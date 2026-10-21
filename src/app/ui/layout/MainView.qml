@@ -148,6 +148,10 @@ Item {
             if (root.documentSession.hasDocument)
                 root.showSaveFileDialog()
         }
+        onExportPlainSimaiRequested: {
+            if (root.documentSession.hasDocument)
+                root.showPlainSimaiExportDialog()
+        }
         onChartTransformRequested: opId => {
             if (root.chartEditorActive)
                 root.applyChartTransform(opId)
@@ -262,6 +266,13 @@ Item {
         saveFileDialog.currentFolder = location.folder
         saveFileDialog.selectedFile = location.file
         saveFileDialog.open()
+    }
+
+    function showPlainSimaiExportDialog() {
+        const location = root.documentSession.plainSimaiExportLocation()
+        plainSimaiExportDialog.currentFolder = location.folder
+        plainSimaiExportDialog.selectedFile = location.file
+        plainSimaiExportDialog.open()
     }
 
     function saveDocument() {
@@ -488,6 +499,15 @@ Item {
         defaultSuffix: "txt"
         nameFilters: [qsTrId("qml.simai_files_txt_simai"), qsTrId("qml.all_files_2")]
         onAccepted: root.commands.saveDocumentAs(selectedFile)
+    }
+
+    FileDialog {
+        id: plainSimaiExportDialog
+        title: qsTrId("action.export_plain_simai")
+        fileMode: FileDialog.SaveFile
+        defaultSuffix: "txt"
+        nameFilters: [qsTrId("qml.simai_files_txt_simai"), qsTrId("qml.all_files_2")]
+        onAccepted: root.commands.exportPlainSimai(selectedFile)
     }
 
     // These actions remain discoverable while their dedicated QML pages and

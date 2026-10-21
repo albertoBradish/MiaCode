@@ -84,7 +84,7 @@ ExportSession::ExportSession(miacode::ShellNotifications& notifications,
     });
     connect(&notifications, &miacode::ShellNotifications::previewRenderSettingsChanged, this, [this]() {
         if (pageSessionActive_ && !pushingSharedSettings_) {
-            adoptPreviewRenderSettings();
+            applyLivePreviewSettings();
         }
     });
     // The audition ends inside the playback coordinator (music faded out,
@@ -184,6 +184,18 @@ QVariantList ExportSession::sizePresetOptions() const
         qtTrId("dialog.video_export.size_preset.compact"),
         qtTrId("dialog.video_export.size_preset.ultra_compact_with_pv"),
         qtTrId("dialog.video_export.size_preset.ultra_compact"),
+    };
+}
+
+QVariantList ExportSession::handOrderModeOptions() const
+{
+    return QVariantList{
+        QVariantMap{{"value", static_cast<int>(HandOrderExportMode::FollowPreview)},
+                    {"label", qtTrId("dialog.video_export.hand_order.follow_preview")}},
+        QVariantMap{{"value", static_cast<int>(HandOrderExportMode::Original)},
+                    {"label", qtTrId("dialog.video_export.hand_order.original")}},
+        QVariantMap{{"value", static_cast<int>(HandOrderExportMode::Annotated)},
+                    {"label", qtTrId("dialog.video_export.hand_order.annotated")}},
     };
 }
 
@@ -676,10 +688,7 @@ void ExportSession::adoptPreviewRenderSettings()
     // The task is seeded from this live state on page entry. Left alone, the page would
     // keep that entry-time copy and write it back over the newer value on its next edit
     // or export.
-    if (preview() == nullptr) {
-        return;
-    }
-    const QVariantMap values = preview()->renderSettings();
+    const QVariantMap values = preview() != nullptr ? preview()->renderSettings() : QVariantMap{};
     const auto fromPercent = [&values](const char* key, double fallback) {
         const QVariant value = values.value(QLatin1String(key));
         return value.isValid() ? value.toDouble() / 100.0 : fallback;
@@ -692,6 +701,19 @@ void ExportSession::adoptPreviewRenderSettings()
     task_.fireworkBrightness = miacode::preview_video::normalizedFireworkBrightness(fromPercent("fireworkBrightness", task_.fireworkBrightness));
     task_.smoothBrightness = values.value(QStringLiteral("smoothBrightness"), task_.smoothBrightness).toBool();
     task_.showTimestamp = values.value(QStringLiteral("showTimestamp"), task_.showTimestamp).toBool();
+    const bool previewShowsAnnotations = values.value(
+        QStringLiteral("showHandOrderAnnotations"), task_.showHandOrderAnnotations).toBool();
+    switch (task_.handOrderExportMode) {
+    case HandOrderExportMode::Original:
+        task_.showHandOrderAnnotations = false;
+        break;
+    case HandOrderExportMode::Annotated:
+        task_.showHandOrderAnnotations = true;
+        break;
+    case HandOrderExportMode::FollowPreview:
+        task_.showHandOrderAnnotations = previewShowsAnnotations;
+        break;
+    }
     task_.tapFlowSpeed = values.value(QStringLiteral("tapFlowSpeed"), task_.tapFlowSpeed).toDouble();
     task_.touchFlowSpeed = values.value(QStringLiteral("touchFlowSpeed"), task_.touchFlowSpeed).toDouble();
 }
@@ -1261,6 +1283,20 @@ void ExportSession::setShowChartInfoHud(bool value)
 {
     task_.showChartInfoHud = value;
     emit videoChanged();
+    applyLivePreviewSettings();
+}
+
+void ExportSession::setHandOrderModeIndex(int index)
+{
+    if (index < static_cast<int>(HandOrderExportMode::FollowPreview)
+        || index > static_cast<int>(HandOrderExportMode::Annotated)
+        || handOrderModeIndex() == index) {
+        return;
+    }
+    task_.handOrderExportMode = static_cast<HandOrderExportMode>(index);
+    adoptPreviewRenderSettings();
+    emit videoChanged();
+    savePreferences();
     applyLivePreviewSettings();
 }
 

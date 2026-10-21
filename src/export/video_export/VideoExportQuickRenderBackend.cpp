@@ -76,6 +76,7 @@ bool VideoExportQuickRenderBackend::bootstrap(
     frameState_.render.judgeEffectStyle = task.judgeEffectStyle;
     frameState_.render.showDebugInfo = false;
     frameState_.render.showTimestamp = task.showTimestamp;
+    frameState_.render.showHandOrderAnnotations = task.showHandOrderAnnotations;
     frameState_.render.showObjectStatsHud = task.showObjectStatsHud;
     frameState_.render.showChartInfoHud = task.showChartInfoHud;
     frameState_.chartTitle = task.chartTitle;

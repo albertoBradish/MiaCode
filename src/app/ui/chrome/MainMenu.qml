@@ -408,6 +408,11 @@ Item {
                 enabled: root.commandsEnabled && root.documentAvailable
                 onTriggered: root.commands.saveAsRequested()
             }
+            AppMenuAction {
+                text: qsTrId("action.export_plain_simai")
+                enabled: root.commandsEnabled && root.documentAvailable
+                onTriggered: root.commands.exportPlainSimaiRequested()
+            }
         }
 
         AppMenu {

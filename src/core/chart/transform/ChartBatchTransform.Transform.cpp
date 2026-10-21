@@ -1,5 +1,6 @@
 #include "core/chart/transform/ChartBatchTransform.h"
 #include "core/chart/transform/ChartBatchTransform.Internal.h"
+#include "core/chart/parser/HandOrderAnnotationSyntax.h"
 
 #include <functional>
 
@@ -9,7 +10,8 @@ namespace miacode::chart_transform {
 
 using namespace detail;
 
-QString transformChartText(const QString& input, ChartTransformOp op, int* changedCount)
+QString transformChartText(const QString& input, ChartTransformOp op, int* changedCount,
+                           HandOrderMirrorPolicy handPolicy)
 {
     MC_OP("miacode::chart_transform::transformChartText");
     _mc_op_.note(QStringLiteral("op=%1 input_len=%2").arg(static_cast<int>(op)).arg(input.size()));
@@ -67,7 +69,7 @@ QString transformChartText(const QString& input, ChartTransformOp op, int* chang
 
     int changed = 0;
 
-    std::function<QString(const QString&)> transformToken = [&](const QString& token) -> QString {
+    const auto transformNativeToken = [&](const QString& token) -> QString {
         if (token.isEmpty()) {
             return token;
         }
@@ -323,6 +325,27 @@ QString transformChartText(const QString& input, ChartTransformOp op, int* chang
         }
         return out;
     };
+    const auto transformToken = [&](const QString& token) {
+        const auto annotation = miacode::hand_order::splitToken(token);
+        QString suffix = annotation.suffix;
+        if (isMirrorOp(op) && handPolicy == HandOrderMirrorPolicy::SwapLeftRight) {
+            for (int i = 1; i < suffix.size(); ++i) {
+                const QChar previous = suffix.at(i - 1);
+                if (previous != QLatin1Char('~') && previous != QLatin1Char('=')
+                    && previous != QLatin1Char(':')) {
+                    continue;
+                }
+                if (suffix.at(i) == QLatin1Char('l')) {
+                    suffix[i] = QLatin1Char('r');
+                    ++changed;
+                } else if (suffix.at(i) == QLatin1Char('r')) {
+                    suffix[i] = QLatin1Char('l');
+                    ++changed;
+                }
+            }
+        }
+        return transformNativeToken(annotation.baseToken) + suffix;
+    };
 
     QString transformed;
     transformed.reserve(input.size());
@@ -437,13 +460,14 @@ QString transformChartText(const QString& input, ChartTransformOp op, int* chang
     return transformed;
 }
 
-QString transformChartSelectionText(const QString& input, ChartTransformOp op, int* changedCount)
+QString transformChartSelectionText(const QString& input, ChartTransformOp op, int* changedCount,
+                                    HandOrderMirrorPolicy handPolicy)
 {
     MC_OP("miacode::chart_transform::transformChartSelectionText");
     _mc_op_.note(QStringLiteral("op=%1 input_len=%2").arg(static_cast<int>(op)).arg(input.size()));
     int changed = 0;
     const QString output = rewriteSelectionCore(input, [&](const QString& core) {
-        return transformChartText(core, op, &changed);
+        return transformChartText(core, op, &changed, handPolicy);
     });
     if (changedCount != nullptr) {
         *changedCount = changed;

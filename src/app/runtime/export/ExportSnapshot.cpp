@@ -522,6 +522,7 @@ bool miacode::runtime::VideoExportHost::buildVideoExportSnapshot(
         defaultOutputName, built.outputMode
     );
     built.showTimestamp = requestedTask.showTimestamp;
+    built.showHandOrderAnnotations = requestedTask.showHandOrderAnnotations;
     built.showObjectStatsHud = requestedTask.showObjectStatsHud;
     built.showChartInfoHud = requestedTask.showChartInfoHud;
     built.centerDisplayMode = requestedTask.centerDisplayMode;
@@ -615,14 +616,22 @@ bool miacode::runtime::VideoExportHost::buildVideoExportSnapshotForChartDirector
     const miacode::simai::SimaiTimingMetadata timingMetadata = miacode::simai::buildTimingMetadata(document);
     const SimaiValidationReport report =
         SimaiParser::buildValidationReport(difficulty->chart, validationLocale, timingMetadata);
-    if (report.errorCount > 0) {
-        QString issueSummary;
-        if (!report.issues.isEmpty()) {
-            issueSummary = report.issues.constFirst().displayMessage.trimmed();
+    int blockingErrorCount = 0;
+    QString issueSummary;
+    for (const SimaiValidationIssue& issue : report.issues) {
+        if (issue.severity != SimaiValidationSeverity::Error
+            || (!requestedTask.showHandOrderAnnotations && issue.isAnnotation)) {
+            continue;
         }
+        ++blockingErrorCount;
+        if (issueSummary.isEmpty()) {
+            issueSummary = issue.displayMessage.trimmed();
+        }
+    }
+    if (blockingErrorCount > 0) {
         if (errorMessage != nullptr) {
             *errorMessage = issueSummary.isEmpty()
-                ? qtTrId("dialog.batch_export.error.validation_failed_count").arg(report.errorCount)
+                ? qtTrId("dialog.batch_export.error.validation_failed_count").arg(blockingErrorCount)
                 : qtTrId("dialog.batch_export.error.validation_failed_detail").arg(issueSummary);
         }
         return false;
@@ -729,6 +738,7 @@ bool miacode::runtime::VideoExportHost::buildVideoExportSnapshotForChartDirector
         defaultOutputName, built.outputMode
     );
     built.showTimestamp = requestedTask.showTimestamp;
+    built.showHandOrderAnnotations = requestedTask.showHandOrderAnnotations;
     built.showObjectStatsHud = requestedTask.showObjectStatsHud;
     built.showChartInfoHud = requestedTask.showChartInfoHud;
     built.centerDisplayMode = requestedTask.centerDisplayMode;
@@ -843,6 +853,21 @@ bool miacode::runtime::VideoExportHost::exportPreviewVideoFromCli(
     if (!liveTimelineCoversDifficulty(difficultyId)) {
         parseAndPublishTimelineForDifficulty(difficultyId);
     }
+    if (request.showHandOrderAnnotations
+        && !session_.state_.timeline_.lastTimelineParseResult_.annotationErrors.isEmpty()) {
+        const SimaiMessage& issue =
+            session_.state_.timeline_.lastTimelineParseResult_.annotationErrors.constFirst();
+        SimaiValidationReport localized;
+        SimaiValidationIssue localizedIssue;
+        localizedIssue.severity = SimaiValidationSeverity::Error;
+        localizedIssue.isAnnotation = true;
+        localizedIssue.rawMessage = issue.message;
+        localized.issues.append(localizedIssue);
+        SimaiParser::localizeValidationReport(localized, uiValidationLocale());
+        return fail(qtTrId("cli.export.hand_order_annotation_invalid"),
+            QStringLiteral("%1:%2 %3").arg(issue.line).arg(issue.col)
+                .arg(localized.issues.constFirst().displayMessage));
+    }
 
     const QString previewSkinDir = session_.resolvePreviewSkinDir();
     if (previewSkinDir.trimmed().isEmpty()) {
@@ -935,6 +960,7 @@ bool miacode::runtime::VideoExportHost::exportPreviewVideoFromCli(
     task.outputHeight = request.outputHeight;
     task.fps = request.fps;
     task.showTimestamp = request.showTimestamp;
+    task.showHandOrderAnnotations = request.showHandOrderAnnotations;
     task.showObjectStatsHud = request.showObjectStatsHud;
     task.showChartInfoHud = request.showChartInfoHud;
     task.chartTitle = session_.applicationServices_.workspace().document().title;

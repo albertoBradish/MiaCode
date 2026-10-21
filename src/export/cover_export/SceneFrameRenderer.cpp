@@ -75,6 +75,7 @@ bool SceneFrameRenderer::bootstrap(const VideoExportTask& task, QString* errorMe
     frameState_.render.judgeEffectStyle = task.judgeEffectStyle;
     frameState_.render.showDebugInfo = false;
     frameState_.render.showTimestamp = false;
+    frameState_.render.showHandOrderAnnotations = task.showHandOrderAnnotations;
     frameState_.render.showObjectStatsHud = false;
     frameState_.render.showChartInfoHud = false;
     frameState_.render.centerDisplayMode = miacode::preview_gameplay::CenterDisplayMode::Off;

@@ -178,6 +178,7 @@ public:
 
     // Fresh values for every open, shared by the shell and save-before-leave.
     Q_INVOKABLE QVariantMap fileDialogLocation(bool saveMode) const;
+    Q_INVOKABLE QVariantMap plainSimaiExportLocation() const;
     Q_INVOKABLE bool openFile(const QUrl& fileUrl);
     QJsonObject documentIdentity() const;
     net::NetEnginePort::Cancel openNetPreview(const QString& path, const QJsonObject& expected,
@@ -185,6 +186,7 @@ public:
     Q_INVOKABLE bool save();
     Q_INVOKABLE bool saveWholeDocument();
     Q_INVOKABLE bool saveAs(const QUrl& fileUrl);
+    Q_INVOKABLE bool exportPlainSimai(const QUrl& fileUrl);
     // Flush current form input and refuse to hide or save a rejected draft.
     Q_INVOKABLE bool finishPendingEdits();
     Q_INVOKABLE bool discardChanges();

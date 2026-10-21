@@ -1,6 +1,7 @@
 #include "core/scene/PreviewTrackLayerState.h"
 
 #include "core/scene/PreviewAnimatedSpriteHelpers.h"
+#include "core/scene/PreviewHandOrderRendering.h"
 #include "core/scene/PreviewMarkerDrawOrder.h"
 #include "core/scene/PreviewOpacityCurves.h"
 #include "core/scene/PreviewSceneConstants.h"
@@ -136,7 +137,8 @@ PreviewTrackLayerState buildPreviewTrackLayerState(
                                   qreal rotationDegrees,
                                   qreal opacity,
                                   PreviewAnimatedSpriteEffect effect,
-                                  bool cacheable
+                                  bool cacheable,
+                                  HandOrderHand handOrderHand
                               ) {
         if (image == nullptr || image->isNull() || opacity <= 0.0) {
             return;
@@ -152,6 +154,7 @@ PreviewTrackLayerState buildPreviewTrackLayerState(
         sprite.rotationDegrees = rotationDegrees;
         sprite.opacity = opacity;
         sprite.effect = effect;
+        sprite.handOrderHand = handOrderHand;
         sprite.cacheable = cacheable;
         layerState.sprites.append(sprite);
     };
@@ -204,7 +207,14 @@ PreviewTrackLayerState buildPreviewTrackLayerState(
         const int startPointIndex = trimFromTail ? 0 : clampedCut;
         const int endPointIndex = trimFromTail ? points.size() - clampedCut : points.size();
         for (int pointIndex = startPointIndex; pointIndex < endPointIndex; ++pointIndex) {
-            appendSprite(image, points[pointIndex], -rotations.value(pointIndex), opacity, effect, cacheable);
+            HandOrderHand hand = HandOrderHand::Unspecified;
+            if (state.render.showHandOrderAnnotations && !marker.handOrderTrackStops.isEmpty()) {
+                const qreal segmentProgress = previewSlideArrowSegmentProgress(
+                    marker, segmentIndex, areaIndex, pointIndex);
+                const qreal progress = previewSlideMovementProgress(marker, segmentIndex, segmentProgress);
+                hand = previewHandOrderAtProgress(marker.handOrderTrackStops, progress);
+            }
+            appendSprite(image, points[pointIndex], -rotations.value(pointIndex), opacity, effect, cacheable, hand);
         }
     };
 
@@ -235,7 +245,12 @@ PreviewTrackLayerState buildPreviewTrackLayerState(
                 continue;
             }
 
-            appendSprite(baseImage, points[pointIndex], -rotations.value(pointIndex), opacity, effect, true);
+            HandOrderHand hand = HandOrderHand::Unspecified;
+            if (state.render.showHandOrderAnnotations && !marker.handOrderTrackStops.isEmpty()) {
+                const qreal progress = previewWifiArrowMovementProgress(marker, points[pointIndex]);
+                hand = previewHandOrderAtProgress(marker.handOrderTrackStops, progress);
+            }
+            appendSprite(baseImage, points[pointIndex], -rotations.value(pointIndex), opacity, effect, true, hand);
         }
     };
 

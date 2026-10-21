@@ -481,6 +481,7 @@ QVariantMap Session::previewRenderSettings() const
         {QStringLiteral("fireworkBrightness"), percentOf(state_.previewFireworkBrightness_)},
         {QStringLiteral("smoothBrightness"), state_.previewSmoothBrightness_},
         {QStringLiteral("showTimestamp"), state_.previewShowTimestamp_},
+        {QStringLiteral("showHandOrderAnnotations"), state_.previewShowHandOrderAnnotations_},
         {QStringLiteral("touchPadAuthoringShortcut"), state_.previewTouchPadAuthoringShortcutEnabled_},
         {QStringLiteral("showDebugInfo"), state_.previewShowDebugInfo_},
         {QStringLiteral("forceLabeledJudgeLineWhenPaused"), state_.previewForceLabeledJudgeLineWhenPaused_},
@@ -547,6 +548,11 @@ void Session::setPreviewRenderSetting(const QString& key, const QVariant& value)
         state_.previewShowTimestamp_ = value.toBool();
         if (canvas != nullptr) {
             canvas->setShowTimestamp(state_.previewShowTimestamp_);
+        }
+    } else if (key == QLatin1String("showHandOrderAnnotations")) {
+        state_.previewShowHandOrderAnnotations_ = value.toBool();
+        if (canvas != nullptr) {
+            canvas->setShowHandOrderAnnotations(state_.previewShowHandOrderAnnotations_);
         }
     } else if (key == QLatin1String("touchPadAuthoringShortcut")) {
         state_.previewTouchPadAuthoringShortcutEnabled_ = value.toBool();

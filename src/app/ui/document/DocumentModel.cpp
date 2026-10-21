@@ -4,6 +4,7 @@
 #include "app/ui/document/ChartTransformCommands.h"
 #include "core/chart/transform/ChartBatchTransform.h"
 #include "core/chart/transform/ChartNormalization.h"
+#include "core/chart/transform/PlainSimaiExport.h"
 #include "core/chart/selection/ChartSelectionBeatSummary.h"
 #include "app/ui/document/DocumentModel.h"
 #include "app/ui/preferences/LocaleService.h"
@@ -1388,6 +1389,16 @@ QVariantMap DocumentModel::fileDialogLocation(bool saveMode) const
             {QStringLiteral("file"), QUrl::fromLocalFile(path)}};
 }
 
+QVariantMap DocumentModel::plainSimaiExportLocation() const
+{
+    const QString directory = miacode::runtime_paths::exportsDirectory();
+    const QString baseName = currentFilePath().isEmpty()
+        ? QStringLiteral("chart") : QFileInfo(currentFilePath()).completeBaseName();
+    const QString path = QDir(directory).filePath(baseName + QStringLiteral("_plain.txt"));
+    return {{QStringLiteral("folder"), QUrl::fromLocalFile(directory)},
+            {QStringLiteral("file"), QUrl::fromLocalFile(path)}};
+}
+
 bool DocumentModel::openFile(const QUrl& fileUrl)
 {
     return openFileWithOrigin(fileUrl, ChartDocumentOrigin::Local);
@@ -1713,6 +1724,50 @@ bool DocumentModel::saveAs(const QUrl& fileUrl)
         writeUnifiedDesignerPreference(currentFilePath(), unifiedDesignerEnabled_);
     }
     return saved;
+}
+
+bool DocumentModel::exportPlainSimai(const QUrl& fileUrl)
+{
+    if (!hasDocument() || workspace_ == nullptr || !fileUrl.isLocalFile()) {
+        return false;
+    }
+    if (!finishPendingEdits()) {
+        return false;
+    }
+    const QString path = fileUrl.toLocalFile();
+    const QFileInfo destination(path);
+    if (!destination.isAbsolute()) {
+        return false;
+    }
+    const QFileInfo source(currentFilePath());
+    const QString destinationIdentity = destination.exists()
+        ? destination.canonicalFilePath() : destination.absoluteFilePath();
+    const QString sourceIdentity = source.exists()
+        ? source.canonicalFilePath() : source.absoluteFilePath();
+#ifdef Q_OS_WIN
+    constexpr Qt::CaseSensitivity pathCase = Qt::CaseInsensitive;
+#else
+    constexpr Qt::CaseSensitivity pathCase = Qt::CaseSensitive;
+#endif
+    if (!currentFilePath().isEmpty()
+        && destinationIdentity.compare(sourceIdentity, pathCase) == 0) {
+        uiRequests_->postNotice(miacode::NoticeSeverity::Error,
+            miacode::localizedText("document.save_failed"),
+            miacode::localizedText("document.plain_export_same_path"));
+        return false;
+    }
+
+    const QByteArray text = miacode::chart_transform::plainSimaiDocumentText(
+        workspace_->document()).toUtf8();
+    QSaveFile output(destination.absoluteFilePath());
+    if (!output.open(QIODevice::WriteOnly) || output.write(text) != text.size()
+        || !output.commit()) {
+        uiRequests_->postNotice(miacode::NoticeSeverity::Error,
+            miacode::localizedText("document.save_failed"),
+            miacode::localizedText("document.cannot_write_chart"));
+        return false;
+    }
+    return true;
 }
 bool DocumentModel::discardChanges()
 {

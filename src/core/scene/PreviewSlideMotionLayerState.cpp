@@ -1,6 +1,7 @@
 #include "core/scene/PreviewSlideMotionLayerState.h"
 
 #include "core/scene/PreviewAnimatedSpriteHelpers.h"
+#include "core/scene/PreviewHandOrderRendering.h"
 #include "core/scene/PreviewMarkerDrawOrder.h"
 #include "core/scene/PreviewOpacityCurves.h"
 #include "core/scene/PreviewSceneConstants.h"
@@ -104,7 +105,8 @@ PreviewSlideMotionLayerState buildPreviewSlideMotionLayerState(
                                   qreal imageScale,
                                   qreal imageOpacity,
                                   PreviewAnimatedSpriteEffect effect,
-                                  bool cacheable
+                                  bool cacheable,
+                                  HandOrderHand handOrderHand
                               ) {
         if (image == nullptr || image->isNull() || imageOpacity <= 0.0 || imageScale <= 0.0) {
             return;
@@ -120,6 +122,7 @@ PreviewSlideMotionLayerState buildPreviewSlideMotionLayerState(
         sprite.rotationDegrees = angleDegrees;
         sprite.opacity = imageOpacity;
         sprite.effect = effect;
+        sprite.handOrderHand = handOrderHand;
         sprite.cacheable = cacheable;
         layerState.sprites.append(sprite);
     };
@@ -162,6 +165,7 @@ PreviewSlideMotionLayerState buildPreviewSlideMotionLayerState(
             QPointF logicalPoint;
             qreal imageScale = kStarAssetScale;
             qreal imageOpacity = 1.0;
+            qreal movementProgress = 0.0;
 
             if (state.playheadSeconds < marker.slideTraceSecond) {
                 const QVector<QPointF>& points = marker.slideSegmentPoints.constFirst();
@@ -201,7 +205,12 @@ PreviewSlideMotionLayerState buildPreviewSlideMotionLayerState(
                 }
                 logicalPoint = interpolatePoint(points, proportion);
                 angle = interpolateAngle(angles, proportion);
+                movementProgress = previewSlideMovementProgress(marker, segmentIndex, proportion);
             }
+
+            const HandOrderHand hand = state.render.showHandOrderAnnotations
+                ? previewHandOrderAtProgress(marker.handOrderTrackStops, movementProgress)
+                : HandOrderHand::Unspecified;
 
             appendSprite(
                 renderImage,
@@ -210,7 +219,8 @@ PreviewSlideMotionLayerState buildPreviewSlideMotionLayerState(
                 imageScale,
                 imageOpacity,
                 effect,
-                cacheable
+                cacheable,
+                hand
             );
             continue;
         }
@@ -247,6 +257,10 @@ PreviewSlideMotionLayerState buildPreviewSlideMotionLayerState(
             );
         }
 
+        const HandOrderHand wifiHand = state.render.showHandOrderAnnotations
+            ? previewHandOrderAtProgress(marker.handOrderTrackStops, proportion)
+            : HandOrderHand::Unspecified;
+
         for (int laneIndex = 0; laneIndex < marker.wifiLanePoints.size(); ++laneIndex) {
             const QVector<QPointF>& points = marker.wifiLanePoints[laneIndex];
             const QVector<double>& angles = marker.wifiLaneAngles.value(laneIndex);
@@ -264,7 +278,8 @@ PreviewSlideMotionLayerState buildPreviewSlideMotionLayerState(
                 imageScale,
                 imageOpacity,
                 effect,
-                cacheable
+                cacheable,
+                wifiHand
             );
         }
     }

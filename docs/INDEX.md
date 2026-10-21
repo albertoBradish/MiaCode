@@ -4,6 +4,7 @@
 - [应用所有权](specs/ui/CURRENT_ARCHITECTURE_ZH.md)
 - [预览与导出](specs/preview/CURRENT_RENDER_EXPORT_CONTRACT_ZH.md)
 - [Slide 语法](specs/chart/SLIDE_DELAY_AND_HEAD_MATERIAL_SPEC.md)
+- [手序标注语法与语义](specs/chart/HAND_ORDER_ANNOTATION_SPEC_ZH.md)
 - [无理检测](specs/muri/MURI_DETECTION_SPEC.md)
 - [Timeline 坐标与聚焦](specs/timeline/TIMELINE_COORDINATE_FOCUS_SPEC.md)
 - [Net 接口](specs/net/NET_API_CONTRACT_ZH.md)、[配置](specs/net/NET_CONFIGURATION_ZH.md)

@@ -1,5 +1,6 @@
 #include "app/ui/document/DocumentModel.h"
 #include "app/services/PreferenceDocument.h"
+#include "common/RuntimePaths.h"
 #include <QDir>
 
 #include <QCoreApplication>
@@ -236,6 +237,48 @@ bool verifyPickerDirectories()
     analysis.shutdown();
     return ok;
 }
+
+bool verifyPlainSimaiExport()
+{
+    QTemporaryDir directory;
+    if (!directory.isValid()) return false;
+    const QString path = directory.filePath(QStringLiteral("maidata.txt"));
+    const QString plainPath = directory.filePath(QStringLiteral("plain.txt"));
+    const QByteArray annotated =
+        "&title=A~B\n&lv_5=12\n&inote_5=(120){4}1~l,E\n";
+    QFile source(path);
+    if (!source.open(QIODevice::WriteOnly) || source.write(annotated) != annotated.size()) {
+        return false;
+    }
+    source.close();
+
+    miacode::ChartWorkspace workspace;
+    miacode::ChartWorkspaceFileService files(workspace);
+    if (!files.open(path).accepted) return false;
+    miacode::AnalysisService analysis(workspace);
+    analysis.setDiagnosticsDeferred(true);
+    miacode::ShellNotifications notifications;
+    miacode::UiRequestService requests;
+    FakeBridge fake;
+    miacode::DocumentBridge* bridge = &fake;
+    miacode::PreviewSurface* preview = nullptr;
+    miacode::ui::DocumentModel model(notifications, workspace, files, analysis, requests, bridge, preview);
+    const auto before = workspace.snapshot();
+    bool ok = expect(model.exportPlainSimai(QUrl::fromLocalFile(plainPath)),
+                     "plain Simai export writes a separate file");
+    const QByteArray exported = read(plainPath);
+    ok &= expect(exported.contains("&title=A~B") && exported.contains("&inote_5=(120){4}1,E")
+                     && !exported.contains("1~l") && read(path) == annotated,
+                 "plain export strips chart annotations and preserves source metadata and file");
+    ok &= expect(!model.exportPlainSimai(QUrl::fromLocalFile(path)) && read(path) == annotated,
+                 "plain export refuses to overwrite the annotated source");
+    ok &= expect(workspace.snapshot().revision == before.revision
+                     && workspace.snapshot().dirty == before.dirty
+                     && workspace.snapshot().filePath == before.filePath,
+                 "plain export leaves workspace revision, dirty state and path unchanged");
+    analysis.shutdown();
+    return ok;
+}
 } // namespace
 
 int main(int argc, char** argv)
@@ -243,5 +286,11 @@ int main(int argc, char** argv)
     QCoreApplication app(argc, argv);
     QStandardPaths::setTestModeEnabled(true);
     app.setApplicationName(QStringLiteral("MiaCodeDocumentModelSaveSpec"));
-    return verifyDifficultyCardProjection() && verifyRejectedDraftBlocksPersistenceAndLeave() && verifyPickerDirectories() ? 0 : 1;
+    QString runtimeError;
+    if (!miacode::runtime_paths::initializeFromEnvironment(&runtimeError)) {
+        QTextStream(stderr) << runtimeError << Qt::endl;
+        return 1;
+    }
+    return verifyDifficultyCardProjection() && verifyRejectedDraftBlocksPersistenceAndLeave()
+        && verifyPickerDirectories() && verifyPlainSimaiExport() ? 0 : 1;
 }

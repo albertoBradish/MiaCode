@@ -21,6 +21,7 @@ QtObject {
     signal saveRequested()
     signal saveWholeDocumentRequested()
     signal saveAsRequested()
+    signal exportPlainSimaiRequested()
     signal exitRequested()
     signal undoRequested()
     signal redoRequested()

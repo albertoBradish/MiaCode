@@ -49,7 +49,8 @@ PreviewTouchHoldLayerState buildPreviewTouchHoldLayerState(
                                     qreal rotation,
                                     qreal opacity,
                                     PreviewAnimatedSpriteEffect effect = PreviewAnimatedSpriteEffect::None,
-                                    bool cacheable = true
+                                    bool cacheable = true,
+                                    HandOrderHand handOrderHand = HandOrderHand::Unspecified
                                 ) {
         if (image == nullptr || image->isNull() || opacity <= 0.0 || width <= 0.0 || height <= 0.0) {
             return;
@@ -62,6 +63,7 @@ PreviewTouchHoldLayerState buildPreviewTouchHoldLayerState(
         sprite.rotationDegrees = rotation;
         sprite.opacity = opacity;
         sprite.effect = effect;
+        sprite.handOrderHand = handOrderHand;
         sprite.cacheable = cacheable;
         bucket.append(sprite);
     };
@@ -132,6 +134,8 @@ PreviewTouchHoldLayerState buildPreviewTouchHoldLayerState(
             ? PreviewAnimatedSpriteEffect::BreakAnimate
             : PreviewAnimatedSpriteEffect::None;
         const bool fansCacheable = true;
+        const HandOrderHand hand = state.render.showHandOrderAnnotations
+            ? marker.handOrderHead : HandOrderHand::Unspecified;
         if (renderFan0 == nullptr || renderFan1 == nullptr || renderFan2 == nullptr || renderFan3 == nullptr) {
             continue;
         }
@@ -183,10 +187,12 @@ PreviewTouchHoldLayerState buildPreviewTouchHoldLayerState(
                 pieceLayout.angle,
                 alpha,
                 fansEffect,
-                fansCacheable
+                fansCacheable,
+                hand
             );
         }
-        appendToBucket(pointBucket, &pointBase, point, pointWidth, pointHeight, 0.0, alpha);
+        appendToBucket(pointBucket, &pointBase, point, pointWidth, pointHeight, 0.0, alpha,
+                       PreviewAnimatedSpriteEffect::None, true, hand);
 
         if (deltaSeconds >= 0.0 && !borderBase.isNull()) {
             const qreal progress = qBound<qreal>(0.0, deltaSeconds / holdDuration, 1.0);

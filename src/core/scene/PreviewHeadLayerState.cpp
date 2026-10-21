@@ -165,7 +165,8 @@ void appendSprite(
     qreal opacity = 1.0,
     const QRectF& sourceRect = QRectF(),
     PreviewAnimatedSpriteEffect effect = PreviewAnimatedSpriteEffect::None,
-    bool cacheable = true
+    bool cacheable = true,
+    HandOrderHand handOrderHand = HandOrderHand::Unspecified
 )
 {
     if (state == nullptr || image == nullptr || image->isNull() || width <= 0.0 || height <= 0.0 || opacity <= 0.0) {
@@ -180,6 +181,7 @@ void appendSprite(
     sprite.opacity = opacity;
     sprite.sourceRect = sourceRect;
     sprite.effect = effect;
+    sprite.handOrderHand = handOrderHand;
     sprite.cacheable = cacheable;
     state->sprites.append(sprite);
 }
@@ -420,6 +422,8 @@ PreviewHeadLayerState buildPreviewHeadLayerState(
             }
 
             const auto appendHoldStripSlices = [&](const QPointF& center, int bodyLogicalLength, qreal scale) {
+                const HandOrderHand hand = state.render.showHandOrderAnnotations
+                    ? marker.handOrderHead : HandOrderHand::Unspecified;
                 const int srcW = qMax(1, renderHoldImage->width());
                 const int srcH = qMax(1, renderHoldImage->height());
                 const int capRaw = qMax(1, qMin(srcH / 2, qRound(srcH * kHoldCapSliceRatioNumerator / kHoldCapSliceRatioDenominator)));
@@ -445,7 +449,8 @@ PreviewHeadLayerState buildPreviewHeadLayerState(
                         1.0,
                         QRectF(0.0, midY, srcW, 1.0),
                         holdEffect,
-                        renderHoldImageCacheable
+                        renderHoldImageCacheable,
+                        hand
                     );
                 }
                 appendSprite(
@@ -458,7 +463,8 @@ PreviewHeadLayerState buildPreviewHeadLayerState(
                     1.0,
                     QRectF(0.0, 0.0, srcW, capRaw),
                     holdEffect,
-                    renderHoldImageCacheable
+                    renderHoldImageCacheable,
+                    hand
                 );
                 appendSprite(
                     &layerState,
@@ -470,7 +476,8 @@ PreviewHeadLayerState buildPreviewHeadLayerState(
                     1.0,
                     QRectF(0.0, srcH - capRaw, srcW, capRaw),
                     holdEffect,
-                    renderHoldImageCacheable
+                    renderHoldImageCacheable,
+                    hand
                 );
             };
 
@@ -627,7 +634,9 @@ PreviewHeadLayerState buildPreviewHeadLayerState(
             1.0,
             QRectF(),
             headEffect,
-            headImageCacheable
+            headImageCacheable,
+            state.render.showHandOrderAnnotations
+                ? marker.handOrderHead : HandOrderHand::Unspecified
         );
     }
 

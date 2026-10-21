@@ -100,6 +100,40 @@ int main(int argc, char** argv)
     expect(candidatesForOpening(QLatin1Char('h'), QString(), QString()).isEmpty(),
            QStringLiteral("candidatesForOpening empty for non-openers"), out, &failed);
 
+    const QString simple = QStringLiteral("1~");
+    const auto simpleHand = handOrderCompletionAt(simple, simple.size());
+    expect(simpleHand.startPosition == 2
+               && simpleHand.candidates.mid(0, 3)
+                   == QStringList({QStringLiteral("l"), QStringLiteral("r"), QStringLiteral("m")}),
+           QStringLiteral("hand suffix completes after the tilde"), out, &failed);
+    expect(!handOrderCompletionAt(QStringLiteral("12~"), 3).active()
+               && !handOrderCompletionAt(QStringLiteral("1, || ~"), 7).active(),
+           QStringLiteral("ambiguous digit clusters and comments offer no hand completion"), out, &failed);
+
+    const QString singleTrack = QStringLiteral("1-5[4:1]~[");
+    const auto singleKeys = handOrderCompletionAt(singleTrack, singleTrack.size());
+    expect(singleKeys.startPosition == singleTrack.size()
+               && singleKeys.candidates.contains(QStringLiteral("head="))
+               && singleKeys.candidates.contains(QStringLiteral("track="))
+               && !singleKeys.candidates.contains(QStringLiteral("8:1]")),
+           QStringLiteral("annotation bracket offers keys instead of durations"), out, &failed);
+
+    const QString multiTrack = QStringLiteral("1-5[4:1]*-7[4:1]~[branch0=0:l;");
+    const auto branchKeys = handOrderCompletionAt(multiTrack, multiTrack.size());
+    expect(branchKeys.candidates.contains(QStringLiteral("branch1="))
+               && !branchKeys.candidates.contains(QStringLiteral("track="))
+               && !branchKeys.candidates.contains(QStringLiteral("branch0=")),
+           QStringLiteral("multi-branch container suggests only missing branch keys"), out, &failed);
+
+    const QString handValue = QStringLiteral("1-5[4:1]~[head=l;track=0:l|0.5:");
+    const auto trackHand = handOrderCompletionAt(handValue, handValue.size());
+    expect(trackHand.startPosition == handValue.size()
+               && trackHand.candidates == QStringList({QStringLiteral("l"), QStringLiteral("r"), QStringLiteral("m")}),
+           QStringLiteral("track node hand completion replaces only the hand value"), out, &failed);
+    const QString closedTrack = QStringLiteral("1-5[4:1]~[track=0:m]");
+    expect(!handOrderCompletionAt(closedTrack, closedTrack.size()).active(),
+           QStringLiteral("closed container does not reopen completion"), out, &failed);
+
     if (failed != 0) {
         out << "SimaiCompletionCatalog spec failed: " << failed << '\n';
         return 1;

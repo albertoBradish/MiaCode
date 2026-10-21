@@ -53,6 +53,7 @@ struct VideoExportSnapshot {
     QString outputPath;
     VideoExportOutputMode outputMode = VideoExportOutputMode::Mp4;
     bool showTimestamp = true;
+    bool showHandOrderAnnotations = true;
     bool showObjectStatsHud = false;
     bool showChartInfoHud = false;
     // Count-in on/off. The clock_count VALUE is always re-derived from the chart;
