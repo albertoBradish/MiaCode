@@ -399,13 +399,18 @@ PreviewHeadLayerState buildPreviewHeadLayerState(
             const PreviewAnimatedSpriteEffect holdEffect = marker.isBreak
                 ? PreviewAnimatedSpriteEffect::BreakAnimate
                 : (holdActive ? PreviewAnimatedSpriteEffect::HoldShine : PreviewAnimatedSpriteEffect::None);
-            const QImage* renderHoldImage = holdImage;
+            const HandOrderHand holdHand = state.render.showHandOrderAnnotations
+                ? marker.handOrderHead : HandOrderHand::Unspecified;
+            const QImage* artworkHoldImage = selectHandOrderSkinArtwork(state.skin, holdImage, holdHand);
+            const HandOrderHand shaderHand = artworkHoldImage == holdImage
+                ? holdHand : HandOrderHand::Unspecified;
+            const QImage* renderHoldImage = artworkHoldImage;
             bool renderHoldImageCacheable = true;
             if (marker.isEx && !state.skin.holdExImage.isNull()) {
                 const QColor tint = exTintColor(marker.isBreak, marker.isEach);
                 if (renderAssetCache != nullptr) {
                     renderHoldImage = renderAssetCache->composedImage(
-                        *holdImage,
+                        *artworkHoldImage,
                         state.skin.holdExImage,
                         tint,
                         kHoldOverlayBaseMix,
@@ -413,7 +418,7 @@ PreviewHeadLayerState buildPreviewHeadLayerState(
                 } else {
                     renderHoldImage = appendOwnedImage(
                         &layerState,
-                        composeOverlayImage(*holdImage, state.skin.holdExImage, kHoldOverlayBaseMix, kHoldOverlayAlphaMix, &tint));
+                        composeOverlayImage(*artworkHoldImage, state.skin.holdExImage, kHoldOverlayBaseMix, kHoldOverlayAlphaMix, &tint));
                     renderHoldImageCacheable = false;
                 }
             }
@@ -422,8 +427,6 @@ PreviewHeadLayerState buildPreviewHeadLayerState(
             }
 
             const auto appendHoldStripSlices = [&](const QPointF& center, int bodyLogicalLength, qreal scale) {
-                const HandOrderHand hand = state.render.showHandOrderAnnotations
-                    ? marker.handOrderHead : HandOrderHand::Unspecified;
                 const int srcW = qMax(1, renderHoldImage->width());
                 const int srcH = qMax(1, renderHoldImage->height());
                 const int capRaw = qMax(1, qMin(srcH / 2, qRound(srcH * kHoldCapSliceRatioNumerator / kHoldCapSliceRatioDenominator)));
@@ -450,7 +453,7 @@ PreviewHeadLayerState buildPreviewHeadLayerState(
                         QRectF(0.0, midY, srcW, 1.0),
                         holdEffect,
                         renderHoldImageCacheable,
-                        hand
+                        shaderHand
                     );
                 }
                 appendSprite(
@@ -464,7 +467,7 @@ PreviewHeadLayerState buildPreviewHeadLayerState(
                     QRectF(0.0, 0.0, srcW, capRaw),
                     holdEffect,
                     renderHoldImageCacheable,
-                    hand
+                    shaderHand
                 );
                 appendSprite(
                     &layerState,
@@ -477,7 +480,7 @@ PreviewHeadLayerState buildPreviewHeadLayerState(
                     QRectF(0.0, srcH - capRaw, srcW, capRaw),
                     holdEffect,
                     renderHoldImageCacheable,
-                    hand
+                    shaderHand
                 );
             };
 
@@ -557,7 +560,12 @@ PreviewHeadLayerState buildPreviewHeadLayerState(
         if (baseImage == nullptr || baseImage->isNull()) {
             continue;
         }
-        const QImage* headImage = baseImage;
+        const HandOrderHand headHand = state.render.showHandOrderAnnotations
+            ? marker.handOrderHead : HandOrderHand::Unspecified;
+        const QImage* artworkBaseImage = selectHandOrderSkinArtwork(state.skin, baseImage, headHand);
+        const HandOrderHand shaderHand = artworkBaseImage == baseImage
+            ? headHand : HandOrderHand::Unspecified;
+        const QImage* headImage = artworkBaseImage;
         bool headImageCacheable = true;
         const bool showExOverlay = headEx && (!headIsMine || !state.render.useMineSkin);
         if (starMaterialHead && showExOverlay) {
@@ -568,7 +576,7 @@ PreviewHeadLayerState buildPreviewHeadLayerState(
                 const QColor tint = exStarTintColor(headBreak, headEach);
                 if (renderAssetCache != nullptr) {
                     headImage = renderAssetCache->composedImage(
-                        *baseImage,
+                        *artworkBaseImage,
                         overlay,
                         tint,
                         kTapOverlayBaseMix,
@@ -576,7 +584,7 @@ PreviewHeadLayerState buildPreviewHeadLayerState(
                 } else {
                     headImage = appendOwnedImage(
                         &layerState,
-                        composeOverlayImage(*baseImage, overlay, kTapOverlayBaseMix, kTapOverlayAlphaMix, &tint));
+                        composeOverlayImage(*artworkBaseImage, overlay, kTapOverlayBaseMix, kTapOverlayAlphaMix, &tint));
                     headImageCacheable = false;
                 }
             }
@@ -584,7 +592,7 @@ PreviewHeadLayerState buildPreviewHeadLayerState(
             const QColor tint = exTintColor(headBreak, headEach);
             if (renderAssetCache != nullptr) {
                 headImage = renderAssetCache->composedImage(
-                    *baseImage,
+                    *artworkBaseImage,
                     state.skin.tapExImage,
                     tint,
                     kTapOverlayBaseMix,
@@ -592,7 +600,7 @@ PreviewHeadLayerState buildPreviewHeadLayerState(
             } else {
                 headImage = appendOwnedImage(
                     &layerState,
-                    composeOverlayImage(*baseImage, state.skin.tapExImage, kTapOverlayBaseMix, kTapOverlayAlphaMix, &tint));
+                    composeOverlayImage(*artworkBaseImage, state.skin.tapExImage, kTapOverlayBaseMix, kTapOverlayAlphaMix, &tint));
                 headImageCacheable = false;
             }
         }
@@ -635,11 +643,11 @@ PreviewHeadLayerState buildPreviewHeadLayerState(
             QRectF(),
             headEffect,
             headImageCacheable,
-            state.render.showHandOrderAnnotations
-                ? marker.handOrderHead : HandOrderHand::Unspecified
+            shaderHand
         );
     }
 
+    applyHandOrderSkinArtwork(state.skin, &layerState.sprites);
     return layerState;
 }
 

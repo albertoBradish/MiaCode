@@ -1,11 +1,13 @@
 #pragma once
 
 #include <QImage>
+#include <QHash>
 #include <QRectF>
 #include <QVector>
 #include <QtGlobal>
 #include <QtMath>
 
+#include <array>
 #include <limits>
 #include <memory>
 #include <utility>
@@ -22,6 +24,9 @@
 namespace miacode::preview::scene {
 
 struct PreviewSkinAssets {
+    // Optional pixel-exact hand artwork, indexed by the original QImage's
+    // cache key. A missing set falls back to the sprite shader tint.
+    QHash<quint64, std::array<QImage, 3>> handOrderVariants;
     QImage tapImage;
     QImage tapEachImage;
     QImage tapBreakImage;

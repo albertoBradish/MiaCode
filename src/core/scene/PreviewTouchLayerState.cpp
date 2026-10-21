@@ -2,6 +2,7 @@
 
 #include "core/scene/PreviewAnimatedSpriteHelpers.h"
 #include "core/scene/PreviewOpacityCurves.h"
+#include "core/scene/PreviewSkinSelectors.h"
 #include "core/scene/PreviewSceneConstants.h"
 #include "core/scene/PreviewSceneMath.h"
 
@@ -203,6 +204,7 @@ PreviewTouchLayerState buildPreviewTouchLayerState(
                      PreviewAnimatedSpriteEffect::None, true, hand);
     }
 
+    applyHandOrderSkinArtwork(state.skin, &layerState.sprites);
     return layerState;
 }
 

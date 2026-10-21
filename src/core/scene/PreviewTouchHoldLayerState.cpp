@@ -2,6 +2,7 @@
 
 #include "core/scene/PreviewAnimatedSpriteHelpers.h"
 #include "core/scene/PreviewOpacityCurves.h"
+#include "core/scene/PreviewSkinSelectors.h"
 #include "core/scene/PreviewSceneConstants.h"
 #include "core/scene/PreviewSceneMath.h"
 
@@ -225,6 +226,7 @@ PreviewTouchHoldLayerState buildPreviewTouchHoldLayerState(
     }
     layerState.sprites.append(pointBucket);
 
+    applyHandOrderSkinArtwork(state.skin, &layerState.sprites);
     return layerState;
 }
 
