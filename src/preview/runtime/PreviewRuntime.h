@@ -204,6 +204,7 @@ public:
     void setSuppressObjectStatsHud(bool suppress);
     void setShowChartInfoHud(bool show);
     void setUseMineSkin(bool enabled);
+    void setShowHandOrderAnnotations(bool enabled);
     void setChartInfo(const QString& title,
                       const QString& artist,
                       const QString& difficultyLabel,

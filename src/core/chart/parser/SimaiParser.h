@@ -16,6 +16,8 @@ struct SimaiMessage {
 struct SimaiParseResult {
     bool ok = true;
     QVector<SimaiMessage> errors;
+    // Annotation diagnostics do not change the validity of the base chart.
+    QVector<SimaiMessage> annotationErrors;
     QVector<SimaiMessage> warnings;
     QVector<double> measureLineSeconds;
     QVector<TimelineBeatMarker> beatMarkers;
@@ -39,6 +41,7 @@ struct SimaiValidationIssue {
     int col = 1;
     int endCol = 1;
     SimaiValidationSeverity severity = SimaiValidationSeverity::Error;
+    bool isAnnotation = false;
     QString rawMessage;
     QString displayMessage;
 };

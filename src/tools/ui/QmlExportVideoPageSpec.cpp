@@ -105,6 +105,12 @@ ApplicationWindow {
         property var sizePresetOptions: ["Standard"]
         property bool showObjectStatsHud: false
         property bool showChartInfoHud: false
+        property int handOrderModeIndex: 0
+        property var handOrderModeOptions: [
+            { value: 0, label: "Follow preview" },
+            { value: 1, label: "Original chart" },
+            { value: 2, label: "Hand-order colors" }
+        ]
         property bool clockCountEnabled: false
         property var fontLibraryOptions: [
             { label: "Default font", path: "", family: "" },
@@ -133,6 +139,15 @@ ApplicationWindow {
         property bool applyingAtomicRange: false
 
         signal rangeChanged()
+
+        // Match the real ExportSession::setActiveTab side effect. A plain
+        // QtObject property has no setter to keep its settings tab in sync.
+        onActiveTabChanged: {
+            if (activeTab === "batch")
+                settingsTab = "batch"
+            else if (settingsTab === "batch")
+                settingsTab = "output"
+        }
 
         onExportStartSecondsChanged: {
             if (applyingAtomicRange)
@@ -572,6 +587,8 @@ bool verifyBatchInputsOwnASettingsTab(QTextStream& err)
     ok &= require(session->property("settingsTab").toString() == QStringLiteral("output"),
                   QStringLiteral("leaving batch mode falls back to a settings tab that still exists"),
                   err);
+    ok &= require(findVisualItem(contentItem, QStringLiteral("exportHandOrderModeCombo")) != nullptr,
+                  QStringLiteral("output settings expose the hand-order export choice"), err);
     ok &= require(findVisualItem(contentItem, QStringLiteral("exportSettingsTab_batch")) == nullptr,
                   QStringLiteral("the batch settings tab disappears with batch mode"), err);
     ok &= require(!batchPage->isVisible(),

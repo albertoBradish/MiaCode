@@ -219,6 +219,7 @@ void miacode::runtime::EditorHost::resetPortablePreviewSettingsToDefaults()
     state_.previewTouchPadAuthoringShortcutEnabled_ = true;
     state_.previewShowDebugInfo_ = false;
     state_.previewShowTimestamp_ = true;
+    state_.previewShowHandOrderAnnotations_ = true;
     state_.previewShowObjectStatsHud_ = false;
     state_.exportShowObjectStatsHud_ = false;
     state_.previewShowChartInfoHud_ = false;
@@ -440,6 +441,10 @@ void miacode::runtime::EditorHost::applyPortablePreviewSettings(const QJsonObjec
     if (preview.value("show_timestamp").isBool()) {
         state_.previewShowTimestamp_ = preview.value("show_timestamp").toBool(true);
     }
+    if (preview.value("show_hand_order_annotations").isBool()) {
+        state_.previewShowHandOrderAnnotations_ =
+            preview.value("show_hand_order_annotations").toBool(true);
+    }
     if (preview.value("show_object_stats_preview").isBool()) {
         state_.previewShowObjectStatsHud_ = preview.value("show_object_stats_preview").toBool(false);
     }
@@ -611,6 +616,7 @@ void miacode::runtime::EditorHost::savePortableState() const
     );
     preview.insert("show_debug_info", state_.previewShowDebugInfo_);
     preview.insert("show_timestamp", state_.previewShowTimestamp_);
+    preview.insert("show_hand_order_annotations", state_.previewShowHandOrderAnnotations_);
     preview.insert("show_object_stats_preview", state_.previewShowObjectStatsHud_);
     preview.insert("show_object_stats_export", state_.exportShowObjectStatsHud_);
     preview.insert("show_chart_info_preview", state_.previewShowChartInfoHud_);

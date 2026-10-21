@@ -236,6 +236,7 @@ struct PreviewRenderState {
     // Presentation-only switch exposed to extensions. Mine semantics remain
     // intact while their dedicated sprites/guides are replaced by normal art.
     bool useMineSkin = true;
+    bool showHandOrderAnnotations = true;
     miacode::preview_gameplay::CenterDisplayMode centerDisplayMode =
         miacode::preview_gameplay::kDefaultCenterDisplayMode;
 };

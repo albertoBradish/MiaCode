@@ -5,6 +5,7 @@
 #include <QVector>
 
 #include "core/scene/PreviewAnimatedSpriteHelpers.h"
+#include "core/chart/model/TimelineData.h"
 
 class QImage;
 
@@ -19,6 +20,7 @@ struct PreviewSpriteDescriptor {
     qreal opacity = 1.0;
     QRectF sourceRect;
     PreviewAnimatedSpriteEffect effect = PreviewAnimatedSpriteEffect::None;
+    HandOrderHand handOrderHand = HandOrderHand::Unspecified;
     bool cacheable = true;
 };
 

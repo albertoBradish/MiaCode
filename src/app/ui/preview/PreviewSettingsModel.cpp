@@ -117,6 +117,7 @@ QVariantMap PreviewSettingsModel::labels() const
         {QStringLiteral("scaleMode"), text("dialog.render_settings.video.scale_mode")},
         {QStringLiteral("smoothBrightness"), text("dialog.render_settings.video.smooth_brightness")},
         {QStringLiteral("showTimestamp"), text("dialog.video_export.option.show_timestamp")},
+        {QStringLiteral("showHandOrderAnnotations"), text("dialog.render_settings.gameplay.hand_order")},
         {QStringLiteral("touchPadAuthoringShortcut"),
          text("dialog.render_settings.video.touch_pad_authoring_shortcut")},
         {QStringLiteral("showDebugInfo"), text("dialog.render_settings.preview.debug")},

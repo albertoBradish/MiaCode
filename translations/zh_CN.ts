@@ -213,13 +213,25 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
         <source>Save As...</source>
         <translation>另存为</translation>
     </message>
+    <message id="action.export_plain_simai">
+        <source>Export plain Simai...</source>
+        <translation>导出纯 Simai...</translation>
+    </message>
     <message id="action.transform.mirror_lr">
         <source>Mirror Left/Right</source>
         <translation>左右镜像</translation>
     </message>
+    <message id="action.transform.mirror_lr_swap_hands">
+        <source>Mirror Left/Right and swap hands</source>
+        <translation>左右镜像并交换左右手</translation>
+    </message>
     <message id="action.transform.mirror_ud">
         <source>Mirror Up/Down</source>
         <translation>上下镜像</translation>
+    </message>
+    <message id="action.transform.mirror_ud_swap_hands">
+        <source>Mirror Up/Down and swap hands</source>
+        <translation>上下镜像并交换左右手</translation>
     </message>
     <message id="action.transform.more">
         <source>More...</source>
@@ -312,6 +324,10 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
     <message id="cli.export.chart_read_failed">
         <source>failed to read chart file</source>
         <translation>读取谱面文件失败</translation>
+    </message>
+    <message id="cli.export.hand_order_annotation_invalid">
+        <source>hand-order annotation is invalid</source>
+        <translation>手序标注无效</translation>
     </message>
     <message id="cli.export.difficulty_invalid">
         <source>invalid difficulty token</source>
@@ -432,6 +448,14 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
     <message id="cli.video_export.hide_timestamp">
         <source>Hide timestamp overlay in output video.</source>
         <translation>隐藏输出视频中的时间戳。</translation>
+    </message>
+    <message id="cli.video_export.hand_order">
+        <source>Hand-order display: annotated or original.</source>
+        <translation>手序显示：annotated 或 original。</translation>
+    </message>
+    <message id="cli.video_export.hand_order_invalid">
+        <source>--hand-order must be annotated or original</source>
+        <translation>--hand-order 必须是 annotated 或 original</translation>
     </message>
     <message id="cli.video_export.inner_brightness">
         <source>Inner background brightness (0.0-1.0).</source>
@@ -1561,6 +1585,10 @@ Failed: %2</source>
         <source>Show preview debug info</source>
         <translation>显示预览调试信息</translation>
     </message>
+    <message id="dialog.render_settings.gameplay.hand_order">
+        <source>Show hand-order annotations</source>
+        <translation>显示手序标注</translation>
+    </message>
     <message id="dialog.render_settings.preview_group">
         <source>Preview</source>
         <translation>预览</translation>
@@ -1849,6 +1877,22 @@ Restore the backup from %1?</source>
         <source>Show object stats</source>
         <translation>显示物量统计</translation>
     </message>
+    <message id="dialog.video_export.option.hand_order_mode">
+        <source>Hand-order display</source>
+        <translation>手序显示</translation>
+    </message>
+    <message id="dialog.video_export.hand_order.follow_preview">
+        <source>Follow preview</source>
+        <translation>跟随预览</translation>
+    </message>
+    <message id="dialog.video_export.hand_order.original">
+        <source>Original chart</source>
+        <translation>强制原谱</translation>
+    </message>
+    <message id="dialog.video_export.hand_order.annotated">
+        <source>Hand-order colors</source>
+        <translation>强制手序</translation>
+    </message>
     <message id="dialog.video_export.option.show_timestamp">
         <source>Show bottom-left timestamp</source>
         <translation>显示左下角时间戳</translation>
@@ -2086,6 +2130,10 @@ Restore the backup from %1?</source>
     <message id="document.save_failed">
         <source>Save failed</source>
         <translation>保存失败</translation>
+    </message>
+    <message id="document.plain_export_same_path">
+        <source>Choose a different file to keep the annotated chart.</source>
+        <translation>请选择其他文件，以保留含手序标注的原谱。</translation>
     </message>
     <message id="document.selection_beats">
         <source>Selection beats: %1</source>

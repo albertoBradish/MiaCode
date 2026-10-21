@@ -58,9 +58,12 @@ miacode_add_module(miacode_chart
         src/core/chart/document/SimaiTimingMetadata.h
         src/core/chart/model/TimelineData.h
         src/core/chart/model/TimelineMarkerOffset.h
+        src/core/chart/parser/HandOrderAnnotationSyntax.cpp
+        src/core/chart/parser/HandOrderAnnotationSyntax.h
         src/core/chart/parser/SimaiCommentScan.cpp
         src/core/chart/parser/SimaiCommentScan.h
         src/core/chart/parser/SimaiParser.Driver.cpp
+        src/core/chart/parser/SimaiParser.HandOrder.cpp
         src/core/chart/parser/SimaiParser.Slide.cpp
         src/core/chart/parser/SimaiParser.StrictChecks.cpp
         src/core/chart/parser/SimaiParser.TouchTap.cpp
@@ -80,12 +83,15 @@ miacode_add_module(miacode_chart
         src/core/chart/transform/ChartNormalizationSegmentPolicy.h
         src/core/chart/transform/Non384SnapTable.cpp
         src/core/chart/transform/Non384SnapTable.h
+        src/core/chart/transform/PlainSimaiExport.cpp
+        src/core/chart/transform/PlainSimaiExport.h
     PUBLIC miacode_base
     QRC resources/slide_data.qrc
 )
 # SimaiParser.cpp includes its partial translation units.
 set_source_files_properties(
     src/core/chart/parser/SimaiParser.Driver.cpp
+    src/core/chart/parser/SimaiParser.HandOrder.cpp
     src/core/chart/parser/SimaiParser.Slide.cpp
     src/core/chart/parser/SimaiParser.StrictChecks.cpp
     src/core/chart/parser/SimaiParser.TouchTap.cpp

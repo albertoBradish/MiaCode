@@ -119,6 +119,12 @@ AppTabPages {
         Layout.alignment: Qt.AlignTop
         spacing: Theme.settingsRowSpacing
 
+        AppSwitch {
+            objectName: "previewHandOrderAnnotationsSwitch"
+            text: root.labels.showHandOrderAnnotations || ""
+            checked: root.values.showHandOrderAnnotations !== false
+            onToggled: root.put("showHandOrderAnnotations", checked)
+        }
         LabeledSlider {
             objectName: "previewTapFlowSpeedSlider"
             label: root.labels.tapFlowSpeed || ""

@@ -161,6 +161,12 @@ miacode::editor::SimaiTextEditResult EditorController::acceptCompletion(const QS
 void EditorController::triggerCompletion(QChar glyph, const QString& text, int position, bool closingPresent)
 {
     if (!autoCompletionEnabled_ || overwriteMode_ || completion_.active) return;
+    const miacode::editor::HandOrderCompletion hand =
+        miacode::editor::handOrderCompletionAt(text, position);
+    if (hand.active()) {
+        setCompletion({true, QLatin1Char('~'), false, hand.startPosition, hand.candidates});
+        return;
+    }
     miacode::editor::SimaiCompletionSession completion;
     if (miacode::editor::isBracketOpening(glyph)) {
         completion.opening = glyph;
@@ -212,7 +218,22 @@ void EditorController::filterCompletion(const QString& text, int position)
 
 void EditorController::updateCompletion(const QString& text, int position)
 {
-    if (completion_.active) filterCompletion(text, position);
+    if (autoCompletionEnabled_ && !overwriteMode_) {
+        const miacode::editor::HandOrderCompletion hand =
+            miacode::editor::handOrderCompletionAt(text, position);
+        if (hand.active()) {
+            const miacode::editor::SimaiCompletionSession next{
+                true, QLatin1Char('~'), false, hand.startPosition, hand.candidates};
+            if (completion_.opening != next.opening
+                || completion_.startPosition != next.startPosition
+                || visibleCandidates_ != next.candidates) {
+                setCompletion(next);
+            }
+            return;
+        }
+    }
+    if (completion_.active && completion_.opening == QLatin1Char('~')) closeCompletion();
+    else if (completion_.active) filterCompletion(text, position);
 }
 
 void EditorController::moveCompletionSelection(int delta)

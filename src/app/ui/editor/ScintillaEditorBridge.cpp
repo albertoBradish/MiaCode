@@ -899,7 +899,7 @@ void ScintillaEditorBridge::keyPressEvent(QKeyEvent* event)
         // Only DSL pairing, completion and half-width conversion intercept
         // typing. Scintilla executes ordinary editing and clipboard commands.
         const bool smartGlyph = controller_->autoCompletionEnabled() &&
-            (QStringLiteral("(){}[]h").contains(input) && input.size() == 1);
+            (QStringLiteral("(){}[]h~").contains(input) && input.size() == 1);
         const bool convert = controller_->halfWidthInputEnabled() && normalizeSimaiInput(input) != input;
         const bool completionKey = controller_->completionActive() &&
             (event->key() == Qt::Key_Up || event->key() == Qt::Key_Down || event->key() == Qt::Key_Escape

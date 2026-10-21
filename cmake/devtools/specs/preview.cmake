@@ -78,7 +78,7 @@ miacode_add_dev_tool(preview_texture_generation_policy_spec TEST
 miacode_add_dev_tool(preview_sfx_timeline_spec TEST
     SOURCES
         src/tools/preview/PreviewSfxTimelineSpec.cpp
-    LIBS Qt6::Core
+    LIBS miacode_chart Qt6::Core
     INCLUDES src
 )
 

@@ -5,7 +5,8 @@
     "Users may copy this file next to MiaCode.exe as shortcuts.json and override action/shortcut sequences without rebuilding."
   ],
   "editable": [
-    "transform.mirror_lr", "transform.mirror_ud", "transform.rotate_180",
+    "transform.mirror_lr", "transform.mirror_lr_swap_hands", "transform.mirror_ud",
+    "transform.mirror_ud_swap_hands", "transform.rotate_180",
     "transform.rotate_ccw_45", "transform.rotate_cw_45", "transform.subdivision_up",
     "transform.subdivision_down", "transform.subdivision_half_up", "transform.subdivision_half_down",
     "transform.toggle_break", "transform.toggle_ex", "transform.toggle_firework",
@@ -31,11 +32,27 @@
       "context": "application",
       "owner": "MainWindow.BootstrapAndMenus"
     },
+    "transform.mirror_lr_swap_hands": {
+      "label_key": "action.transform.mirror_lr_swap_hands",
+      "label_zh": "左右镜像并交换左右手",
+      "label_en": "Mirror Left/Right and Swap Hands",
+      "default": "",
+      "context": "application",
+      "owner": "MainWindow.BootstrapAndMenus"
+    },
     "transform.mirror_ud": {
       "label_key": "action.transform.mirror_ud",
       "label_zh": "上下镜像",
       "label_en": "Mirror Up/Down",
       "default": "Ctrl+K",
+      "context": "application",
+      "owner": "MainWindow.BootstrapAndMenus"
+    },
+    "transform.mirror_ud_swap_hands": {
+      "label_key": "action.transform.mirror_ud_swap_hands",
+      "label_zh": "上下镜像并交换左右手",
+      "label_en": "Mirror Up/Down and Swap Hands",
+      "default": "",
       "context": "application",
       "owner": "MainWindow.BootstrapAndMenus"
     },

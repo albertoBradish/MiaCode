@@ -420,6 +420,7 @@
         bool pauseDisplayAltHoldActive_ = false;
         bool previewShowDebugInfo_ = false;
         bool previewShowTimestamp_ = true;
+        bool previewShowHandOrderAnnotations_ = true;
         bool previewShowObjectStatsHud_ = false;
         bool exportShowObjectStatsHud_ = false;
         bool previewShowChartInfoHud_ = false;
@@ -716,6 +717,7 @@
     bool& exportPreviewActive_ = state_.exportPreviewActive_;
     bool& previewShowDebugInfo_ = state_.previewShowDebugInfo_;
     bool& previewShowTimestamp_ = state_.previewShowTimestamp_;
+    bool& previewShowHandOrderAnnotations_ = state_.previewShowHandOrderAnnotations_;
     bool& previewShowObjectStatsHud_ = state_.previewShowObjectStatsHud_;
     bool& exportShowObjectStatsHud_ = state_.exportShowObjectStatsHud_;
     bool& previewShowChartInfoHud_ = state_.previewShowChartInfoHud_;

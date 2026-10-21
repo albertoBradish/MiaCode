@@ -213,13 +213,25 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
         <source>Save As...</source>
         <translation>Save As...</translation>
     </message>
+    <message id="action.export_plain_simai">
+        <source>Export plain Simai...</source>
+        <translation>Export plain Simai...</translation>
+    </message>
     <message id="action.transform.mirror_lr">
         <source>Mirror Left/Right</source>
         <translation>Mirror Left/Right</translation>
     </message>
+    <message id="action.transform.mirror_lr_swap_hands">
+        <source>Mirror Left/Right and swap hands</source>
+        <translation>Mirror Left/Right and swap hands</translation>
+    </message>
     <message id="action.transform.mirror_ud">
         <source>Mirror Up/Down</source>
         <translation>Mirror Up/Down</translation>
+    </message>
+    <message id="action.transform.mirror_ud_swap_hands">
+        <source>Mirror Up/Down and swap hands</source>
+        <translation>Mirror Up/Down and swap hands</translation>
     </message>
     <message id="action.transform.more">
         <source>More...</source>
@@ -312,6 +324,10 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
     <message id="cli.export.chart_read_failed">
         <source>failed to read chart file</source>
         <translation>failed to read chart file</translation>
+    </message>
+    <message id="cli.export.hand_order_annotation_invalid">
+        <source>hand-order annotation is invalid</source>
+        <translation>hand-order annotation is invalid</translation>
     </message>
     <message id="cli.export.difficulty_invalid">
         <source>invalid difficulty token</source>
@@ -432,6 +448,14 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
     <message id="cli.video_export.hide_timestamp">
         <source>Hide timestamp overlay in output video.</source>
         <translation>Hide timestamp overlay in output video.</translation>
+    </message>
+    <message id="cli.video_export.hand_order">
+        <source>Hand-order display: annotated or original.</source>
+        <translation>Hand-order display: annotated or original.</translation>
+    </message>
+    <message id="cli.video_export.hand_order_invalid">
+        <source>--hand-order must be annotated or original</source>
+        <translation>--hand-order must be annotated or original</translation>
     </message>
     <message id="cli.video_export.inner_brightness">
         <source>Inner background brightness (0.0-1.0).</source>
@@ -1561,6 +1585,10 @@ Failed: %2</translation>
         <source>Show preview debug info</source>
         <translation>Show preview debug info</translation>
     </message>
+    <message id="dialog.render_settings.gameplay.hand_order">
+        <source>Show hand-order annotations</source>
+        <translation>Show hand-order annotations</translation>
+    </message>
     <message id="dialog.render_settings.preview_group">
         <source>Preview</source>
         <translation>Preview</translation>
@@ -1849,6 +1877,22 @@ Restore the backup from %1?</translation>
         <source>Show object stats</source>
         <translation>Show object stats</translation>
     </message>
+    <message id="dialog.video_export.option.hand_order_mode">
+        <source>Hand-order display</source>
+        <translation>Hand-order display</translation>
+    </message>
+    <message id="dialog.video_export.hand_order.follow_preview">
+        <source>Follow preview</source>
+        <translation>Follow preview</translation>
+    </message>
+    <message id="dialog.video_export.hand_order.original">
+        <source>Original chart</source>
+        <translation>Original chart</translation>
+    </message>
+    <message id="dialog.video_export.hand_order.annotated">
+        <source>Hand-order colors</source>
+        <translation>Hand-order colors</translation>
+    </message>
     <message id="dialog.video_export.option.show_timestamp">
         <source>Show bottom-left timestamp</source>
         <translation>Show bottom-left timestamp</translation>
@@ -2086,6 +2130,10 @@ Restore the backup from %1?</translation>
     <message id="document.save_failed">
         <source>Save failed</source>
         <translation>Save failed</translation>
+    </message>
+    <message id="document.plain_export_same_path">
+        <source>Choose a different file to keep the annotated chart.</source>
+        <translation>Choose a different file to keep the annotated chart.</translation>
     </message>
     <message id="document.selection_beats">
         <source>Selection beats: %1</source>
