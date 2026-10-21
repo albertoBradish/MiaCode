@@ -676,6 +676,7 @@ PreviewTrackLayerState buildPreviewTrackLayerState(
         }
     }
 
+    applyHandOrderSkinArtwork(state.skin, &layerState.sprites);
     return layerState;
 }
 

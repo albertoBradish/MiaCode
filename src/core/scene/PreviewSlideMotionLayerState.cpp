@@ -284,6 +284,7 @@ PreviewSlideMotionLayerState buildPreviewSlideMotionLayerState(
         }
     }
 
+    applyHandOrderSkinArtwork(state.skin, &layerState.sprites);
     return layerState;
 }
 
