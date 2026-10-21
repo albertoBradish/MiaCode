@@ -163,15 +163,19 @@
             'slide_break_start.wav', 'slide_break_slide.wav', 'tap_ex.wav', 'tap_perfect.wav',
             'touch_hanabi.wav', 'touch.wav', 'touch_Hold_riser.wav', 'clock.wav'
         )
-        ReleaseDocs = @('LICENSE', 'THIRD_PARTY_NOTICES.md')
+        ReleaseDocs = @('LICENSE', 'THIRD_PARTY_NOTICES.md', 'HandOrderPackage.marker', 'README_HAND_ORDER_ZH.md')
         # Required entries. 'qt:<BaseName>' expands to app\<BaseName>[d].dll;
         # 'toolchain-runtime:<DllName>' expands to app\<DllName> and is only
         # required for the toolchain that ships that runtime.
         RequiredRelativePaths = @(
             'MiaCode.exe',
             'Start_HandOrder.ps1',
+              'HandOrderPackage.marker',
+              'README_HAND_ORDER_ZH.md',
             'logs',
             'logs\worker-hwnd',
+              'runtime',
+              'exports',
             'assets\SFX',
             'licenses\Resource-Han-Rounded-OFL.txt',
             'LICENSE',

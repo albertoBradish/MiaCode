@@ -449,8 +449,8 @@ Copy-Item $launcherExe (Join-Path $DistDir "MiaCode.exe") -Force
 
 Copy-Item (Join-Path $PSScriptRoot "Start_HandOrder.ps1") (Join-Path $DistDir "Start_HandOrder.ps1") -Force
 
-# Start_HandOrder.ps1 sets the workspace runtime root before launching the
-# package; the root MiaCode.exe remains the upstream forwarding executable.
+# Both launch entries use the package-local runtime root; the launcher is the
+# normal double-click entry and Start_HandOrder.ps1 also accepts CLI arguments.
 
 New-Item -ItemType Directory -Path (Join-Path $DistDir "logs") -Force | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $DistDir "logs\\worker-hwnd") -Force | Out-Null
@@ -647,6 +647,9 @@ foreach ($releaseDoc in $releaseDocs) {
     }
     Copy-Item $releaseDocSrc (Join-Path $DistDir $releaseDoc) -Force
 }
+
+New-Item -ItemType Directory -Path (Join-Path $DistDir 'runtime') -Force | Out-Null
+New-Item -ItemType Directory -Path (Join-Path $DistDir 'exports') -Force | Out-Null
 
 $ffmpegExportDir = Join-Path $repoRoot $toolchainData.FFmpeg.ExportDirByArch.$Arch
 $ffmpegSrc = Join-Path $ffmpegExportDir $toolchainData.FFmpeg.ExportBinary
