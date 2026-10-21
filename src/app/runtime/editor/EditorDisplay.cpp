@@ -83,23 +83,12 @@ void miacode::runtime::EditorHost::loadPortableState()
     const auto completionConfig = miacode::readEditorCompletionCandidates(ui);
     state_.editorCompletionDurationCandidates_ = completionConfig.durations;
     state_.editorCompletionDivisionCandidates_ = completionConfig.divisions;
-    QSettings legacySettings;
-    const bool hasLegacyBottomPanelHeight =
-        legacySettings.contains(QStringLiteral("ui/bottomPanelHeight"));
     if (ui.value("bottom_tabs_content_scale").isDouble()) {
         // Stored as a content-scale ratio (not pixels). The raw value is clamped
         // to its valid [min,max] range by applyBottomTabsContentScale() when the
         // height is re-applied below.
         state_.bottomTabsContentScale_ =
             ui.value("bottom_tabs_content_scale").toDouble(state_.bottomTabsContentScale_);
-    }
-    // The shell's scale is canonical even when it already existed before this
-    // launch, so always retire the obsolete v2 pixel-height key. (The legacy
-    // pixel value itself is discarded rather than migrated — the migration
-    // path used to route it through ShellHost::setBottomTabsHeight(), which
-    // was deleted because it was a no-op: bottomTabs_ is never constructed.)
-    if (hasLegacyBottomPanelHeight) {
-        legacySettings.remove(QStringLiteral("ui/bottomPanelHeight"));
     }
     if (ui.value("preview_pane_width_ratio").isDouble()) {
         state_.previewPaneWidthRatio_ =

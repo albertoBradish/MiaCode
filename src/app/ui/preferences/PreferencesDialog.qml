@@ -931,7 +931,7 @@ AppDialog {
                         ColumnLayout {
                             spacing: 2
                             Text {
-                                text: "MiaCode"
+                                text: "MiaCode Hand Order"
                                 color: Theme.colors.text.active
                                 font.family: Theme.uiFont
                                 font.pixelSize: Theme.uiFontSize + 6
@@ -976,6 +976,7 @@ AppDialog {
 
                     PreferenceGroup {
                         title: qsTrId("dialog.preferences.updates_group")
+                        visible: root.updateService !== null
 
                         PreferenceSwitch {
                             objectName: "preferencesUpdateCheckSwitch"

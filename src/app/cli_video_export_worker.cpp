@@ -4,13 +4,12 @@
 #include "export/video_export/VideoExportSnapshot.h"
 #include "common/DebugLog.h"
 #include "common/OperationLog.h"
-#include "audio/WaveformCache.h"
+#include "common/RuntimePaths.h"
 
 #include <QGuiApplication>
 #include <QCommandLineOption>
 #include <QCommandLineParser>
 #include <QCoreApplication>
-#include <QDir>
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -19,24 +18,6 @@
 #include <QTextStream>
 
 namespace {
-
-QString videoExportWorkerProjectLogDirectory(const VideoExportSnapshot& snapshot)
-{
-    const QString chartPath = snapshot.originalChartPath.trimmed();
-    if (!chartPath.isEmpty()) {
-        const QString projectDataDirectoryPath = miacode::waveform::projectDataDirectoryPathForFile(chartPath);
-        if (!projectDataDirectoryPath.isEmpty()) {
-            return QDir(projectDataDirectoryPath).filePath(QStringLiteral("logs"));
-        }
-    }
-
-    const QString projectDir = snapshot.projectDir.trimmed();
-    if (!projectDir.isEmpty()) {
-        return QDir(QDir::cleanPath(projectDir)).filePath(QStringLiteral(".miacode/logs"));
-    }
-
-    return QString();
-}
 
 void writeWorkerJsonLine(const QJsonObject& object)
 {
@@ -134,19 +115,9 @@ int runCliVideoExportWorker(QGuiApplication& app, QString* errorMessage)
         return 1;
     }
     workerJobId = snapshot.jobId;
-    miacode::debug_log::setSessionProjectLogDirectory(videoExportWorkerProjectLogDirectory(snapshot));
-    // Co-locate the startup beacon and op-chain shadow with the worker's
-    // runtime/export logs under the project's .miacode/logs/.
-    {
-        const QString projectLogDir = videoExportWorkerProjectLogDirectory(snapshot);
-        if (!projectLogDir.isEmpty()) {
-            miacode::oplog::relocateLogs(projectLogDir);
-        }
-    }
-    // Re-emit the P0/P2/P3 startup diagnostics into the worker's now-bound
-    // project log so the export-worker's GPU policy (which the GUI forwards via
-    // env) is visible alongside the GUI's in the same collected .miacode/logs/.
-    logProcessStartupDiagnostics(QStringLiteral("log_dir_rebound"));
+    const QString runtimeLogDirectory = miacode::runtime_paths::logDirectory();
+    miacode::debug_log::setSessionProjectLogDirectory(runtimeLogDirectory);
+    miacode::oplog::relocateLogs(runtimeLogDirectory);
 
     writeWorkerJsonLine(QJsonObject{
         {QStringLiteral("event"), QStringLiteral("accepted")},

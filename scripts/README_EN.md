@@ -25,25 +25,21 @@ See the [Net API](../docs/specs/net/NET_API_CONTRACT_ZH.md) for availability and
 Windows:
 
 ```powershell
-# MSVC x64: the generator is resolved through vswhere (Visual Studio + Windows SDK required)
-# x64 builds the decode-only preview SDK with ffmpeg/trim by default (~150 MB -> ~20 MB, needs
-# MSYS2); pass -SkipTrim to skip that build.
-powershell -ExecutionPolicy Bypass -File .\scripts\build\build-win.ps1 -Toolchain msvc -BuildDir build-msvc
-
-# MSVC arm64: native arm64 host, ARM64 generator platform and Qt's arm64 package
-powershell -ExecutionPolicy Bypass -File .\scripts\build\build-win.ps1 -Toolchain msvc-arm64 -BuildDir build-msvc-arm64
-
-# Package an existing build (-Arch has to match the build)
-powershell -ExecutionPolicy Bypass -File .\scripts\build\package-win.ps1 -QtRoot <QtRoot> -BuildDir <BuildDir> -Arch x64
+# Run from source/. The helper sets MSVC, Windows SDK and Qt for this workspace.
+. .\scripts\build\enter-hand-order-build.ps1
+cmake --preset hand_order
+cmake --build --preset hand_order_release
+& .\scripts\build\package-win.ps1 -Config Release -Arch x64 -QtRoot $env:MIACODE_HAND_ORDER_QT_ROOT `
+    -BuildDir ..\build\windows_x64 -DistDir ..\dist\MiaCode_HandOrder_2.0.0_alpha_dev_win_x64 -BuildJobs 4
 ```
 
 `build-win.ps1` runs, in order: the export `ffmpeg.exe`, the
-preview FFmpeg dev SDK (a trim build on x64 unless `-SkipTrim` is set), Qt resolution, CMake configure and
+preview FFmpeg dev SDK (a pinned download on both architectures), Qt resolution, CMake configure and
 build, then `package-win.ps1`. Both
 FFmpeg chains and the packaging chain pick their directories from the architecture the selected
 toolchain targets: `third_party\ffmpeg\windows\<win64|winarm64>\` and
-`third_party\bass\bin\<win64|winarm64>\`, producing `MiaCode_<version>_win_x64` or
-`MiaCode_<version>_win_arm64` (a channel segment from `MIACODE_PACKAGE_CHANNEL` lands right after the version). The arm64 package ships no `bass_aac.dll` (upstream publishes that
+`third_party\bass\bin\<win64|winarm64>\`, producing `MiaCode_HandOrder_<version>_win_x64` or
+`MiaCode_HandOrder_<version>_win_arm64` (a channel segment from `MIACODE_PACKAGE_CHANNEL` lands right after the version). The arm64 package ships no `bass_aac.dll` (upstream publishes that
 add-on for x86/x64 only); the audio backend already tolerates a missing add-on.
 
 Qt resolution order: `-QtRoot` → `C:\Qt\<version>\<arch dir>` → `.qt\<version>\<arch dir>` →
@@ -53,7 +49,7 @@ per-architecture folders 6.11 uses), verifies every archive against the publishe
 needs no aqtinstall.
 
 `package-win.ps1` rebuilds `MiaCode` and `MiaCodeLauncher` when needed, places the MSVC runtime
-and the trimmed FFmpeg runtimes into `app/`, asserts the package contents
+and the FFmpeg runtimes into `app/`, asserts the package contents
 contract, and writes a 7z archive. With a single-config generator it also checks that
 `CMAKE_BUILD_TYPE` matches `-Config`.
 

@@ -579,8 +579,8 @@ qt_add_shaders(MiaCode "ui_shaders"
         src/app/ui/pet/shaders/pet.frag
 )
 set_target_properties(MiaCode PROPERTIES
-    MACOSX_BUNDLE_BUNDLE_NAME "MiaCode"
-    MACOSX_BUNDLE_GUI_IDENTIFIER "com.fanfaredash.MiaCode"
+    MACOSX_BUNDLE_BUNDLE_NAME "MiaCodeHandOrder"
+    MACOSX_BUNDLE_GUI_IDENTIFIER "com.fanfaredash.MiaCodeHandOrder"
 )
 
 if(UNIX AND NOT APPLE)

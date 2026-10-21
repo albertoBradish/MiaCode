@@ -1,13 +1,12 @@
 #include "app/services/PreferenceDocument.h"
 #include "app/services/PreferenceJsonFile.h"
+#include "common/RuntimePaths.h"
 
-#include <QCoreApplication>
 #include <QDir>
 #include <QFile>
 #include <QJsonObject>
 #include <QLocale>
 #include <QMutexLocker>
-#include <QStandardPaths>
 #include <QStringList>
 
 #include <utility>
@@ -26,27 +25,16 @@ constexpr auto kDarkThemeKey = "dark_theme";
 
 QString configFilePath(const QString& fileName)
 {
-    const QString configRoot = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    const QString configRoot = miacode::runtime_paths::configDirectory();
     if (configRoot.isEmpty()) {
         return QString();
     }
     return QDir(configRoot).filePath(fileName);
 }
 
-// 2.x keeps its own document beside the 1.x preferences.json. The 1.x files
-// are read-only migration sources consulted only while this file is missing.
 QString preferencesPath()
 {
     return configFilePath(QStringLiteral("preferences_v2.json"));
-}
-
-QStringList migrationSourcePaths()
-{
-    QStringList sources;
-    const QString v1 = configFilePath(QStringLiteral("preferences.json"));
-    if (!v1.isEmpty()) sources.append(v1);
-    sources.append(QDir(QCoreApplication::applicationDirPath()).filePath(".miacode_preferences.json"));
-    return sources;
 }
 
 bool supportedPreferencesSchema(const QJsonObject& root)
@@ -453,7 +441,9 @@ QString resolvedLanguageTokenFromStorage()
 
 PreferenceDocument::Repository& preferencesRepository()
 {
-    static PreferenceDocument::Repository repository(preferencesPath(), migrationSourcePaths());
+    // This development build starts from its own document; importing an older
+    // release's preferences could restore real recent files and setup state.
+    static PreferenceDocument::Repository repository(preferencesPath());
     return repository;
 }
 }  // namespace

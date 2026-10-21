@@ -123,10 +123,13 @@ third_party/**/*.a
 
 # scripts whitelist: ignore all by default, allow only release/infra scripts.
 scripts/*
+!scripts/run-hand-order.ps1
 !scripts/build/
 scripts/build/*
 !scripts/build/build-macos-local.sh
 !scripts/build/build-win.ps1
+!scripts/build/enter-hand-order-build.ps1
+!scripts/build/Start_HandOrder.ps1
 !scripts/build/package.py
 !scripts/build/package-mac.sh
 !scripts/build/package-win.ps1

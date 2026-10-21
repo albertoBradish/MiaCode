@@ -1,7 +1,7 @@
 #pragma once
 
-// Per-chart 片头 settings stored in the chart's project preferences
-// (<chartDir>/.miacode/preferences.json). The PV-preview start belongs to the
+// Per-chart 片头 settings stored in the isolated project preferences
+// (<runtime>/data/projects/<chart-folder-hash>/preferences.json). The PV-preview start belongs to the
 // song, not to a difficulty or to the dialog: every difficulty of the chart and
 // every batch item reads the value its own project last stored.
 
