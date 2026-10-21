@@ -19,13 +19,13 @@ int main()
     qputenv("MIACODE_HAND_ORDER_RUNTIME_ROOT", invalidRoot);
     QString error;
     if (miacode::runtime_paths::initializeFromEnvironment(&error) || error.isEmpty()) {
-        out << "FAIL: non-workspace root was accepted\n";
+        out << "FAIL: unmarked runtime owner was accepted\n";
         return 1;
     }
 
     qputenv("MIACODE_HAND_ORDER_RUNTIME_ROOT", expectedRoot);
     if (!miacode::runtime_paths::initializeFromEnvironment(&error)) {
-        out << "FAIL: workspace runtime root rejected: " << error << '\n';
+        out << "FAIL: hand-order runtime root rejected: " << error << '\n';
         return 1;
     }
 
@@ -43,7 +43,7 @@ int main()
     }
     if (miacode::runtime_paths::exportsDirectory().compare(
             workspace.filePath(QStringLiteral("exports")), Qt::CaseInsensitive) != 0) {
-        out << "FAIL: exports directory is outside the workspace\n";
+        out << "FAIL: exports directory is outside the runtime owner\n";
         return 1;
     }
 
@@ -60,6 +60,6 @@ int main()
         return 1;
     }
 
-    out << "PASS: hand-order runtime paths stay in the workspace\n";
+    out << "PASS: hand-order runtime paths stay under their owner directory\n";
     return 0;
 }

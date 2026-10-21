@@ -4,7 +4,7 @@
 
 namespace miacode::runtime_paths {
 
-// The hand-order build only runs with a dedicated workspace runtime root.
+// The hand-order build only runs with a dedicated workspace or package runtime root.
 // Initialize this before startup diagnostics or any preference access.
 bool initializeFromEnvironment(QString* error = nullptr);
 

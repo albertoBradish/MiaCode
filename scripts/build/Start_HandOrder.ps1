@@ -4,17 +4,15 @@ param(
 )
 
 $packageRoot = $PSScriptRoot
-$workspace = [System.IO.Path]::GetFullPath((Join-Path $packageRoot '..\..'))
-if (-not (Test-Path -LiteralPath (Join-Path $workspace 'baseline.json') -PathType Leaf) -or
-    -not (Test-Path -LiteralPath (Join-Path $workspace 'source\AGENTS.md') -PathType Leaf)) {
-    throw 'This development package must stay inside the hand-order workspace dist directory.'
+if (-not (Test-Path -LiteralPath (Join-Path $packageRoot 'HandOrderPackage.marker') -PathType Leaf)) {
+    throw 'Hand-order package marker is missing.'
 }
 
 $executable = Join-Path $packageRoot 'app\MiaCode.exe'
 if (-not (Test-Path -LiteralPath $executable -PathType Leaf)) {
     throw "Packaged application is missing: $executable"
 }
-$runtimeRoot = Join-Path $workspace 'runtime'
+$runtimeRoot = Join-Path $packageRoot 'runtime'
 $runtimeTemp = Join-Path $runtimeRoot 'temp'
 New-Item -ItemType Directory -Path $runtimeTemp -Force | Out-Null
 
