@@ -2,6 +2,7 @@
 #include "common/LocalizedText.h"
 
 #include "app/ui/export/ExportSession.h"
+#include "common/RuntimePaths.h"
 #include "app/ui/document/DifficultyOptions.h"
 
 #include "core/chart/document/SimaiDocument.h"
@@ -25,7 +26,6 @@
 #include <QFileInfo>
 #include <QJsonObject>
 #include <QScopedValueRollback>
-#include <QSettings>
 #include <QTimer>
 #include <QUrl>
 
@@ -37,16 +37,6 @@ namespace miacode::ui {
 namespace {
 
 constexpr auto kBatchOutputDirectoryKey = "last_batch_output_directory";
-
-// v1 kept the batch pickers' history in the native QSettings store. v2 only
-// reads it, as the upgrade fallback, and records its own in the dialog
-// preferences.
-QString legacyBatchExportDirectory(const char* key)
-{
-    QSettings settings(QStringLiteral("fanfaredash"), QStringLiteral("MiaCode"));
-    return miacode::file_dialog_preferences::validDirectory(
-        settings.value(QStringLiteral("batch_video_export_dialog/") + QLatin1String(key)).toString());
-}
 
 inline constexpr auto& kResolutionPresets = miacode::video_export::kVideoExportResolutionPresets;
 inline constexpr auto& kFpsOptions = miacode::video_export::kVideoExportFpsOptions;
@@ -629,12 +619,9 @@ void ExportSession::seedFromDifficulty(int difficultyId)
         batchSelectedDifficultyIds_.append(difficultyId);
     }
     if (batchOutputDirectory_.isEmpty()) {
-        // A stored empty value is a cleared choice and must not revive v1's.
         const QJsonObject preferences = miacode::app_preferences::loadDialogPreferences();
-        batchOutputDirectory_ = preferences.contains(QLatin1String(kBatchOutputDirectoryKey))
-            ? miacode::file_dialog_preferences::validDirectory(
-                  preferences.value(QLatin1String(kBatchOutputDirectoryKey)).toString())
-            : legacyBatchExportDirectory("last_output_directory");
+        batchOutputDirectory_ = miacode::file_dialog_preferences::validDirectory(
+            preferences.value(QLatin1String(kBatchOutputDirectoryKey)).toString());
     }
     adoptPreviewRenderSettings();
     emit outputChanged();
@@ -1021,12 +1008,9 @@ void ExportSession::addChartDirectories()
     request.selectFolder = true;
     const QJsonObject preferences = miacode::app_preferences::loadDialogPreferences();
     request.startPath = preferences.value(QStringLiteral("last_batch_chart_directory")).toString();
-    if (request.startPath.isEmpty()) {
-        const QString legacy = legacyBatchExportDirectory("last_chart_directory");
-        if (!legacy.isEmpty()) request.startPath = QFileInfo(legacy).absolutePath();
-    }
     if (!QDir(request.startPath).exists() || request.startPath.isEmpty()) {
-        request.startPath = task_.chartPath.isEmpty() ? QDir::homePath()
+        request.startPath = task_.chartPath.isEmpty()
+            ? QDir(miacode::runtime_paths::workspaceDirectory()).filePath(QStringLiteral("fixtures"))
             : QFileInfo(QFileInfo(task_.chartPath).absolutePath()).absolutePath();
     }
     uiRequests_->requestFiles(request, [self = QPointer<ExportSession>(this)](const QStringList& paths) {

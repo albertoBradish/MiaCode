@@ -4,10 +4,10 @@
     [ValidateSet("x64", "arm64")]
     [string]$Arch = "x64",
     [string]$QtRoot = "",
-    [string]$BuildDir = "build",
+    [string]$BuildDir = "",
     [string]$DistDir = "",
     [switch]$IncludeDevTools,
-    [int]$BuildJobs = [Environment]::ProcessorCount
+    [int]$BuildJobs = 4
 )
 
 $ErrorActionPreference = "Stop"
@@ -321,7 +321,14 @@ function Remove-PackagedDllIfPresent {
 }
 
 $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$BuildDir = Resolve-RepoPath -RepoRoot $repoRoot -PathValue $BuildDir
+if ($BuildJobs -lt 1 -or $BuildJobs -gt 4) {
+    throw "BuildJobs must be between 1 and 4 in this workspace."
+}
+if ([string]::IsNullOrWhiteSpace($BuildDir)) {
+    $BuildDir = Join-Path (Split-Path -Parent $repoRoot) "build\windows_$Arch"
+} else {
+    $BuildDir = Resolve-RepoPath -RepoRoot $repoRoot -PathValue $BuildDir
+}
 if (![string]::IsNullOrWhiteSpace($QtRoot)) {
     $QtRoot = Resolve-RepoPath -RepoRoot $repoRoot -PathValue $QtRoot
 }
@@ -351,9 +358,27 @@ if ([string]::IsNullOrWhiteSpace($distNamePattern)) {
 if ([string]::IsNullOrWhiteSpace($DistDir)) {
     $channelSegment = if ($packageChannel) { "_$packageChannel" } else { "" }
     $distName = $distNamePattern.Replace("{version}", $version).Replace("{channel}", $channelSegment).Replace("{arch}", $archName)
-    $DistDir = Join-Path (Join-Path $repoRoot "dist") $distName
+    $DistDir = Join-Path (Join-Path (Split-Path -Parent $repoRoot) "dist") $distName
 } else {
     $DistDir = Resolve-RepoPath -RepoRoot $repoRoot -PathValue $DistDir
+}
+
+$workspace = [System.IO.Path]::GetFullPath((Split-Path -Parent $repoRoot))
+$allowedBuildRoot = [System.IO.Path]::GetFullPath((Join-Path $workspace "build"))
+$allowedDistRoot = [System.IO.Path]::GetFullPath((Join-Path $workspace "dist"))
+if (!$BuildDir.StartsWith($allowedBuildRoot + [System.IO.Path]::DirectorySeparatorChar,
+        [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw "BuildDir must be inside this hand-order workspace build directory: $allowedBuildRoot"
+}
+if (!$DistDir.StartsWith($allowedDistRoot + [System.IO.Path]::DirectorySeparatorChar,
+        [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw "DistDir must be a child of this hand-order workspace dist directory: $allowedDistRoot"
+}
+foreach ($candidate in @($allowedBuildRoot, $allowedDistRoot, $DistDir)) {
+    if ((Test-Path -LiteralPath $candidate) -and
+        ((Get-Item -LiteralPath $candidate).Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+        throw "Workspace output path must not be a junction or symlink: $candidate"
+    }
 }
 
 $exePath = Ensure-PackageBuildReady `
@@ -406,7 +431,7 @@ if (Test-Path $DistDir) {
 New-Item -ItemType Directory -Path $DistDir | Out-Null
 
 # All runtime DLLs and Qt plugin/QML subtrees live in app/ so the dist
-# root only exposes the user-facing entry points (launcher exe + .bat
+# root only exposes the user-facing entry points (launcher exe + PowerShell
 # files + assets/ + logs/).
 $appDir = Join-Path $DistDir "app"
 New-Item -ItemType Directory -Path $appDir | Out-Null
@@ -422,16 +447,10 @@ if (!(Test-Path $launcherExe)) {
 }
 Copy-Item $launcherExe (Join-Path $DistDir "MiaCode.exe") -Force
 
-$debugLauncherSrc = Join-Path $repoRoot "scripts\\debug\\Start_MiaCode_Debug.bat"
-if (!(Test-Path $debugLauncherSrc)) {
-    throw "Missing required launcher script: $debugLauncherSrc"
-}
-Copy-Item $debugLauncherSrc (Join-Path $DistDir "Start_MiaCode_Debug.bat") -Force
+Copy-Item (Join-Path $PSScriptRoot "Start_HandOrder.ps1") (Join-Path $DistDir "Start_HandOrder.ps1") -Force
 
-# Start_MiaCode_Debug.bat is the only launcher shipped in the Windows package.
-# Focused diagnostic launchers may exist in the repository for support work,
-# but they stay out of DistDir and are asserted absent below so testers have
-# one obvious entry point.
+# Start_HandOrder.ps1 sets the workspace runtime root before launching the
+# package; the root MiaCode.exe remains the upstream forwarding executable.
 
 New-Item -ItemType Directory -Path (Join-Path $DistDir "logs") -Force | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $DistDir "logs\\worker-hwnd") -Force | Out-Null

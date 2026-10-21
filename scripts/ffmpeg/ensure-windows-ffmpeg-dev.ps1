@@ -12,8 +12,7 @@
 # The whole dev/ tree is gitignored - never committed. CMake discovers it via
 # the MIACODE_FFMPEG_DEV_DIR cache variable (built from the target architecture).
 #
-# Both architectures use the FFmpeg 8.1 ABI. x64 comes from the decode-only
-# source build in scripts/ffmpeg/trim; arm64 uses a pinned upstream shared SDK.
+# Both architectures use the FFmpeg 8.1 ABI from pinned shared SDK archives.
 # LGPL (decode-only, no --enable-gpl/--enable-nonfree) matches the existing
 # redistribution terms. Major versions stay avcodec-62, avformat-62,
 # avutil-60, swresample-6, swscale-9 and avfilter-11 to
@@ -72,10 +71,10 @@ if ($Arch -eq "arm64") {
     $defaultUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/download/$ffmpegReleaseTag/ffmpeg-$ffmpegBuildVersion-winarm64-lgpl-shared-8.1.zip"
     $defaultSha256 = "DFB3F394B316F91CC2C399BBAA38A280F81E523E150A20F7DDD477843AA70608"
 } else {
-    # x64 is produced by the compact source build. An override URL can provide
-    # the same include/lib/bin layout.
-    $defaultUrl = ""
-    $defaultSha256 = ""
+    $ffmpegReleaseTag = "autobuild-2026-10-20-13-08"
+    $ffmpegBuildVersion = "n8.1.3-18-g46d899d7a0"
+    $defaultUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/download/$ffmpegReleaseTag/ffmpeg-$ffmpegBuildVersion-win64-lgpl-shared-8.1.zip"
+    $defaultSha256 = "453A30A5019676E805A85D4845E3AAD31234DFED4AE0EA2B1D4E97254DC44B0A"
 }
 
 function Test-DevSdkPresent {
@@ -100,10 +99,7 @@ $ffmpegUrl = if ([string]::IsNullOrWhiteSpace($env:MIACODE_WINDOWS_FFMPEG_DEV_UR
     $env:MIACODE_WINDOWS_FFMPEG_DEV_URL
 }
 if ([string]::IsNullOrWhiteSpace($ffmpegUrl)) {
-    throw ("No FFmpeg dev SDK source for $Arch. x64 builds the decode-only SDK with " +
-        "scripts/ffmpeg/trim/build-trimmed-ffmpeg.ps1 (scripts/build/build-win.ps1 does that by " +
-        "default); arm64 downloads the pinned n8.1 build. Pass " +
-        "MIACODE_WINDOWS_FFMPEG_DEV_URL=<zip> to fetch a specific SDK instead.")
+    throw "No FFmpeg dev SDK source for $Arch. Set MIACODE_WINDOWS_FFMPEG_DEV_URL to a compatible archive."
 }
 $expectedSha256 = if ([string]::IsNullOrWhiteSpace($env:MIACODE_WINDOWS_FFMPEG_DEV_SHA256)) {
     $defaultSha256

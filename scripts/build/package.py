@@ -246,12 +246,13 @@ def provision_windows_ffmpeg():
     if arch == "x64":
         sdk = dest_dir / "dev"
         header = sdk / "include" / "libavcodec" / "avcodec.h"
-        dll = sdk / "bin" / "avcodec-61.dll"
+        dll = sdk / "bin" / "avcodec-62.dll"
         if header.is_file() and dll.is_file():
             print(f"Using existing FFmpeg preview SDK: {sdk}")
             return
-        script = ROOT / "scripts" / "ffmpeg" / "trim" / "build-trimmed-ffmpeg.ps1"
-        run(["powershell", "-ExecutionPolicy", "Bypass", "-File", script, "-OutputDir", sdk, "-Jobs", cpu_jobs()])
+        script = ROOT / "scripts" / "ffmpeg" / "ensure-windows-ffmpeg-dev.ps1"
+        run(["powershell", "-ExecutionPolicy", "Bypass", "-File", script,
+             "-RepoRoot", ROOT, "-Arch", "x64"])
         return
     sdk = dest_dir / "dev"
     if (sdk / "include" / "libavcodec").is_dir() and (sdk / "bin" / "avcodec-62.dll").is_file():

@@ -6,6 +6,10 @@
 
 ## 目录结构
 
+此工作区的手序开发版从 `scripts/run-hand-order.ps1` 启动。脚本只接受本工作区
+`build/` 或 `dist/` 内的程序，设置独立 `runtime/` 和临时目录；当前阶段需先完成
+Release 构建与隔离验证，尚不运行程序。
+
 | 目录 | 内容 |
 |---|---|
 | `build/` | Windows/macOS 构建、打包与出包校验入口 |
@@ -25,23 +29,19 @@
 Windows:
 
 ```powershell
-# MSVC x64：生成器由 vswhere 解析，需已装 Visual Studio 与 Windows SDK
-# x64 默认用 ffmpeg/trim 从源码构建 decode-only 预览 SDK（体积从约 150 MB 降到约 20 MB，需 MSYS2）；
-# 跳过裁剪加 -SkipTrim
-powershell -ExecutionPolicy Bypass -File .\scripts\build\build-win.ps1 -Toolchain msvc -BuildDir build-msvc
-
-# MSVC arm64：原生 arm64 主机，走 ARM64 平台参数与 Qt 的 arm64 包
-powershell -ExecutionPolicy Bypass -File .\scripts\build\build-win.ps1 -Toolchain msvc-arm64 -BuildDir build-msvc-arm64
-
-# 构建已完成时单独打包（-Arch 与构建时一致）
-powershell -ExecutionPolicy Bypass -File .\scripts\build\package-win.ps1 -QtRoot <QtRoot> -BuildDir <BuildDir> -Arch x64
+# 在 source/ 中执行；辅助脚本为当前工作区设置 MSVC、Windows SDK 和 Qt。
+. .\scripts\build\enter-hand-order-build.ps1
+cmake --preset hand_order
+cmake --build --preset hand_order_release
+& .\scripts\build\package-win.ps1 -Config Release -Arch x64 -QtRoot $env:MIACODE_HAND_ORDER_QT_ROOT `
+    -BuildDir ..\build\windows_x64 -DistDir ..\dist\MiaCode_HandOrder_2.0.0_alpha_dev_win_x64 -BuildJobs 4
 ```
 
 `build-win.ps1` 依次执行：导出用 `ffmpeg.exe`、预览用 FFmpeg
-dev SDK（x64 走裁剪构建，`-SkipTrim` 关闭）、Qt 定位、CMake 配置与构建、调用 `package-win.ps1` 打包。两条 FFmpeg 链与打包
+dev SDK（x64 与 arm64 均走固定版本下载）、Qt 定位、CMake 配置与构建、调用 `package-win.ps1` 打包。两条 FFmpeg 链与打包
 链都按 `-Toolchain` 推导出的目标架构选择各自的目录：`third_party\ffmpeg\windows\<win64|winarm64>\`
-与 `third_party\bass\bin\<win64|winarm64>\`，包名分别为 `MiaCode_<version>_win_x64` 与
-`MiaCode_<version>_win_arm64`（Nightly 渠道在版本后插入 `_nightly`，`MIACODE_PACKAGE_CHANNEL` 可指定包名渠道段）。arm64 不随包分发 `bass_aac.dll`（上游只提供 x86/x64 版本），
+与 `third_party\bass\bin\<win64|winarm64>\`，包名分别为 `MiaCode_HandOrder_<version>_win_x64` 与
+`MiaCode_HandOrder_<version>_win_arm64`（Nightly 渠道在版本后插入 `_nightly`，`MIACODE_PACKAGE_CHANNEL` 可指定包名渠道段）。arm64 不随包分发 `bass_aac.dll`（上游只提供 x86/x64 版本），
 音频后端对缺失插件已有存在性检查。
 
 Qt 定位顺序：`-QtRoot` → `C:\Qt\<版本>\<架构目录>` → `.qt\<版本>\<架构目录>` →
@@ -49,8 +49,8 @@ Qt 定位顺序：`-QtRoot` → `C:\Qt\<版本>\<架构目录>` → `.qt\<版本
 后者自适应上游两种仓库目录布局（6.11 前的扁平目录与 6.11 起的按架构分目录），每个归档按
 发布方 `.sha1` 校验，不依赖 aqtinstall。
 
-`package-win.ps1` 在需要时自动重建 `MiaCode` 与 `MiaCodeLauncher`，把 MSVC 运行库与裁切后的
-FFmpeg 运行库放入 `app/`，按内容契约断言必需项，产出 7z 归档；
+`package-win.ps1` 在需要时自动重建 `MiaCode` 与 `MiaCodeLauncher`，把 MSVC 运行库与 FFmpeg
+运行库放入 `app/`，按内容契约断言必需项，产出 7z 归档；
 单配置生成器下还会校验 `CMAKE_BUILD_TYPE` 与 `-Config` 一致。
 
 预览用 FFmpeg SDK 可由 `ffmpeg/trim/build-trimmed-ffmpeg.ps1` 产出裁切版，替代

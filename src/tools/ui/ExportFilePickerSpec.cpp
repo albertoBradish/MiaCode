@@ -8,6 +8,7 @@
 #include "app/services/ShellNotifications.h"
 #include "app/services/UiRequestService.h"
 #include "app/services/VideoExportPreferences.h"
+#include "common/RuntimePaths.h"
 
 #include <QDir>
 #include <QFileInfo>
@@ -18,8 +19,6 @@
 #include <QQuickStyle>
 #include <QQuickWindow>
 #include <QSignalSpy>
-#include <QHash>
-#include <QSettings>
 #include <QStandardPaths>
 #include <QTemporaryDir>
 #include <QTextStream>
@@ -54,40 +53,6 @@ public:
 };
 }
 
-// ExportSession reads v1's batch history from the native QSettings store,
-// which QSettings::setPath cannot redirect. Set the developer's real values
-// aside for the run and put them back afterwards, even when a check fails.
-class LegacyBatchHistoryGuard
-{
-public:
-    LegacyBatchHistoryGuard()
-    {
-        for (const QString& key : keys()) {
-            if (store_.contains(key)) saved_.insert(key, store_.value(key));
-            store_.remove(key);
-        }
-    }
-    ~LegacyBatchHistoryGuard()
-    {
-        for (const QString& key : keys()) {
-            if (saved_.contains(key)) store_.setValue(key, saved_.value(key));
-            else store_.remove(key);
-        }
-        store_.sync();
-    }
-    QString value(const QString& key) { store_.sync(); return store_.value(key).toString(); }
-    void setValue(const QString& key, const QString& value) { store_.setValue(key, value); store_.sync(); }
-
-private:
-    static QStringList keys()
-    {
-        return {QStringLiteral("batch_video_export_dialog/last_chart_directory"),
-                QStringLiteral("batch_video_export_dialog/last_output_directory")};
-    }
-    QSettings store_{QStringLiteral("fanfaredash"), QStringLiteral("MiaCode")};
-    QHash<QString, QVariant> saved_;
-};
-
 int main(int argc, char** argv)
 {
     const bool native = argc > 1 && QByteArray(argv[1]) == "--native";
@@ -100,12 +65,17 @@ int main(int argc, char** argv)
     QTranslator translator;
     if (translator.load(QStringLiteral(":/i18n/zh_CN.qm"))) app.installTranslator(&translator);
     QTextStream err(stderr);
-    LegacyBatchHistoryGuard legacy;
     bool ok = true;
     const auto expect = [&](bool condition, const char* message) {
         if (!condition) { err << "FAIL: " << message << Qt::endl; ok = false; }
     };
-    QTemporaryDir scratch(QDir::temp().filePath(QStringLiteral("MiaCode picker #XXXXXX")));
+    QString runtimeError;
+    if (!miacode::runtime_paths::initializeFromEnvironment(&runtimeError)) {
+        err << "FAIL: " << runtimeError << Qt::endl;
+        return 1;
+    }
+    QTemporaryDir scratch(QDir(miacode::runtime_paths::tempDirectory())
+                              .filePath(QStringLiteral("MiaCode picker #XXXXXX")));
     expect(scratch.isValid(), "scratch directory exists");
     QDir parent(scratch.path());
     parent.mkdir(QStringLiteral("Song #1"));
@@ -232,8 +202,6 @@ ApplicationWindow {
         finish({}, {});
     }
     // Caller policy: exercise real models without opening a platform window.
-    QSettings::setDefaultFormat(QSettings::IniFormat);
-    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, scratch.path());
     miacode::UiRequestService historyRequests;
     QString historyId;
     QVariantMap historyRequest;
@@ -314,36 +282,36 @@ ApplicationWindow {
         historyRequests.cancelFileRequest(historyId);
         expect(tools.batchDirectory() == pvRoot, "cancelling PV selection preserves the root");
     }
-    const QString legacyRoot = chosen("legacy-root");
-    const QString legacyChart = chosen("legacy-root/song");
-    legacy.setValue(QStringLiteral("batch_video_export_dialog/last_chart_directory"), legacyChart);
+    const QString chartRoot = chosen("chart-root");
+    const QString chartFolder = chosen("chart-root/song");
     auto withoutNewHistory = miacode::app_preferences::loadDialogPreferences();
     withoutNewHistory.remove("last_batch_chart_directory");
     miacode::app_preferences::saveDialogPreferences(withoutNewHistory);
     {
         miacode::ui::ExportSession session(notifications, historyRequests, progress, appearance, seedSlot, preview);
         session.addChartDirectories();
-        expect(folder() == legacyRoot, "v1 chart-directory history opens its parent on upgrade");
+        expect(folder() == QDir(miacode::runtime_paths::workspaceDirectory()).filePath(QStringLiteral("fixtures")),
+               "missing chart history starts in workspace fixtures");
         historyRequests.cancelFileRequest(historyId);
         expect(miacode::app_preferences::loadDialogPreferences().value("last_batch_chart_directory").toString().isEmpty(),
-               "cancelling an upgrade browse does not create a new selection history");
+               "cancelling a browse does not create selection history");
         session.addChartDirectories();
-        historyRequests.submitFileResults(historyId, {QUrl::fromLocalFile(legacyChart)});
-        expect(miacode::app_preferences::loadDialogPreferences().value("last_batch_chart_directory").toString() == legacyRoot,
-               "an accepted upgraded selection persists the new parent policy");
+        historyRequests.submitFileResults(historyId, {QUrl::fromLocalFile(chartFolder)});
+        expect(miacode::app_preferences::loadDialogPreferences().value("last_batch_chart_directory").toString() == chartRoot,
+               "an accepted selection persists its parent directory");
         auto current = miacode::app_preferences::loadDialogPreferences();
         current.insert("last_batch_chart_directory", fontSource);
         miacode::app_preferences::saveDialogPreferences(current);
         session.addChartDirectories();
-        expect(folder() == fontSource, "new batch input history wins over the old preference");
+        expect(folder() == fontSource, "batch input history restores its own location");
         historyRequests.cancelFileRequest(historyId);
         current.insert("last_batch_chart_directory", parent.filePath("deleted-current"));
         miacode::app_preferences::saveDialogPreferences(current);
         session.addChartDirectories();
-        expect(folder() != legacyRoot && QDir(folder()).exists(), "deleted new history falls back without resurrecting old history");
+        expect(folder() == QDir(miacode::runtime_paths::workspaceDirectory()).filePath(QStringLiteral("fixtures")),
+               "deleted chart history falls back to workspace fixtures");
         historyRequests.cancelFileRequest(historyId);
     }
-    legacy.setValue(QStringLiteral("batch_video_export_dialog/last_output_directory"), legacyRoot);
     auto withoutOutputHistory = miacode::app_preferences::loadDialogPreferences();
     withoutOutputHistory.remove("last_batch_output_directory");
     miacode::app_preferences::saveDialogPreferences(withoutOutputHistory);
@@ -351,17 +319,15 @@ ApplicationWindow {
         miacode::ui::ExportSession session(notifications, historyRequests, progress, appearance, seedSlot, preview);
         session.enter(5);
         wait();
-        expect(session.batchOutputDirectory() == legacyRoot, "v1 batch output history survives the upgrade");
+        expect(session.batchOutputDirectory().isEmpty(), "missing batch output history starts empty");
         session.setBatchOutputDirectory(fontSource);
         expect(miacode::app_preferences::loadDialogPreferences().value("last_batch_output_directory").toString() == fontSource,
-               "a new batch output choice is recorded in the dialog preferences");
-        expect(legacy.value(QStringLiteral("batch_video_export_dialog/last_output_directory")) == legacyRoot,
-               "v1's native settings store is only read, never written");
+               "a batch output choice is recorded in the dialog preferences");
         session.setBatchOutputDirectory({});
         session.leave();
         session.enter(5);
         wait();
-        expect(session.batchOutputDirectory().isEmpty(), "a cleared output does not revive v1's history");
+        expect(session.batchOutputDirectory().isEmpty(), "a cleared output remains empty after reseeding");
     }
     miacode::FileRequest save;
     save.saveMode = true;

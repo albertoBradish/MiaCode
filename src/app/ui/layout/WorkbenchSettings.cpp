@@ -12,7 +12,6 @@
 #include <QJsonValue>
 #include <QDate>
 #include <QStringList>
-#include <QSettings>
 #include <QSysInfo>
 #include <QtGlobal>
 
@@ -36,14 +35,6 @@ constexpr auto kEditorAutoWrap = "editor_auto_wrap";
 constexpr auto kEditorScrollPastEnd = "editor_scroll_past_end";
 constexpr auto kEditorSelectionBeatDisplay = "editor_selection_beat_display";
 constexpr auto kEditorOverviewRulerEnabled = "editor_overview_ruler_enabled";
-
-constexpr auto kLegacySidebarVisible = "ui/sidebarVisible";
-constexpr auto kLegacySidebarWidth = "ui/sidebarWidth";
-constexpr auto kLegacyBottomPanelVisible = "ui/bottomPanelVisible";
-constexpr auto kLegacyBottomPanelHeightRatio = "ui/bottomPanelHeightRatio";
-constexpr auto kLegacyPreviewWidthRatio = "ui/previewWidthRatio";
-constexpr auto kLegacyPreviewCanvasFreeAspect = "ui/previewCanvasFreeAspect";
-constexpr auto kLegacyFontSize = "appearance/fontSize";
 
 QString releasePlatformDisplay()
 {
@@ -89,29 +80,6 @@ void storeUiValue(const char* key, const QJsonValue& value)
     PreferenceDocument::savePreferencesObject(root);
 }
 
-bool jsonBool(const QJsonObject& ui, const char* key, QSettings& legacy, const char* legacyKey, bool fallback)
-{
-    if (ui.contains(QLatin1String(key))) {
-        return ui.value(QLatin1String(key)).toBool(fallback);
-    }
-    return legacy.value(QLatin1String(legacyKey), fallback).toBool();
-}
-
-int jsonInt(const QJsonObject& ui, const char* key, QSettings& legacy, const char* legacyKey, int fallback)
-{
-    if (ui.contains(QLatin1String(key))) {
-        return ui.value(QLatin1String(key)).toInt(fallback);
-    }
-    return legacy.value(QLatin1String(legacyKey), fallback).toInt();
-}
-
-double jsonDouble(const QJsonObject& ui, const char* key, QSettings& legacy, const char* legacyKey, double fallback)
-{
-    if (ui.contains(QLatin1String(key))) {
-        return ui.value(QLatin1String(key)).toDouble(fallback);
-    }
-    return legacy.value(QLatin1String(legacyKey), fallback).toDouble();
-}
 }
 
 WorkbenchSettings::WorkbenchSettings(QObject* parent)
@@ -119,7 +87,7 @@ WorkbenchSettings::WorkbenchSettings(QObject* parent)
 {
     uiFontFamily_ = QGuiApplication::font().family();
 
-    // 启动时读取并约束到界面可接受范围。无 json 键时回退到旧 QSettings，供 macOS 上已有记录迁入。
+    // Read this build's JSON document and clamp layout values to supported ranges.
     const QJsonObject ui = loadUiObject();
     efficientSidebarEnabled_ = ui.value(QLatin1String(kEfficientSidebarEnabled)).toBool(false);
     previewDetached_ = ui.value(QLatin1String(kPreviewDetached)).toBool(false);
@@ -127,24 +95,20 @@ WorkbenchSettings::WorkbenchSettings(QObject* parent)
     uiScalePercent_ = qBound(kUiScaleMinimumPercent,
                             ui.value(QLatin1String(kUiScalePercent)).toInt(kUiScaleDefaultPercent),
                             kUiScaleMaximumPercent);
-    QSettings legacySettings;
-    sidebarVisible_ = jsonBool(ui, kSidebarVisible, legacySettings, kLegacySidebarVisible, true);
+    sidebarVisible_ = ui.value(QLatin1String(kSidebarVisible)).toBool(true);
     sidebarWidth_ = qBound(kSidebarMinimumContentWidth,
-                           jsonInt(ui, kSidebarWidth, legacySettings, kLegacySidebarWidth, kSidebarDefaultWidth),
+                           ui.value(QLatin1String(kSidebarWidth)).toInt(kSidebarDefaultWidth),
                            kSidebarMaximumContentWidth);
-    bottomPanelVisible_ = jsonBool(ui, kBottomPanelVisible, legacySettings, kLegacyBottomPanelVisible, true);
+    bottomPanelVisible_ = ui.value(QLatin1String(kBottomPanelVisible)).toBool(true);
     bottomPanelHeightRatio_ = qBound(kBottomPanelMinimumHeightRatio,
-                                     jsonDouble(ui, kBottomPanelHeightRatio, legacySettings,
-                                                kLegacyBottomPanelHeightRatio, kBottomPanelDefaultHeightRatio),
+                                     ui.value(QLatin1String(kBottomPanelHeightRatio)).toDouble(kBottomPanelDefaultHeightRatio),
                                      kBottomPanelMaximumHeightRatio);
     previewWidthRatio_ = qBound(kPreviewMinimumWidthRatio,
-                                jsonDouble(ui, kPreviewWidthRatio, legacySettings,
-                                           kLegacyPreviewWidthRatio, kPreviewDefaultWidthRatio),
+                                ui.value(QLatin1String(kPreviewWidthRatio)).toDouble(kPreviewDefaultWidthRatio),
                                 kPreviewMaximumWidthRatio);
-    previewCanvasFreeAspect_ = jsonBool(ui, kPreviewCanvasFreeAspect, legacySettings,
-                                        kLegacyPreviewCanvasFreeAspect, false);
-    previewHidePv_ = jsonBool(ui, kPreviewHidePv, legacySettings, kPreviewHidePv, false);
-    fontSize_ = qBound(12, jsonInt(ui, kFontSize, legacySettings, kLegacyFontSize, 13), 14);
+    previewCanvasFreeAspect_ = ui.value(QLatin1String(kPreviewCanvasFreeAspect)).toBool(false);
+    previewHidePv_ = ui.value(QLatin1String(kPreviewHidePv)).toBool(false);
+    fontSize_ = qBound(12, ui.value(QLatin1String(kFontSize)).toInt(13), 14);
     if (!ui.contains(QLatin1String(kSidebarVisible))
         || !ui.contains(QLatin1String(kSidebarWidth))
         || !ui.contains(QLatin1String(kBottomPanelVisible))

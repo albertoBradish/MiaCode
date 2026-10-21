@@ -14,6 +14,7 @@
 #include "app/services/ChartBannerData.h"
 #include "core/chart/ChartAssetPaths.h"
 #include "common/DebugLog.h"
+#include "common/RuntimePaths.h"
 #include "app/services/Id3TagReader.h"
 #include "app/services/ProjectPreferences.h"
 #include "core/chart/document/SimaiDocument.h"
@@ -25,7 +26,6 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
-#include <QStandardPaths>
 #include <QImage>
 #include <QImageReader>
 #include <QJsonObject>
@@ -1365,8 +1365,7 @@ QVariantMap DocumentModel::fileDialogLocation(bool saveMode) const
     QString directory;
     if (netPreview && miacode::file_dialog_preferences::validDirectory(lastDirectory).isEmpty()) {
         directory = miacode::file_dialog_preferences::validDirectory(
-            QStandardPaths::writableLocation(QStandardPaths::DesktopLocation));
-        if (directory.isEmpty()) directory = QDir::homePath();
+            miacode::runtime_paths::exportsDirectory());
     } else {
         directory = miacode::file_dialog_preferences::documentDirectory(
             lastDirectory, netPreview ? QString() : currentFilePath());

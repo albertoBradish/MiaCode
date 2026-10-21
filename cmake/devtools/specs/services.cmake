@@ -21,6 +21,12 @@ miacode_add_dev_tool(job_registry_spec TEST
     INCLUDES src
 )
 
+miacode_add_dev_tool(hand_order_runtime_paths_spec TEST
+    SOURCES src/tools/services/HandOrderRuntimePathsSpec.cpp
+    LIBS miacode_base Qt6::Core
+    INCLUDES src
+)
+
 miacode_add_dev_tool(net_service_spec TEST
     SOURCES
         src/tools/services/NetServiceSpec.cpp

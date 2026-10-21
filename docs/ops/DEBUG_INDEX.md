@@ -1,5 +1,25 @@
 # Debug Index
 
+## Hand Order workspace runtime
+
+This fork requires `MIACODE_HAND_ORDER_RUNTIME_ROOT` before any GUI, CLI export,
+or export worker starts. The value must be the absolute `runtime` directory
+beside the workspace `baseline.json`. `scripts/run-hand-order.ps1` sets it for
+a build or package executable inside this workspace; a packaged build also
+ships `Start_HandOrder.ps1` at its root. Startup refuses a missing
+or invalid root before writing its beacon.
+
+Preferences, encoder probe state, net cache, project state, recovery snapshots,
+and export temporary files use subdirectories of this runtime root. Logs and
+crash breadcrumbs use `runtime/logs`; inherited `MIACODE_*_LOG_PATH` overrides
+are cleared at startup. `TEMP`, `TMP`, and `TMPDIR` are set to `runtime/temp`
+for the process and its workers. Default user output goes to workspace
+`exports`. This path contract is currently implemented in source and awaits
+a Release build and runtime verification.
+
+The log fallback and project-local paths below document the upstream baseline;
+the hand-order runtime path takes precedence in this fork.
+
 ## Debug Entry Points
 
 - Preferred CLI switch: `--debug`

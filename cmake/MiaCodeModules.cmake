@@ -29,6 +29,8 @@ miacode_add_module(miacode_base
         src/common/PixelGeometry.h
         src/common/ProcessDiagnostics.cpp
         src/common/ProcessDiagnostics.h
+        src/common/RuntimePaths.cpp
+        src/common/RuntimePaths.h
         src/common/TaskCancellation.h
         src/common/UiHangWatchdog.cpp
         src/common/UiHangWatchdog.h

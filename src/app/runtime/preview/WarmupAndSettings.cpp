@@ -43,7 +43,7 @@ bool hasBlockingPreviewWindow()
 }
 
 // Project-preferences key holding the per-chart preview mixer
-// (<chartDir>/.miacode/preferences.json).
+// (<runtime>/data/projects/<chart-folder-hash>/preferences.json).
 constexpr auto kProjectAudioPreferencesKey = "preview_audio";
 
 struct PreviewMediaWarmupResult {
@@ -820,7 +820,7 @@ void miacode::runtime::StageMediaHost::applyPreviewAudioSettingsToRuntime()
 void miacode::runtime::StageMediaHost::loadProjectAudioPreferences()
 {
     // The mixer is PROJECT-scoped: every chart remembers the volumes and mutes
-    // it was last edited with, in <chartDir>/.miacode/preferences.json. A
+    // it was last edited with, in isolated runtime project preferences. A
     // project that has never stored one — a brand-new chart, or one authored
     // before the mixer became project-scoped — starts from the app-level
     // 本地预设 (softwarePreviewAudioSettings_). Seeding is the preset's only

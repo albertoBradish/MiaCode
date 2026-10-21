@@ -20,6 +20,7 @@
 #include "common/DebugLog.h"
 #include "common/ProcessDiagnostics.h"
 #include "common/DebugOptions.h"
+#include "common/RuntimePaths.h"
 #include "core/video/PreviewInteractionConfig.h"
 #include "audio/WaveformCache.h"
 #include "preview/runtime/PreviewRuntime.h"
@@ -561,25 +562,9 @@ void miacode::runtime::PlaybackCoordinator::setCurrentFilePath(const QString& pa
     // two close paths; a marker still present at next startup widens the
     // chart-open recovery prompt to the debounced autosave snapshot.
     miacode::crash_recovery::updateSessionMarker(netPreview ? QString() : state_.currentFilePath_);
-    const QString projectDataDirectoryPath = resolveProjectDataDirectoryPath(state_.currentFilePath_);
-    miacode::debug_log::setSessionProjectLogDirectory(
-        projectDataDirectoryPath.isEmpty()
-            ? QString()
-            : QDir(projectDataDirectoryPath).filePath(QStringLiteral("logs"))
-    );
-    // Relocate the startup beacon and op-chain shadow so they co-locate
-    // with the runtime/export logs under this chart's .miacode/logs/.
-    if (!projectDataDirectoryPath.isEmpty()) {
-        miacode::oplog::relocateLogs(
-            QDir(projectDataDirectoryPath).filePath(QStringLiteral("logs")));
-    }
-    // The runtime log directory just rebound to this chart's .miacode/logs/;
-    // re-emit the P0/P2/P3 startup diagnostics (process identity / GPU hint /
-    // resolved GPU policy) so the per-chart log a user collects is self-contained
-    // rather than only holding them in the app-local boot log.
-    if (!projectDataDirectoryPath.isEmpty()) {
-        miacode::app::entry::logProcessStartupDiagnostics(QStringLiteral("log_dir_rebound"));
-    }
+    const QString runtimeLogDirectory = miacode::runtime_paths::logDirectory();
+    miacode::debug_log::setSessionProjectLogDirectory(runtimeLogDirectory);
+    miacode::oplog::relocateLogs(runtimeLogDirectory);
     if (!state_.currentFilePath_.isEmpty()) {
         if (!netPreview) preferences_.setLastOpenDirectory(state_.currentFilePath_);
 
@@ -641,7 +626,8 @@ void miacode::runtime::PlaybackCoordinator::updateWindowTitle()
     const QFontMetrics metrics(QGuiApplication::font());
     const QString elided = metrics.elidedText(titleText, Qt::ElideRight, 420);
     const bool dirty = state_.documentDirty_;
-    state_.titleText_ = QString("MiaCode - %1%2").arg(elided, dirty ? QStringLiteral("[*]") : QString());
+    state_.titleText_ = QString("MiaCode Hand Order - %1%2")
+        .arg(elided, dirty ? QStringLiteral("[*]") : QString());
 }
 
 QString miacode::runtime::PlaybackCoordinator::editorText() const
