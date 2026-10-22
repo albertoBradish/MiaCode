@@ -3,7 +3,7 @@
 #include "core/chart/transform/HandOrderEdit.h"
 
 namespace miacode::hand_order {
-inline constexpr int basicAlgorithmVersion = 3;
+inline constexpr int basicAlgorithmVersion = 4;
 inline constexpr int basicJudgeProfileRevision = 2;
 struct BasicParameters {
     int version = basicAlgorithmVersion;
@@ -63,6 +63,7 @@ struct BasicRow {
     QVector<HandOrderWifiMode> wifiModes;
     QVector<QVector<QVector<HandOrderTrackStop>>> wifiSectors;
     bool fullReplayVerified = false;
+    bool hasCandidate = false;
     int dependencyUnit = -1;
     double confidence = 0;
     QString confidenceLevel = QStringLiteral("insufficient_evidence");
@@ -76,6 +77,11 @@ struct BasicRow {
     double oneHandoffCost = 0, oneHandoffPeak = 0;
     QVector<BasicHandoffEvidence> handoffEvidence;
 };
+struct BasicWindowEvidence {
+    int start = 0, end = 0, tasks = 0;
+    qint64 workUsed = 0;
+    QString outcome;
+};
 struct BasicResult {
     QVector<BasicRow> rows;
     QVector<chart_transform::HandOrderEditPlan::Patch> patches;
@@ -86,7 +92,11 @@ struct BasicResult {
     int algorithmVersion = basicAlgorithmVersion;
     int judgeProfileRevision = basicJudgeProfileRevision;
     qint64 workUsed = 0;
+    int includedObjects = 0, auditedObjects = 0, windowCount = 0, maxWindowTasks = 0;
+    bool taskLimited = false, workLimited = false;
+    QVector<BasicWindowEvidence> searchWindows;
 };
+double basicOrdinaryAssociationWeight(double seconds, int intermediateNotes);
 // Additive cost over fixed-time motion segments. Coordinates use field-radius units.
 double basicMotionCost(const QVector<QPointF>& points, const QVector<double>& segmentSeconds,
                        double* peakSpeed = nullptr);

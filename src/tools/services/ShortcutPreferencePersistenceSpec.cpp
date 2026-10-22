@@ -54,6 +54,13 @@ int main(int argc, char** argv)
                        == QKeySequence(custom).toString(QKeySequence::PortableText),
                "hand-order binding persists canonically and survives registry restart");
     }
+    const QString basicId = QStringLiteral("hand_order.basic_layout");
+    expect(handRegistry.defaultShortcutText(basicId) == QStringLiteral("Ctrl+Alt+B")
+        && handModel.setShortcutText(basicId, QStringLiteral("Ctrl+Shift+Alt+B")),
+        "basic layout has its own editable default shortcut");
+    ShortcutRegistry layoutRestart(handPath);
+    expect(layoutRestart.shortcutText(basicId) == QKeySequence(QStringLiteral("Ctrl+Shift+Alt+B")).toString(QKeySequence::PortableText),
+        "basic-layout shortcut survives an independent registry restart");
     const QString cwdFixture = temporary.filePath(QStringLiteral("external-launch"));
     expect(QDir().mkpath(cwdFixture), "create synthetic external launch directory");
     const QString externalShortcuts = QDir(cwdFixture).filePath(QStringLiteral("shortcuts.json"));

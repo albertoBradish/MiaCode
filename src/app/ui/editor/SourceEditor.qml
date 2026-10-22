@@ -323,6 +323,8 @@ Rectangle {
             if (normalize)
                 action("qml.normalize_whole_chart", "normalize")
             if (normalize)
+                action("hand_order.basic_layout", "hand_order.basic_layout")
+            if (normalize)
                 action("hand_order.analyze", "hand_order.analyze")
             if (transform)
                 rows.push({ kind: "handOrder", labelKey: "hand_order.title", operation: "" })

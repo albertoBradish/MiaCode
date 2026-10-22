@@ -12,6 +12,7 @@
 - [发布](ops/RELEASE_CHECKLIST.md)
 
 - [手序手动工具（阶段 A）](specs/chart/HAND_ORDER_MANUAL_TOOLS_SPEC_ZH.md)：命令、区间编辑与会话临时状态契约。
+- [基础排布](specs/chart/BASIC_HAND_ORDER_LAYOUT_SPEC_ZH.md)：半屏默认手别、slide 起点手、Wifi 双扇区、已有标注保护与自动优化衔接。
 - [拆成独立 slide](specs/chart/NATIVE_SLIDE_SPLIT_SPEC_ZH.md)：原生链段结构拆分、差异预览、原子应用与身份拒绝。
 
 - [基础自动手序（实验性，阶段 B）](specs/chart/BASIC_AUTOMATIC_HAND_ORDER_SPEC_ZH.md)：支持范围、异步身份、候选代价与未支持边界。

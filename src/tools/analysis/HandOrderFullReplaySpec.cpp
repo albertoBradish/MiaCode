@@ -6,6 +6,7 @@
 #include <QJsonObject>
 #include <QTextStream>
 #include <cmath>
+#include <tuple>
 
 using namespace miacode::hand_order;
 namespace {
@@ -93,6 +94,47 @@ void dumpNativeFailure(const QString& token, const FullReplay& replay, bool real
         for (int i = 0; i < judgement.areas.size(); ++i) if (!judgement.areas.at(i).hit) out << i << ',';
         out << '\n';
     }
+}
+bool sameNumber(double a, double b) { return (std::isnan(a) && std::isnan(b)) || std::abs(a - b) < 1e-8; }
+bool sameCauses(const QVector<BasicCause>& a, const QVector<BasicCause>& b) {
+    if (a.size() != b.size()) return false;
+    for (int i = 0; i < a.size(); ++i) {
+        const auto& x = a.at(i); const auto& y = b.at(i);
+        if (std::tie(x.tokenStart, x.branch, x.kind, x.pad, x.handMask) != std::tie(y.tokenStart, y.branch, y.kind, y.pad, y.handMask)
+            || !sameNumber(x.second, y.second) || !sameNumber(x.progress, y.progress)) return false;
+    }
+    return true;
+}
+bool sameAreas(const QVector<FullReplayArea>& a, const QVector<FullReplayArea>& b) {
+    if (a.size() != b.size()) return false;
+    for (int i = 0; i < a.size(); ++i) {
+        const auto& x = a.at(i); const auto& y = b.at(i);
+        if (std::tie(x.hit, x.skipped, x.pad) != std::tie(y.hit, y.skipped, y.pad)
+            || !sameNumber(x.second, y.second) || !sameCauses(x.causes, y.causes)) return false;
+    }
+    return true;
+}
+bool sameJudgement(const FullReplayJudgement& a, const FullReplayJudgement& b) {
+    if (std::tie(a.parseOrder, a.supported, a.judged, a.completed, a.highQuality, a.meetsTarget, a.sideEffect,
+            a.headRequired, a.headJudged, a.headCompleted, a.headHighQuality, a.trackCompleted, a.trackHighQuality,
+            a.handMask, a.singleHandCompletionMask, a.kind, a.quality, a.reason, a.inputChannel)
+        != std::tie(b.parseOrder, b.supported, b.judged, b.completed, b.highQuality, b.meetsTarget, b.sideEffect,
+            b.headRequired, b.headJudged, b.headCompleted, b.headHighQuality, b.trackCompleted, b.trackHighQuality,
+            b.handMask, b.singleHandCompletionMask, b.kind, b.quality, b.reason, b.inputChannel)) return false;
+    for (const auto& values : {std::pair{a.second, b.second}, {a.margin, b.margin}, {a.hitDelta, b.hitDelta},
+            {a.headSecond, b.headSecond}, {a.headMargin, b.headMargin}, {a.headHitDelta, b.headHitDelta},
+            {a.heldSeconds, b.heldSeconds}, {a.requiredHoldSeconds, b.requiredHoldSeconds}, {a.heldRatio, b.heldRatio},
+            {a.rawHeldSeconds, b.rawHeldSeconds}, {a.releasedSeconds, b.releasedSeconds}, {a.wifiPadCSecond, b.wifiPadCSecond}})
+        if (!sameNumber(values.first, values.second)) return false;
+    if (!sameCauses(a.causes, b.causes) || !sameCauses(a.headCauses, b.headCauses) || !sameAreas(a.areas, b.areas)
+        || a.sourceParseOrders != b.sourceParseOrders || a.headSourceParseOrders != b.headSourceParseOrders
+        || a.segmentStartAreas != b.segmentStartAreas || a.segmentEndAreas != b.segmentEndAreas
+        || a.wifiProgress != b.wifiProgress || a.wifiAreas.size() != b.wifiAreas.size()
+        || a.segmentCompletedSeconds.size() != b.segmentCompletedSeconds.size()) return false;
+    for (int i = 0; i < a.wifiAreas.size(); ++i) if (!sameAreas(a.wifiAreas.at(i), b.wifiAreas.at(i))) return false;
+    for (int i = 0; i < a.segmentCompletedSeconds.size(); ++i)
+        if (!sameNumber(a.segmentCompletedSeconds.at(i), b.segmentCompletedSeconds.at(i))) return false;
+    return true;
 }
 }
 
@@ -386,6 +428,60 @@ int main(int argc, char** argv) {
     const auto sparse = replayHandOrderChart({lateTouch}, {screen("B1", 0, 1e9 + 1)}, {}, &sparseWork);
     expect(!sparse.exhausted && sparseWork > 9000 && !sparse.meetsTarget,
         "billion-second sustained input uses sparse events and cannot retrigger at a window boundary");
+    QVector<TimelineNoteMarker> longMarkers; QVector<ChartInputAction> longInputs;
+    for (int i = 0; i < 1200; ++i) {
+        longMarkers.append(note("tap", i * .5, i, i % 8 + 1));
+        auto input = button(i % 8 + 1, i * .5, i * .5 + .025, i % 2); input.contact.tokenStart = i;
+        longInputs.append(input);
+    }
+    qint64 activeWork = 300000;
+    const auto manyCompleted = replayHandOrderChart(longMarkers, longInputs, {}, &activeWork);
+    expect(!manyCompleted.exhausted && manyCompleted.meetsTarget && activeWork > 0 && manyCompleted.judgements.size() == 1200,
+        "twelve hundred independent native consumers fit a fixed budget through active-window scheduling without dropping any marker");
+    for (auto& marker : longMarkers) marker.lane = 1;
+    qint64 unresolvedWork = 300000;
+    const auto manyUnresolved = replayHandOrderChart(longMarkers, {button(1, 0, 1000)}, {}, &unresolvedWork);
+    bool trueMisses = !manyUnresolved.exhausted && !manyUnresolved.meetsTarget && manyUnresolved.judgements.size() == 1200
+        && manyUnresolved.judgements.first().meetsTarget && unresolvedWork > 0;
+    for (int i = 1; i < manyUnresolved.judgements.size(); ++i) trueMisses &= manyUnresolved.judgements.at(i).judged
+        && !manyUnresolved.judgements.at(i).completed && manyUnresolved.judgements.at(i).reason == "no_down_in_window";
+    expect(trueMisses, "all eleven hundred ninety-nine unresolved native notes expire honestly while a continuous prior ON never becomes another DOWN");
+    for (bool needC : {false, true}) {
+        FullReplayOptions batchOptions; batchOptions.wifiNeedC = needC;
+        QVector<TimelineNoteMarker> batchMarkers; QVector<ChartInputAction> batchInputs;
+        QVector<FullReplayJudgement> expected;
+        const auto appendFixture = [&](QVector<TimelineNoteMarker> markers, QVector<ChartInputAction> inputs) {
+            const double shift = batchMarkers.size() * 5.0; const int base = batchMarkers.size();
+            for (int i = 0; i < markers.size(); ++i) {
+                auto& marker = markers[i]; marker.parseOrder = base + i; marker.second += shift;
+                marker.endSecond += shift; marker.slideTraceSecond += shift;
+                for (auto& time : marker.slideSegmentShootSeconds) time += shift;
+            }
+            for (auto& input : inputs) {
+                auto& action = input.contact; action.start += shift; action.end += shift;
+                action.motionStart += shift; action.motionEnd += shift;
+                for (auto& time : action.times) time += shift;
+            }
+            const auto isolated = replayHandOrderChart(markers, inputs, batchOptions);
+            expected += isolated.judgements; batchMarkers += markers; batchInputs += inputs;
+        };
+        for (int repetition = 0; repetition < 4; ++repetition) {
+            appendFixture({tap}, {button(1, 0, .03)});
+            appendFixture({touch}, {screen("B1", 0, .03)});
+            appendFixture({hold}, {button(1, 0, 1), screen("A1", .3, .5, 1)});
+            appendFixture({touchHold}, {screen("B1", 0, 1)});
+            QVector<TimelineNoteMarker> members;
+            for (int i = 0; i < 3; ++i) { auto member = note("touch", 0, i, 1, QStringLiteral("B%1").arg(i + 1)); member.eachGroupId = 17; members.append(member); }
+            appendFixture(members, {screen("B1", 0, .01), screen("B2", .02, .03, 1)});
+            appendFixture({slide()}, straight()); appendFixture({wifi()}, wifiInputs());
+            appendFixture({hold}, {button(1, 0, .3), button(1, .3 + 8.0 / 180.0, 1)});
+            appendFixture({shortHold}, {});
+        }
+        const auto batch = replayHandOrderChart(batchMarkers, batchInputs, batchOptions);
+        bool equal = batch.valid && !batch.exhausted && batch.judgements.size() == expected.size();
+        for (int i = 0; equal && i < expected.size(); ++i) equal &= sameJudgement(batch.judgements.at(i), expected.at(i));
+        expect(equal, "active scheduling preserves complete isolated Tap/Touch/Hold/TouchHold/group/Slide/Wifi states, grades, body shadows and causes in a separated batch");
+    }
     qint64 tiny = 1;
     expect(replayHandOrderChart({tap}, {button(1, 0, .03)}, {}, &tiny).exhausted,
         "all preprocessing, geometry and state updates share the caller's work budget");

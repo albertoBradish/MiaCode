@@ -83,6 +83,7 @@ bool resolveHandOrderActions(const QVector<ScheduledAction>& logical,
         for (double second : times) {
             QVector<QPointF> screens, buttons;
             int buttonLane = 0;
+            bool pinned = false; QPointF pinnedCentre;
             for (int id : ids) {
                 if (!spend(work)) return false;
                 const auto& scheduled = logical.at(id); const auto& action = scheduled.action;
@@ -90,14 +91,26 @@ bool resolveHandOrderActions(const QVector<ScheduledAction>& logical,
                 if (scheduled.button) {
                     if (buttonLane && buttonLane != scheduled.lane) return false;
                     buttonLane = scheduled.lane; buttons.append(contactPosition(action, second));
-                } else screens.append(contactPosition(action, second));
+                } else {
+                    const auto point = contactPosition(action, second);
+                    screens.append(point);
+                }
+                if (scheduled.committed) {
+                    const auto point = contactPosition(action, second);
+                    if (pinned && QLineF(pinnedCentre, point).length() > 1e-6) return false;
+                    pinned = true; pinnedCentre = point;
+                }
             }
             QPointF centre;
             if (!screens.isEmpty()) {
-                if (!enclosingCentre(screens, &centre, work)) return false;
+                if (pinned) {
+                    centre = pinnedCentre;
+                    for (const auto& point : screens)
+                        if (QLineF(point, centre).length() > proposalReach + epsilon) return false;
+                } else if (!enclosingCentre(screens, &centre, work)) return false;
                 for (const auto& point : buttons)
                     if (QLineF(centre, point).length() > buttonScreenReach + epsilon) return false;
-            } else if (!buttons.isEmpty()) centre = buttons.first();
+            } else if (!buttons.isEmpty()) centre = pinned ? pinnedCentre : buttons.first();
             centres.append(centre);
         }
         for (int id : ids) {

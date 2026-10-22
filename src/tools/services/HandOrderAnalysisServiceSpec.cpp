@@ -144,13 +144,28 @@ int main(int argc, char** argv) {
             && !row.value("counterfactualData").toList().isEmpty() && row.value("fullReplayVerified").toBool();
     }
     expect(hasConfidence && service.canApply(), "real worker publishes component confidence and complete-replay evidence");
+    const auto unfilteredConfidenceRows = service.rows();
     service.setHighConfidenceOnly(true);
     expect(!service.canApply() && !service.takeEdit(source).consumed,
         "changing the high-confidence policy immediately invalidates the previous applicable result");
     service.request(source, 0, 0); settle(service);
-    bool weakMember = false;
-    for (const auto& item : service.rows()) weakMember |= item.toMap().value("confidenceLevel") != "high";
-    expect(weakMember && !service.canApply(), "high-confidence mode withholds the complete dependency unit when any generated member is weak");
+    int highCount = 0; bool weakMember = false;
+    for (const auto& item : unfilteredConfidenceRows) {
+        const auto row = item.toMap(); const bool high = row.value("confidenceLevel") == "high" && row.value("fullReplayVerified").toBool();
+        highCount += high; weakMember |= !high;
+    }
+    const auto highEdit = service.takeEdit(source); QString highText = source;
+    if (highEdit.transaction.hasEdit) highText.replace(highEdit.transaction.replacementStart,
+        highEdit.transaction.replacementEnd - highEdit.transaction.replacementStart, highEdit.transaction.replacementText);
+    bool exactHighMembership = true;
+    for (const auto& item : unfilteredConfidenceRows) {
+        const auto row = item.toMap();
+        const QString token = source.mid(row.value("col").toInt() - 1).section(',', 0, 0);
+        exactHighMembership &= highText.contains(token + '~') == (row.value("confidenceLevel") == "high" && row.value("fullReplayVerified").toBool());
+    }
+    expect(weakMember && highCount > 0 && highEdit.consumed && highText.count('~') == highCount
+        && exactHighMembership && SimaiParser::validateSyntax(highText).annotationErrors.isEmpty(),
+        "high-confidence mode preserves an independently verified high candidate while withholding its weak soft neighbour");
     service.setHighConfidenceOnly(false); service.setInputPreference(1);
     service.request(source, 0, 0); settle(service);
     bool screenInput = false;

@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <set>
 
 namespace miacode::hand_order {
 namespace {
@@ -548,6 +549,25 @@ FullReplay replayHandOrderChart(const QVector<TimelineNoteMarker>& markers,
         if (left.second != right.second) return left.second < right.second;
         return markers.at(left.owners.first()).parseOrder < markers.at(right.owners.first()).parseOrder;
     });
+    // Keep the original consumption order, but visit only notes whose window
+    // has opened. Finished notes still remain in the returned audit; removing
+    // them from these queues never creates inputs or removes a native consumer.
+    QVector<int> simpleActivation(order.size()), trackActivation(tracks.size());
+    for (int rank = 0; rank < order.size(); ++rank) simpleActivation[rank] = rank;
+    std::stable_sort(simpleActivation.begin(), simpleActivation.end(), [&](int a, int b) {
+        const auto& left = simpleNotes.at(order.at(a)); const auto& right = simpleNotes.at(order.at(b));
+        return left.second - left.available < right.second - right.available;
+    });
+    for (int index = 0; index < tracks.size(); ++index) trackActivation[index] = index;
+    std::stable_sort(trackActivation.begin(), trackActivation.end(), [&](int a, int b) { return tracks.at(a).available < tracks.at(b).available; });
+    QVector<int> simpleGroup(simpleNotes.size(), -1);
+    for (int group = 0; group < touchGroups.size(); ++group) for (int child : touchGroups.at(group)) {
+        if (!budget.use()) return result;
+        simpleGroup[touchSimpleIndices.at(child)] = group;
+    }
+    if (!budget.use(simpleActivation.size() + trackActivation.size() + simpleGroup.size())) return result;
+    std::set<int> activeSimples, activeHolds, activeGroups, activeTracks;
+    int nextSimple = 0, nextTrack = 0;
     QMap<QString, QSet<int>> contributors;
     PadStates previousOn;
     double previousSecond = 0;
@@ -570,9 +590,22 @@ FullReplay replayHandOrderChart(const QVector<TimelineNoteMarker>& markers,
         if (!budget.use()) return result;
         const double now = secondAt(eventIt.key());
         if (now > horizon + epsilon) break;
-        if (havePrevious) for (auto& simple : simpleNotes) {
+        while (nextSimple < simpleActivation.size()) {
+            const int rank = simpleActivation.at(nextSimple), index = order.at(rank);
+            const auto& simple = simpleNotes.at(index);
+            if (now < simple.second - simple.available - epsilon) break;
             if (!budget.use()) return result;
-            observeHold(simple, previousSecond, now, previousOn, budget);
+            ++nextSimple; activeSimples.insert(rank);
+            if (simple.hold) activeHolds.insert(rank);
+            if (simpleGroup.at(index) >= 0) activeGroups.insert(simpleGroup.at(index));
+        }
+        while (nextTrack < trackActivation.size() && now + epsilon >= tracks.at(trackActivation.at(nextTrack)).available) {
+            if (!budget.use()) return result;
+            activeTracks.insert(trackActivation.at(nextTrack++));
+        }
+        if (havePrevious) for (int rank : activeHolds) {
+            if (!budget.use()) return result;
+            observeHold(simpleNotes[order.at(rank)], previousSecond, now, previousOn, budget);
         }
         const PadStates before = previousOn;
         const auto previousContributors = contributors;
@@ -604,9 +637,9 @@ FullReplay replayHandOrderChart(const QVector<TimelineNoteMarker>& markers,
         for (const auto& channel : channels) {
             if (!budget.use()) return result;
             if (before.contains(channel)) continue;
-            for (int index : order) {
+            for (int rank : activeSimples) {
                 if (!budget.use()) return result;
-                auto& simple = simpleNotes[index];
+                auto& simple = simpleNotes[order.at(rank)];
                 if (simple.judged || now < simple.second - simple.available - epsilon
                     || now > simple.second + simple.available + epsilon) continue;
                 const bool matches = channel == simple.pad || (!simple.touch
@@ -621,17 +654,27 @@ FullReplay replayHandOrderChart(const QVector<TimelineNoteMarker>& markers,
                 break;
             }
         }
-        for (auto& simple : simpleNotes) { if (!budget.use()) return result; finishSimple(simple, now); }
-        for (const auto& group : touchGroups) {
+        for (auto it = activeSimples.begin(); it != activeSimples.end();) {
             if (!budget.use()) return result;
+            auto& simple = simpleNotes[order.at(*it)]; finishSimple(simple, now);
+            if (simple.judged && (!simple.hold || now + epsilon >= simple.end)) {
+                activeHolds.erase(*it); it = activeSimples.erase(it);
+            } else ++it;
+        }
+        for (auto it = activeGroups.begin(); it != activeGroups.end();) {
+            if (!budget.use()) return result;
+            const auto& group = touchGroups.at(*it);
             int count = 0; bool quality = true; Causes causes;
+            bool allJudged = true;
             for (int child : group) {
                 if (!budget.use()) return result;
                 const auto& simple = simpleNotes.at(touchSimpleIndices.at(child));
+                allJudged &= simple.judged;
                 if (!simple.judged || simple.kind == QLatin1String("group_carry")) continue;
                 ++count; quality &= simple.highQuality; causes += simple.causes;
             }
-            if (count < int(std::ceil(0.51 * group.size()))) continue;
+            if (allJudged) { it = activeGroups.erase(it); continue; }
+            if (count < int(std::ceil(0.51 * group.size()))) { ++it; continue; }
             for (int child : group) {
                 if (!budget.use()) return result;
                 auto& simple = simpleNotes[touchSimpleIndices.at(child)];
@@ -642,15 +685,20 @@ FullReplay replayHandOrderChart(const QVector<TimelineNoteMarker>& markers,
                 simple.kind = QStringLiteral("group_carry");
                 simple.reason = simple.highQuality ? QStringLiteral("completed") : QStringLiteral("group_outside_target");
             }
+            it = activeGroups.erase(it);
         }
-        for (auto& track : tracks) { if (!budget.use()) return result; advanceTrack(track, now, on, up, budget); }
+        for (auto it = activeTracks.begin(); it != activeTracks.end();) {
+            if (!budget.use()) return result;
+            auto& track = tracks[*it]; advanceTrack(track, now, on, up, budget);
+            if (track.done || track.failed) it = activeTracks.erase(it); else ++it;
+        }
         if (result.exhausted) return result;
         previousOn = on; previousSecond = now; havePrevious = true;
     }
     // Complete a finite prefix's hold integral up to the exact requested time.
-    if (std::isfinite(horizon) && havePrevious && horizon > previousSecond) for (auto& simple : simpleNotes) {
+    if (std::isfinite(horizon) && havePrevious && horizon > previousSecond) for (int rank : activeHolds) {
         if (!budget.use()) return result;
-        observeHold(simple, previousSecond, horizon, previousOn, budget);
+        observeHold(simpleNotes[order.at(rank)], previousSecond, horizon, previousOn, budget);
     }
     for (const auto& simple : simpleNotes) for (int index : simple.owners) {
         if (!budget.use()) return result;

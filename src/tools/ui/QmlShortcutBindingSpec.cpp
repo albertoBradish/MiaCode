@@ -93,6 +93,10 @@ int main(int argc, char** argv)
     }
     const QStringList boundIds = miacode::ui::shortcutCommandIds();
     const QString nativeSplitId = QStringLiteral("hand_order.split_native_slide");
+    const QString basicLayoutId = QStringLiteral("hand_order.basic_layout");
+    expect(boundIds.contains(basicLayoutId)
+        && miacode::ui::ShortcutRegistry::instance().defaultShortcutText(basicLayoutId) == QStringLiteral("Ctrl+Alt+B"),
+        QStringLiteral("basic layout has a dedicated configurable command and default shortcut"), out, &failed);
     expect(boundIds.contains(nativeSplitId)
         && miacode::ui::ShortcutRegistry::instance().defaultShortcutText(nativeSplitId) == QStringLiteral("Ctrl+Alt+5")
         && miacode::ui::ShortcutRegistry::instance().defaultShortcutText(QStringLiteral("hand_order.split_annotation")) == QStringLiteral("Ctrl+Alt+4"),
@@ -258,6 +262,7 @@ Window {
     width: 320; height: 200; visible: true
     id: shortcutWindow
     property int autoStarts: 0
+    property int layouts: 0
     property bool autoAllowed: true
     property int hands: 0
     property int nativeSplits: 0
@@ -288,12 +293,14 @@ Window {
         property int revision: 1
         property bool captureActive: false
         property string autoKey: "Ctrl+Alt+H"
+        property string layoutKey: "Ctrl+Alt+B"
         property string handKey: "Ctrl+Alt+1"
         property string nativeKey: "Ctrl+Alt+5"
         property string cKey: "Ctrl+Shift+C"
         property string xKey: "Ctrl+Shift+X"
         function sequence(id, fallback) {
             if (id === "hand_order.analyze") return autoKey
+            if (id === "hand_order.basic_layout") return layoutKey
             if (id === "hand_order.set_left") return handKey
             if (id === "hand_order.split_native_slide") return nativeKey
             if (id === "preview.stop_or_play") return cKey
@@ -301,17 +308,17 @@ Window {
             return ""
         }
     }
-    QtObject { id: commandSource; function shortcutCommandIds() { return ["hand_order.set_left", "hand_order.analyze", "hand_order.split_native_slide"] } }
+    QtObject { id: commandSource; function shortcutCommandIds() { return ["hand_order.set_left", "hand_order.analyze", "hand_order.basic_layout", "hand_order.split_native_slide"] } }
     TextInput { anchors.fill: parent; focus: true }
     Chrome.ShortcutBindings {
         shortcuts: bindings; commands: commandSource; previewSession: preview
         chartCommandsEnabled: true
         handOrderCommandsEnabled: shortcutWindow.handAllowed
         handOrderAnalyzeEnabled: shortcutWindow.autoAllowed
-        onChartTransformRequested: id => { if (id === "hand_order.analyze") shortcutWindow.autoStarts++; else if (id === "hand_order.split_native_slide") shortcutWindow.nativeSplits++; else shortcutWindow.hands++ }
+        onChartTransformRequested: id => { if (id === "hand_order.analyze") shortcutWindow.autoStarts++; else if (id === "hand_order.basic_layout") shortcutWindow.layouts++; else if (id === "hand_order.split_native_slide") shortcutWindow.nativeSplits++; else shortcutWindow.hands++ }
         playbackCommandsEnabled: playbackAllowed
     }
-    function rebind() { bindings.autoKey = "Ctrl+Alt+B"; bindings.handKey = "Ctrl+Alt+4"; bindings.nativeKey = "Ctrl+Alt+6"; bindings.cKey = "Ctrl+Alt+J"; bindings.xKey = "Ctrl+Alt+K"; bindings.revision++ }
+    function rebind() { bindings.autoKey = "Ctrl+Alt+Y"; bindings.layoutKey = "Ctrl+Alt+G"; bindings.handKey = "Ctrl+Alt+4"; bindings.nativeKey = "Ctrl+Alt+6"; bindings.cKey = "Ctrl+Alt+J"; bindings.xKey = "Ctrl+Alt+K"; bindings.revision++ }
 }
 )QML").replace("MIACODE_CHROME_DIR", MIACODE_SOURCE_ROOT "/src/app/ui/chrome"), QUrl());
         QScopedPointer<QObject> object(component.create());
@@ -373,8 +380,17 @@ Window {
             press(Qt::Key_5, Qt::ControlModifier | Qt::AltModifier);
             expect(window->property("nativeSplits").toInt() == 1,
                    QStringLiteral("native slide split dispatches once with editor focus"), out, &failed);
+            window->setProperty("handAllowed", false);
+            press(Qt::Key_B, Qt::ControlModifier | Qt::AltModifier);
+            expect(window->property("layouts").toInt() == 1,
+                QStringLiteral("basic layout is eligible without a selection while selection-only commands are disabled"), out, &failed);
+            window->setProperty("handAllowed", true);
             QMetaObject::invokeMethod(window, "rebind");
             QCoreApplication::processEvents();
+            press(Qt::Key_B, Qt::ControlModifier | Qt::AltModifier);
+            press(Qt::Key_G, Qt::ControlModifier | Qt::AltModifier);
+            expect(window->property("layouts").toInt() == 2,
+                QStringLiteral("basic-layout rebinding releases the old key and dispatches the new one once"), out, &failed);
             press(Qt::Key_C, Qt::ControlModifier | Qt::ShiftModifier);
             press(Qt::Key_X, Qt::ControlModifier | Qt::ShiftModifier);
             press(Qt::Key_J, Qt::ControlModifier | Qt::AltModifier);
@@ -398,18 +414,21 @@ Window {
             window->findChild<QObject*>("shortcutFixture")->setProperty("captureActive", true);
             press(Qt::Key_4, Qt::ControlModifier | Qt::AltModifier);
             press(Qt::Key_6, Qt::ControlModifier | Qt::AltModifier);
-            expect(window->property("hands").toInt() == 2 && window->property("nativeSplits").toInt() == 2,
+            press(Qt::Key_G, Qt::ControlModifier | Qt::AltModifier);
+            expect(window->property("hands").toInt() == 2 && window->property("nativeSplits").toInt() == 2
+                && window->property("layouts").toInt() == 2,
                    QStringLiteral("shortcut preference capture cannot trigger either chart-editing command"), out, &failed);
             window->findChild<QObject*>("shortcutFixture")->setProperty("captureActive", false);
             window->setProperty("handAllowed", false);
             press(Qt::Key_H, Qt::ControlModifier | Qt::AltModifier);
-            press(Qt::Key_B, Qt::ControlModifier | Qt::AltModifier);
+            press(Qt::Key_Y, Qt::ControlModifier | Qt::AltModifier);
             press(Qt::Key_4, Qt::ControlModifier | Qt::AltModifier);
             expect(window->property("autoStarts").toInt() == 1 && window->property("hands").toInt() == 2,
                    QStringLiteral("rebound automatic analysis works without selection while manual editing stays disabled"), out, &failed);
             window->setProperty("autoAllowed", false);
-            press(Qt::Key_B, Qt::ControlModifier | Qt::AltModifier);
-            expect(window->property("autoStarts").toInt() == 1,
+            press(Qt::Key_Y, Qt::ControlModifier | Qt::AltModifier);
+            press(Qt::Key_G, Qt::ControlModifier | Qt::AltModifier);
+            expect(window->property("autoStarts").toInt() == 1 && window->property("layouts").toInt() == 2,
                    QStringLiteral("automatic shortcut respects non-editor focus eligibility"), out, &failed);
         }
     }

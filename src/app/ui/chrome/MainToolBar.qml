@@ -130,6 +130,18 @@ Rectangle {
         z: 1
 
         ToolBarButton {
+            objectName: "handOrderBasicLayoutButton"
+            iconSource: Qt.resolvedUrl("icons/tools.svg")
+            label: qsTrId("hand_order.basic_layout")
+            tooltip: qsTrId("hand_order.basic_layout_scope")
+                + "\n" + qsTrId("hand_order.basic_layout_next_step")
+                + (root.shortcuts && root.shortcuts.revision >= 0
+                    ? "\n" + root.shortcuts.displayText("hand_order.basic_layout") : "")
+            enabled: root.handOrderAnalyzeEnabled
+            focusPolicy: Qt.NoFocus
+            onClicked: root.handOrderRequested("hand_order.basic_layout")
+        }
+        ToolBarButton {
             id: handOrderButton
             objectName: "handOrderButton"
             iconSource: Qt.resolvedUrl("icons/tools.svg")

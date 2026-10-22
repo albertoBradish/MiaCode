@@ -4984,8 +4984,8 @@ Error: %1</source>
         <translation>可写建议 %1；保留 %2；冲突 %3；未决 %4；不支持/无效/部分选中 %5；只读上下文 %6。</translation>
     </message>
     <message id="hand_order.auto.truncated">
-        <source> Search beam was pruned; results are bounded approximations.</source>
-        <translation> 搜索束已裁剪，结果为有界近似。</translation>
+        <source> The search beam was pruned; a failed bounded search does not prove impossibility.</source>
+        <translation> 搜索束曾被裁剪；有限搜索未找到不代表无解。</translation>
     </message>
     <message id="hand_order.auto.invalid_parameters">
         <source>Parameters exceed the basic model limits; no suggestions generated.</source>
@@ -5154,8 +5154,8 @@ Error: %1</source>
         <translation>执行条件：</translation>
     </message>
     <message id="hand_order.auto.conditions_text">
-        <source>Community profile v2; high-quality target; finite hand contacts; full judgement replay; conditional context. Scores are experimental.</source>
-        <translation>社区参考 profile v2；高判定质量目标；有限手掌接触；完整判定回放；上下文手别为方案前提。评分仍为实验模型。</translation>
+        <source>Community profile v2; high-quality target; finite contacts; combined candidate-scope replay; rolling local choices with committed inputs. Scores are experimental.</source>
+        <translation>社区参考 profile v2；高判定质量目标；有限接触；合并候选范围完整回放；局部滚动选择保留已承诺输入。评分仍为实验模型。</translation>
     </message>
     <message id="hand_order.auto.reason.joint_action_candidate">
         <source>Joint motion and contact candidate</source>
@@ -5570,6 +5570,46 @@ Error: %1</source>
     <message id="hand_order.native.change.break_count_scoring_changes">
         <source>Split native Break segments retain Break, which may change Break counts and scoring.</source>
         <translation>拆出的原生 Break 段保留 Break，Break 物量和计分可能改变。</translation>
+    </message>
+    <message id="hand_order.auto.search_scope">
+        <source> Solve %1 objects; audit %6 native judgements; %2 rolling windows; largest window %3 tasks; work %4/%5.</source>
+        <translation> 求解 %1 个物件；审计 %6 个原生判定；%2 个局部窗口，单窗最多 %3 项任务；工作量 %4/%5。</translation>
+    </message>
+    <message id="hand_order.auto.reason.task_limit">
+        <source>The inseparable local window exceeds the task limit; no candidate was validated</source>
+        <translation>不可分的局部窗口超过任务数上限，尚无已验证方案</translation>
+    </message>
+    <message id="hand_order.auto.reason.work_limit">
+        <source>The request work budget was exhausted; no candidate was validated for this window</source>
+        <translation>本次分析工作量预算耗尽，此窗口尚无已验证方案</translation>
+    </message>
+    <message id="hand_order.auto.reason.boundary_replay_failed">
+        <source>Combined inputs changed an earlier judgement; this dependent scope cannot be applied</source>
+        <translation>合并输入改变了先前判定，该依赖范围不能应用</translation>
+    </message>
+    <message id="hand_order.auto.reason.window_work_limit">
+        <source>This local window reached its work share; independent later windows can still be checked</source>
+        <translation>该局部窗口达到工作量份额，后续独立窗口仍可继续检查</translation>
+    </message>
+    <message id="hand_order.basic_layout">
+        <source>Basic Layout</source>
+        <translation>基础排布</translation>
+    </message>
+    <message id="hand_order.basic_layout_scope">
+        <source>Use complete selected notes, or the current difficulty when no text is selected. Keep existing annotations; no playability replay.</source>
+        <translation>选区内完整音符；无选区时处理当前难度。保护已有标注，不做可玩性回放。</translation>
+    </message>
+    <message id="hand_order.basic_layout_feedback">
+        <source>Basic layout: %1 changed; %2 existing annotations kept; %3 partial tokens skipped; %4 unsupported; %5 diagnostics.</source>
+        <translation>基础排布：改写 %1 个；保留已有标注 %2 个；跳过部分 token %3 个；不支持 %4 个；诊断 %5 条。</translation>
+    </message>
+    <message id="hand_order.basic_layout_notice">
+        <source>Keys 1–4 use right, 5–8 left. Slides keep their starting hand throughout. Wifi uses two opposite hands; centre-axis Touch is Either. No action-feasibility replay is performed.</source>
+        <translation>1–4 右手、5–8 左手；slide 全程沿用起点手；Wifi 双扇区分配左右；中轴 Touch 为任选。此操作不做动作可行性回放。</translation>
+    </message>
+    <message id="hand_order.basic_layout_next_step">
+        <source>Basic layout writes normal annotations. To optimize them, enable “Recompute existing annotations in selection” and analyze again.</source>
+        <translation>基础排布会写入正常标注；继续自动优化时，请勾选“重算选区已有手序”并重新分析。</translation>
     </message>
 </context>
 </TS>

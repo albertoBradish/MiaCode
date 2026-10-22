@@ -5,7 +5,7 @@
     "Users may copy this file next to MiaCode.exe as shortcuts.json and override action/shortcut sequences without rebuilding."
   ],
   "editable": [
-    "hand_order.analyze", "hand_order.set_left", "hand_order.set_right", "hand_order.set_either", "hand_order.split_annotation", "hand_order.split_native_slide",
+    "hand_order.basic_layout", "hand_order.analyze", "hand_order.set_left", "hand_order.set_right", "hand_order.set_either", "hand_order.split_annotation", "hand_order.split_native_slide",
     "transform.mirror_lr", "transform.mirror_lr_swap_hands", "transform.mirror_ud",
     "transform.mirror_ud_swap_hands", "transform.rotate_180",
     "transform.rotate_ccw_45", "transform.rotate_cw_45", "transform.subdivision_up",
@@ -17,6 +17,11 @@
     "ui.zoom_out", "ui.zoom_in", "ui.zoom_reset", "editor.overwrite_mode"
   ],
   "actions": {
+    "hand_order.basic_layout": {
+      "label_key": "hand_order.basic_layout", "label_zh": "基础排布",
+      "label_en": "Basic Layout", "default": "Ctrl+Alt+B",
+      "context": "window", "owner": "EditorController"
+    },
     "hand_order.analyze": {
       "label_key": "hand_order.analyze", "label_zh": "基础自动手序（实验性）",
       "label_en": "Basic Automatic Hand Order (Experimental)", "default": "Ctrl+Alt+H",

@@ -44,7 +44,8 @@ Item {
                 : ""
             enabled: root.commandsEnabled && !root.shortcuts.captureActive
                      && (!modelData.startsWith("hand_order.")
-                         || (modelData === "hand_order.analyze" ? root.handOrderAnalyzeEnabled : root.handOrderCommandsEnabled))
+                         || ((modelData === "hand_order.analyze" || modelData === "hand_order.basic_layout")
+                             ? root.handOrderAnalyzeEnabled : root.handOrderCommandsEnabled))
                      && root.chartCommandsEnabled
                      && !root.menuOwnsChartTransformShortcuts
                      && sequence !== ""

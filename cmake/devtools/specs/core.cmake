@@ -322,6 +322,18 @@ miacode_add_dev_tool(basic_hand_order_spec TEST
     INCLUDES src
 )
 
+miacode_add_dev_tool(hand_order_local_context_spec TEST
+    SOURCES src/tools/analysis/HandOrderLocalContextSpec.cpp
+    LIBS miacode_analysis miacode_chart Qt6::Core
+    INCLUDES src
+)
+
+miacode_add_dev_tool(basic_hand_order_layout_spec TEST
+    SOURCES src/tools/chart_transform/BasicHandOrderLayoutSpec.cpp
+    LIBS miacode_chart Qt6::Core
+    INCLUDES src
+)
+
 miacode_add_dev_tool(hand_order_touch_judge_spec TEST
     SOURCES src/tools/analysis/HandOrderTouchJudgeSpec.cpp
     LIBS miacode_analysis Qt6::Core Qt6::Gui

@@ -102,8 +102,16 @@ int main(int argc, char** argv) {
     expect(bounded.patches.size() == 1 && bounded.contextObjects == visibleContexts
         && visibleContexts > 0 && visibleContexts < 16,
         "local context count matches only displayed participating rows, not 199 remote taps");
-    const auto blocked = solve(longChart, 0, longChart.size(), local);
-    expect(blocked.patches.isEmpty() && blocked.rows.first().status == "undecided", "resource limits are explicit unresolved results");
+    const auto rolling = solve(longChart, 0, longChart.size(), local);
+    expect(rolling.patches.size() == 200 && rolling.maxWindowTasks <= local.maxTasks && !rolling.workLimited,
+        "a long ordinary sequence rolls bounded windows instead of treating the full difficulty as one task block");
+    QString dense = "(120){4}";
+    for (int i = 0; i < 20; ++i) dense += (i ? "/6" : "6");
+    dense += ',';
+    const auto blocked = solve(dense, 0, dense.size(), local);
+    expect(blocked.patches.isEmpty() && blocked.rows.first().status == "undecided"
+        && blocked.taskLimited && !blocked.workLimited && !blocked.rows.first().hasCandidate
+        && blocked.rows.first().pressureLevel.isEmpty(), "inseparable simultaneous task limits remain explicit and have no invented zero-pressure candidate");
     const double one = basicMotionCost({{0,0},{1,0}}, {1});
     const double split = basicMotionCost({{0,0},{0.25,0},{0.5,0},{1,0}}, {0.25,0.25,0.5});
     expect(std::abs(one - split) < 1e-12, "subdividing the same physical motion cannot lower cost");
@@ -164,7 +172,18 @@ int main(int argc, char** argv) {
         } else marker.second = 0.2;
     }
     const auto sideEffect = inferBasicHandOrder(sideEffectText, sideEffectParse, 0, sideEffectText.size(), synthetic);
-    expect(sideEffect.patches.isEmpty(), "an independent Touch cannot silently advance a future active-slide judging pad");
+    const auto onlyIndependentTouch = [&](const BasicResult& result) {
+        bool staleSlideRejected = false, directTouchVerified = false;
+        for (const auto& row : result.rows) {
+            if (row.start == sideEffectText.indexOf("1-5")) staleSlideRejected = !row.fullReplayVerified && !row.hasCandidate;
+            if (row.start == sideEffectText.indexOf("B3")) directTouchVerified = row.fullReplayVerified && row.hasCandidate
+                && row.judgementKind == "direct_touch";
+        }
+        return staleSlideRejected && directTouchVerified && result.patches.size() == 1
+            && result.patches.first().start == sideEffectText.indexOf("B3");
+    };
+    expect(onlyIndependentTouch(sideEffect),
+        "stale synthetic slide geometry remains rejected while an unrelated native-queue Touch can be independently verified");
     QString hundred = "(120){16}"; for (int i = 0; i < 100; ++i) hundred += (i % 2 ? "6," : "2,");
     const auto ordinary = solve(hundred);
     expect(ordinary.patches.size() == 100 && ordinary.workUsed <= BasicParameters{}.maxWorkUnits,
@@ -214,7 +233,8 @@ int main(int argc, char** argv) {
         } else marker.second = 0.0;
     }
     const auto waitingSideEffect = inferBasicHandOrder(sideEffectText, waitingParse, 0, sideEffectText.size(), synthetic);
-    expect(waitingSideEffect.patches.isEmpty(), "Touch in the slide waiting phase is checked from judge availability, not only from motion start");
+    expect(onlyIndependentTouch(waitingSideEffect),
+        "waiting-phase stale geometry never becomes verified merely because an independent Touch has a valid contact");
     const QString lockedTouchText = "(120){4}1-5[4:1]~r/C~l/5h[1:1]~l,";
     auto lockedTouchParse = SimaiParser::validateSyntax(lockedTouchText);
     for (auto& marker : lockedTouchParse.noteMarkers) {
@@ -252,8 +272,9 @@ int main(int argc, char** argv) {
     const auto longWaitResult = solve(longWait, 0, -1, synthetic);
     expect(longWaitResult.patches.size() == 2 && longWaitResult.rows.first().fullReplayVerified
         && longWaitResult.rows.last().fullReplayVerified
-        && longWaitResult.rows.first().dependencyUnit == longWaitResult.rows.last().dependencyUnit,
-        "long waiting slide and early Touch remain in one dependency unit and legal early activity is verified by full replay");
+        && longWaitResult.rows.last().judgementKind == "direct_touch"
+        && longWaitResult.rows.first().dependencyUnit != longWaitResult.rows.last().dependencyUnit,
+        "a long waiting slide and a physically independent early Touch both replay without creating a time-overlap dependency");
     const QString closure = "(120){4}1-5[5##1]~r,A7,,,,,3h[2:1]~r,";
     const int closureTouch = closure.indexOf("A7");
     const auto closureResult = solve(closure, closureTouch, closureTouch + 2, synthetic);
@@ -264,8 +285,14 @@ int main(int argc, char** argv) {
     const QString closureConflict = "(120){4}1-5[5##1]~r,A7,,,,,3h[1:2]~r,";
     const int conflictTouch = closureConflict.indexOf("A7");
     const auto closureBlocked = solve(closureConflict, conflictTouch, conflictTouch + 2, synthetic);
-    expect(closureBlocked.patches.isEmpty() && closureBlocked.rows.first().status == "not_found",
-        "a locked Hold outside the initial one-second window cannot be omitted while its conflicting slide stays in context");
+    int failedContext = 0; bool independentTarget = false;
+    for (const auto& row : closureBlocked.rows) {
+        if (row.context) failedContext += row.status == "not_found" && !row.hasCandidate && !row.fullReplayVerified && row.pressureLevel.isEmpty();
+        else independentTarget |= row.fullReplayVerified && row.hasCandidate && row.judgementKind == "direct_touch";
+    }
+    expect(closureBlocked.patches.size() == 1 && closureBlocked.patches.first().start == conflictTouch
+        && independentTarget && failedContext == 2 && closureBlocked.contextObjects == 2,
+        "an independent early Touch stays writable while the conflicting future slide and Hold remain visible failed read-only contexts");
     const auto& transferRow = actualTransferred.rows.first();
     expect(transferRow.handoffEvidence.size() == 1 && transferRow.handoffEvidence.first().branch == 0
         && transferRow.handoffEvidence.first().handoffCount == transferRow.handoffCount
@@ -328,6 +355,7 @@ int main(int argc, char** argv) {
         dump("native projection", nativeResult); dump("held exterior", buttons); dump("three presses", triple); dump("Wifi", wifi); dump("mixed group", group);
         dump("small budget", limited); dump("actual transfers", actualTransferred); dump("spanning", spanning); dump("long wait", longWaitResult); dump("synthetic inherited", inherited);
         dump("synthetic shared", sharedForward); dump("synthetic counter transfer", counterTransfer); dump("unstable carry", unstableCarry);
+        dump("stale geometry independent Touch", sideEffect); dump("waiting stale geometry", waitingSideEffect); dump("closure conflict", closureBlocked);
     }
     return ok ? 0 : 1;
 }

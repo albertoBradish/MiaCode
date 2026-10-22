@@ -4984,8 +4984,8 @@ Error: %1</translation>
         <translation>Writable %1; preserved %2; conflicts %3; unresolved %4; unsupported/invalid/partial %5; read-only context %6.</translation>
     </message>
     <message id="hand_order.auto.truncated">
-        <source> Search beam was pruned; results are bounded approximations.</source>
-        <translation> Search beam was pruned; results are bounded approximations.</translation>
+        <source> The search beam was pruned; a failed bounded search does not prove impossibility.</source>
+        <translation> The search beam was pruned; a failed bounded search does not prove impossibility.</translation>
     </message>
     <message id="hand_order.auto.invalid_parameters">
         <source>Parameters exceed the basic model limits; no suggestions generated.</source>
@@ -5154,8 +5154,8 @@ Error: %1</translation>
         <translation>Execution conditions:</translation>
     </message>
     <message id="hand_order.auto.conditions_text">
-        <source>Community profile v2; high-quality target; finite hand contacts; full judgement replay; conditional context. Scores are experimental.</source>
-        <translation>Community profile v2; high-quality target; finite hand contacts; full judgement replay; conditional context. Scores are experimental.</translation>
+        <source>Community profile v2; high-quality target; finite contacts; combined candidate-scope replay; rolling local choices with committed inputs. Scores are experimental.</source>
+        <translation>Community profile v2; high-quality target; finite contacts; combined candidate-scope replay; rolling local choices with committed inputs. Scores are experimental.</translation>
     </message>
     <message id="hand_order.auto.reason.joint_action_candidate">
         <source>Joint motion and contact candidate</source>
@@ -5570,6 +5570,46 @@ Error: %1</translation>
     <message id="hand_order.native.change.break_count_scoring_changes">
         <source>Split native Break segments retain Break, which may change Break counts and scoring.</source>
         <translation>Split native Break segments retain Break, which may change Break counts and scoring.</translation>
+    </message>
+    <message id="hand_order.auto.search_scope">
+        <source> Solve %1 objects; audit %6 native judgements; %2 rolling windows; largest window %3 tasks; work %4/%5.</source>
+        <translation> Solve %1 objects; audit %6 native judgements; %2 rolling windows; largest window %3 tasks; work %4/%5.</translation>
+    </message>
+    <message id="hand_order.auto.reason.task_limit">
+        <source>The inseparable local window exceeds the task limit; no candidate was validated</source>
+        <translation>The inseparable local window exceeds the task limit; no candidate was validated</translation>
+    </message>
+    <message id="hand_order.auto.reason.work_limit">
+        <source>The request work budget was exhausted; no candidate was validated for this window</source>
+        <translation>The request work budget was exhausted; no candidate was validated for this window</translation>
+    </message>
+    <message id="hand_order.auto.reason.boundary_replay_failed">
+        <source>Combined inputs changed an earlier judgement; this dependent scope cannot be applied</source>
+        <translation>Combined inputs changed an earlier judgement; this dependent scope cannot be applied</translation>
+    </message>
+    <message id="hand_order.auto.reason.window_work_limit">
+        <source>This local window reached its work share; independent later windows can still be checked</source>
+        <translation>This local window reached its work share; independent later windows can still be checked</translation>
+    </message>
+    <message id="hand_order.basic_layout">
+        <source>Basic Layout</source>
+        <translation>Basic Layout</translation>
+    </message>
+    <message id="hand_order.basic_layout_scope">
+        <source>Use complete selected notes, or the current difficulty when no text is selected. Keep existing annotations; no playability replay.</source>
+        <translation>Use complete selected notes, or the current difficulty when no text is selected. Keep existing annotations; no playability replay.</translation>
+    </message>
+    <message id="hand_order.basic_layout_feedback">
+        <source>Basic layout: %1 changed; %2 existing annotations kept; %3 partial tokens skipped; %4 unsupported; %5 diagnostics.</source>
+        <translation>Basic layout: %1 changed; %2 existing annotations kept; %3 partial tokens skipped; %4 unsupported; %5 diagnostics.</translation>
+    </message>
+    <message id="hand_order.basic_layout_notice">
+        <source>Keys 1–4 use right, 5–8 left. Slides keep their starting hand throughout. Wifi uses two opposite hands; centre-axis Touch is Either. No action-feasibility replay is performed.</source>
+        <translation>Keys 1–4 use right, 5–8 left. Slides keep their starting hand throughout. Wifi uses two opposite hands; centre-axis Touch is Either. No action-feasibility replay is performed.</translation>
+    </message>
+    <message id="hand_order.basic_layout_next_step">
+        <source>Basic layout writes normal annotations. To optimize them, enable “Recompute existing annotations in selection” and analyze again.</source>
+        <translation>Basic layout writes normal annotations. To optimize them, enable “Recompute existing annotations in selection” and analyze again.</translation>
     </message>
 </context>
 </TS>

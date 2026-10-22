@@ -144,7 +144,7 @@ AppDialog {
                 Label {
                     objectName: "handOrderConfidence_" + modelData.line + "_" + modelData.col
                     width: parent.width
-                    visible: modelData.status === "review" || modelData.status === "undecided"
+                    visible: modelData.hasCandidate && (modelData.status === "review" || modelData.status === "undecided")
                     text: modelData.confidenceText + " · " + modelData.pressureText + " · " + modelData.counterfactualSummary
                     color: Theme.colors.text.secondary
                     wrapMode: Text.Wrap

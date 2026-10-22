@@ -4,16 +4,19 @@
 
 ## 命令与入口
 
-主工具栏“手序”、调整菜单下的“手序”和编辑器右键菜单提供本页相同四个手序命令。相同入口另有独立结构命令 `hand_order.split_native_slide` / `Ctrl+Alt+5`，先预览再一次应用，详见[拆成独立 slide](NATIVE_SLIDE_SPLIT_SPEC_ZH.md)；它不属于手序区间染色。快捷键沿用 ShortcutRegistry，可在首选项的快捷键页重新绑定，菜单展示当前绑定。
+主工具栏“手序”、调整菜单下的“手序”和编辑器右键菜单提供以下手动命令；工具栏另有直接可点的“基础排布”按钮。相同入口另有独立结构命令 `hand_order.split_native_slide` / `Ctrl+Alt+5`，先预览再一次应用，详见[拆成独立 slide](NATIVE_SLIDE_SPLIT_SPEC_ZH.md)；它不属于手序区间染色。快捷键沿用 ShortcutRegistry，可在首选项的快捷键页重新绑定，菜单展示当前绑定。
 
 | 命令 ID | 行为 | 默认绑定 |
 | --- | --- | --- |
+| `hand_order.basic_layout` | 仅为未标注完整音符做确定性位置初分配；无选区时处理当前难度 | Ctrl+Alt+B |
 | `hand_order.set_left` | 选中完整音符设为左手 | Ctrl+Alt+1 |
 | `hand_order.set_right` | 选中完整音符设为右手 | Ctrl+Alt+2 |
 | `hand_order.set_either` | 选中完整音符设为无色/任选 | Ctrl+Alt+3 |
 | `hand_order.split_annotation` | 拆分手序区间并打开区间编辑器 | Ctrl+Alt+4 |
 
-没有选区时禁用；键盘路径还要求源编辑器焦点，快捷键录制期间不编辑谱面。原生菜单平台由菜单 Action 独占绑定，其他平台由 ShortcutBindings 独占绑定，工具栏和右键菜单只显示绑定文本。
+基础排布无选区时处理当前难度，有选区时仅处理完整 token；表中其余设置手别与区间拆分命令无选区时禁用。键盘路径还要求源编辑器焦点，快捷键录制期间不编辑谱面。原生菜单平台由菜单 Action 独占绑定，其他平台由 ShortcutBindings 独占绑定，工具栏和右键菜单只显示绑定文本。
+
+基础排布默认保护全部已有标注和部分选中的 token。普通键 1–4 右手、5–8 左手；普通及链式 slide 整条沿用运动起点手；Touch 按几何左右、中轴为任选；Wifi 使用左右双扇区，不推断单手。一次执行可一次撤销，不做动作可行性回放。它写入正常持久标注，随后若要自动优化，需在自动手序面板勾选“重算选区已有手序”并重新分析；不会自动修改该保护选项。完整规则及独立验收入口见[基础排布契约](BASIC_HAND_ORDER_LAYOUT_SPEC_ZH.md)。
 
 手序文案使用真实编译的三语 ID catalog；ID 消息统一放在 TS 的空 context，不能依赖新版 `lrelease -idbased` 把命名 context 转成 ID。运行时切换语言刷新工具栏、区间行和反馈，保留原文、临时手别选择与草稿身份；翻译刷新不执行编辑。
 

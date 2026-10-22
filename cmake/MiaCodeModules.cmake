@@ -79,6 +79,8 @@ miacode_add_module(miacode_chart
         src/core/chart/transform/ChartBatchTransform.h
         src/core/chart/transform/HandOrderEdit.cpp
         src/core/chart/transform/HandOrderEdit.h
+        src/core/chart/transform/BasicHandOrderLayout.cpp
+        src/core/chart/transform/BasicHandOrderLayout.h
         src/core/chart/transform/NativeSlideSplit.cpp
         src/core/chart/transform/NativeSlideSplit.h
         src/core/chart/transform/ChartNormalization.cpp

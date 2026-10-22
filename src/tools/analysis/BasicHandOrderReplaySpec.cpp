@@ -141,9 +141,18 @@ int main(int argc, char** argv)
         "Touch and track intervals receive actual full-block opposite-hand evidence");
     BasicParameters selective; selective.highConfidenceOnly = true;
     const auto closed = solve("(120){4}6,1,", selective);
-    expect(closed.patches.isEmpty() && closed.rows.size() == 2
-        && closed.rows.first().dependencyUnit == closed.rows.last().dependencyUnit,
-        "high-confidence application keeps a weak complete dependency unit closed", closed);
+    const auto unfiltered = solve("(120){4}6,1,");
+    bool exactConfidenceGate = closed.rows.size() == 2 && allVerified(closed);
+    int eligible = 0;
+    for (const auto& row : unfiltered.rows) {
+        bool applied = false;
+        for (const auto& patch : closed.patches) if (patch.start == row.start) applied = true;
+        const bool high = row.confidenceLevel == "high" && row.fullReplayVerified;
+        eligible += high; exactConfidenceGate &= applied == high;
+    }
+    expect(exactConfidenceGate && closed.patches.size() == eligible
+        && closed.rows.first().dependencyUnit != closed.rows.last().dependencyUnit,
+        "high-confidence application exactly gates independent ordinary candidates without closing their soft neighbourhood", closed);
     const auto extreme = solve("(120){4}1/3/5,", selective);
     expect(extreme.patches.isEmpty() && allVerified(extreme) && extreme.rows.first().pressureLevel == "extreme"
         && extreme.rows.first().confidence < 0.8,

@@ -163,6 +163,9 @@ void HandOrderAnalysisService::dispatch()
                     .arg(preserved).arg(conflicts).arg(undecided).arg(unsupported).arg(guard->result_.contextObjects)
                     + (guard->result_.truncated ? localizedText("hand_order.auto.truncated") : LocalizedText{})
                     + (guard->result_.evidenceTruncated ? localizedText("hand_order.auto.evidence_truncated") : LocalizedText{});
+                guard->message_ = guard->message_ + localizedText("hand_order.auto.search_scope")
+                    .arg(guard->result_.includedObjects).arg(guard->result_.windowCount).arg(guard->result_.maxWindowTasks)
+                    .arg(guard->result_.workUsed).arg(guard->parameters_.maxWorkUnits).arg(guard->result_.auditedObjects);
                 if (guard->parameters_.highConfidenceOnly) guard->message_ = guard->message_ + localizedText("hand_order.auto.high_confidence_closed");
                 if (!guard->result_.error.isEmpty()) guard->message_ = localizedText("hand_order.auto.invalid_parameters");
                 emit guard->changed();
@@ -277,12 +280,13 @@ QVariantList HandOrderAnalysisService::rows() const
         }
         rows.append(QVariantMap{{"line", row.line}, {"col", row.col}, {"status", row.status},
             {"context", row.context}, {"originalAnnotation", row.originalAnnotation},
-            {"hasAssignments", !row.noteHands.isEmpty() || row.head != HandOrderHand::Unspecified || row.track != HandOrderHand::Unspecified || !row.wifiSectors.isEmpty()},
+            {"hasCandidate", row.hasCandidate},
+            {"hasAssignments", row.hasCandidate && (!row.noteHands.isEmpty() || row.head != HandOrderHand::Unspecified || row.track != HandOrderHand::Unspecified || !row.wifiSectors.isEmpty())},
             {"statusText", qtTrId(("hand_order.auto.status." + row.status).toUtf8().constData())},
             {"reason", qtTrId(("hand_order.auto.reason." + row.reason).toUtf8().constData())},
             {"noteAssignments", noteAssignments.join(QStringLiteral(" / "))}, {"head", handName(row.head)}, {"track", handName(row.track)},
             {"cost", row.cost}, {"peakSpeed", row.peakSpeed}, {"inputChannel", row.inputChannel}, {"pressureLevel", row.pressureLevel},
-            {"pressureText", qtTrId(("hand_order.auto.pressure." + row.pressureLevel).toUtf8().constData())}, {"hasCounterfactual", row.hasCounterfactual},
+            {"pressureText", row.pressureLevel.isEmpty() ? QString() : qtTrId(("hand_order.auto.pressure." + row.pressureLevel).toUtf8().constData())}, {"hasCounterfactual", row.hasCounterfactual},
             {"dependencyUnit", row.dependencyUnit}, {"confidence", row.confidence}, {"confidenceLevel", row.confidenceLevel},
             {"confidenceText", qtTrId("hand_order.auto.confidence_text").arg(qRound(row.confidence * 100))
                 .arg(qtTrId(("hand_order.auto.confidence." + row.confidenceLevel).toUtf8().constData()))},

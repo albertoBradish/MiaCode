@@ -53,6 +53,9 @@ public:
         automatic.request(text(), 0, 0);
     }
     Q_INVOKABLE bool applyAutomatic() { return apply(automatic.takeEdit(text())); }
+    Q_INVOKABLE bool applyBasicLayout() {
+        return apply(controller.handOrderCommand(text(), 0, 0, QStringLiteral("hand_order.basic_layout")));
+    }
     Q_INVOKABLE bool navigateAutomatic(int row) {
         const auto range = automatic.navigationRange(row, text());
         if (range.isEmpty()) return false;
@@ -116,6 +119,23 @@ int main(int argc, char** argv)
         && QCoreApplication::installTranslator(&chineseCatalog),
         "the real compiled Chinese resource catalog loads before hand-order QML");
     EditHost host;
+    const QString layoutSource = "(120){4}1,8,1-5[4:1],8~r,";
+    host.load(layoutSource);
+    const int layoutCursor = layoutSource.indexOf("8,");
+    const auto layoutEdit = host.controller.handOrderCommand(layoutSource, layoutCursor, layoutCursor, "hand_order.basic_layout");
+    expect(layoutEdit.transaction.hasEdit && layoutEdit.transaction.anchor == layoutEdit.transaction.position
+        && host.apply(layoutEdit) && host.text().contains("1~r,8~l,1-5[4:1]~[head=r;track=0:r],8~r,"),
+        "basic layout uses the whole difficulty without a selection and preserves existing explicit annotations");
+    expect(!host.controller.handOrderCommand(host.text(), 0, 0, "hand_order.basic_layout").transaction.hasEdit,
+        "repeated basic layout creates no empty undo entry");
+    host.editor.send(SCI_UNDO);
+    expect(host.text() == layoutSource && !host.editor.send(SCI_CANUNDO), "one native Scintilla undo restores the complete basic layout");
+    const auto selectedLayout = host.controller.handOrderCommand(layoutSource, layoutCursor + 1, layoutCursor, "hand_order.basic_layout");
+    expect(selectedLayout.transaction.replacementStart == layoutCursor && selectedLayout.transaction.replacementEnd == layoutCursor + 1
+        && host.apply(selectedLayout) && host.text() == "(120){4}1,8~l,1-5[4:1],8~r,",
+        "backward selection lays out only its complete token and leaves the rest of the difficulty untouched");
+    host.editor.send(SCI_UNDO);
+    expect(host.text() == layoutSource && !host.editor.send(SCI_CANUNDO), "selected basic layout is one native undo transaction");
     const QString nativeChain = "(120){4}1-3-7[2:1]~[head=l;track=0:l|0.25:r|0.75:l],";
     miacode::ChartWorkspace nativeWorkspace;
     nativeWorkspace.openSource("&inote_5=" + nativeChain + "\n&inote_6=2,\n", {}, 5);
@@ -279,10 +299,12 @@ Window {
         windowChrome: null
         previewSettingsVisible: false
         handOrderEnabled: true
+        handOrderAnalyzeEnabled: true
         handOrderRows: editHost.handOrderRows()
         shortcuts: fakeShortcuts
         onHandOrderRequested: command => {
             window.toolCommands++; window.lastToolCommand = command
+            if (command === "hand_order.basic_layout") editHost.applyBasicLayout()
             if (command === "hand_order.split_native_slide" && editHost.prepareNative()) nativeDialog.open()
         }
     }
@@ -370,6 +392,20 @@ Window {
         expect(window->property("toolCommands").toInt() == 1
             && window->property("lastToolCommand").toString() == "hand_order.set_left",
             "toolbar menu dispatches one command after it closes");
+        const QString buttonLayout = "(120){4}1,8,";
+        host.load(buttonLayout);
+        auto* basicButton = findVisualItem(window->contentItem(), "handOrderBasicLayoutButton");
+        expect(basicButton && basicButton->isEnabled()
+            && basicButton->property("label").toString() == QStringLiteral("基础排布"),
+            "toolbar exposes a translated basic-layout button without requiring a selection");
+        if (basicButton) {
+            const QPoint point = basicButton->mapToScene(QPointF(basicButton->width()/2, basicButton->height()/2)).toPoint();
+            QTest::mouseClick(window, Qt::LeftButton, {}, point);
+            expect(QTest::qWaitFor([&] { return host.applications == 1; }, 1000), "basic-layout button dispatches one edit");
+        }
+        expect(host.text() == "(120){4}1~r,8~l,", "basic-layout toolbar action executes the deterministic half-screen assignment");
+        host.editor.send(SCI_UNDO);
+        expect(host.text() == buttonLayout && !host.editor.send(SCI_CANUNDO), "toolbar basic layout is one native undo action");
         host.load(wifiText);
         host.controller.handOrderCommand(wifiText, 0, wifiText.size(), "hand_order.split_annotation");
         QMetaObject::invokeMethod(dialog, "open");

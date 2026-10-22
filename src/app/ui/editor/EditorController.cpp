@@ -3,6 +3,7 @@
 #include "editor/SimaiCompletionCatalog.h"
 #include "editor/BookmarkCommentSyntax.h"
 #include "editor/TouchPadAuthoringEdit.h"
+#include "core/chart/transform/BasicHandOrderLayout.h"
 
 #include <QtGlobal>
 #include <QCryptographicHash>
@@ -414,6 +415,37 @@ miacode::editor::SimaiTextEditResult EditorController::handOrderCommand(
     activateHandOrderDocument(handOrderScope_, text);
     const int begin = qBound(0, qMin(anchor, position), int(text.size()));
     const int end = qBound(begin, qMax(anchor, position), int(text.size()));
+    if (command == QStringLiteral("hand_order.basic_layout")) {
+        const auto layout = miacode::chart_transform::basicHandOrderLayoutInSelection(text, begin, end, metadata);
+        const auto& plan = layout.edit;
+        const bool wholeDifficulty = begin == end;
+        auto result = selectionTransaction(text, wholeDifficulty ? 0 : anchor,
+            wholeDifficulty ? int(text.size()) : position, plan.replacement);
+        if (wholeDifficulty) {
+            int mapped = qBound(0, position, int(text.size()));
+            int delta = 0;
+            for (const auto& patch : plan.patches) {
+                if (position >= patch.end) {
+                    delta += patch.text.size() - (patch.end - patch.start);
+                    mapped = position + delta;
+                } else if (position > patch.start) {
+                    mapped = patch.start + delta + qMin(position - patch.start, int(patch.text.size()));
+                    break;
+                }
+            }
+            result.transaction.anchor = result.transaction.position = qBound(0, mapped, int(plan.replacement.size()));
+        }
+        handOrderSplitAvailable_ = false;
+        handOrderFeedback_ = miacode::localizedText("hand_order.basic_layout_feedback")
+            .arg(plan.changed).arg(layout.preserved).arg(plan.partial).arg(plan.unsupported).arg(plan.diagnostics.size());
+        handOrderFeedback_ = handOrderFeedback_ + QStringLiteral("\n") + miacode::localizedText("hand_order.basic_layout_notice");
+        handOrderFeedback_ = handOrderFeedback_ + QStringLiteral("\n") + miacode::localizedText("hand_order.basic_layout_next_step");
+        for (const auto& diagnostic : plan.diagnostics)
+            handOrderFeedback_ = handOrderFeedback_ + QStringLiteral("\n") + miacode::localizedText("hand_order.diagnostic")
+                .arg(diagnostic.line).arg(diagnostic.col).arg(diagnostic.message);
+        emit handOrderChanged();
+        return result;
+    }
     if (begin == end) return untouched(text, anchor, position);
     namespace transform = miacode::chart_transform;
     const bool split = command == QStringLiteral("hand_order.split_annotation");

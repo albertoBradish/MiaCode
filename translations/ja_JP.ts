@@ -4984,8 +4984,8 @@ Error: %1</source>
         <translation>反映可能 %1、維持 %2、競合 %3、未解決 %4、未対応・無効・部分選択 %5、読み取り専用の前後文脈 %6。</translation>
     </message>
     <message id="hand_order.auto.truncated">
-        <source> Search beam was pruned; results are bounded approximations.</source>
-        <translation> 探索幅を制限した近似結果です。</translation>
+        <source> The search beam was pruned; a failed bounded search does not prove impossibility.</source>
+        <translation> 探索候補を枝刈りしました。有限探索の失敗は不可能の証明ではありません。</translation>
     </message>
     <message id="hand_order.auto.invalid_parameters">
         <source>Parameters exceed the basic model limits; no suggestions generated.</source>
@@ -5154,8 +5154,8 @@ Error: %1</source>
         <translation>実行条件：</translation>
     </message>
     <message id="hand_order.auto.conditions_text">
-        <source>Community profile v2; high-quality target; finite hand contacts; full judgement replay; conditional context. Scores are experimental.</source>
-        <translation>コミュニティ参照 profile v2、高判定品質目標、有限の手の接触、全判定リプレイ、文脈の手割りを前提とします。評価は実験モデルです。</translation>
+        <source>Community profile v2; high-quality target; finite contacts; combined candidate-scope replay; rolling local choices with committed inputs. Scores are experimental.</source>
+        <translation>コミュニティ基準 v2、高品質判定、有限接触、候補範囲の統合リプレイ、確定入力を維持した局所推論。評価値は実験的です。</translation>
     </message>
     <message id="hand_order.auto.reason.joint_action_candidate">
         <source>Joint motion and contact candidate</source>
@@ -5570,6 +5570,46 @@ Error: %1</source>
     <message id="hand_order.native.change.break_count_scoring_changes">
         <source>Split native Break segments retain Break, which may change Break counts and scoring.</source>
         <translation>分割されたネイティブ Break 区間も Break を保つため、Break の物量と得点が変わる可能性があります。</translation>
+    </message>
+    <message id="hand_order.auto.search_scope">
+        <source> Solve %1 objects; audit %6 native judgements; %2 rolling windows; largest window %3 tasks; work %4/%5.</source>
+        <translation> 推論対象 %1 個、判定監査 %6 個、局所窓 %2 個、最大 %3 タスク、処理量 %4/%5。</translation>
+    </message>
+    <message id="hand_order.auto.reason.task_limit">
+        <source>The inseparable local window exceeds the task limit; no candidate was validated</source>
+        <translation>不可分の局所窓がタスク数上限を超え、検証済み候補はありません</translation>
+    </message>
+    <message id="hand_order.auto.reason.work_limit">
+        <source>The request work budget was exhausted; no candidate was validated for this window</source>
+        <translation>解析全体の処理量上限に達し、この窓の候補は未検証です</translation>
+    </message>
+    <message id="hand_order.auto.reason.boundary_replay_failed">
+        <source>Combined inputs changed an earlier judgement; this dependent scope cannot be applied</source>
+        <translation>統合した入力で以前の判定が変わったため、この依存範囲は適用できません</translation>
+    </message>
+    <message id="hand_order.auto.reason.window_work_limit">
+        <source>This local window reached its work share; independent later windows can still be checked</source>
+        <translation>この局所窓の処理量配分に達しました。後続の独立した窓は引き続き検証できます</translation>
+    </message>
+    <message id="hand_order.basic_layout">
+        <source>Basic Layout</source>
+        <translation>基本配置</translation>
+    </message>
+    <message id="hand_order.basic_layout_scope">
+        <source>Use complete selected notes, or the current difficulty when no text is selected. Keep existing annotations; no playability replay.</source>
+        <translation>選択内の完全な音符、未選択時は現在の難易度を配置します。既存の注釈を保護し、演奏可能性の再生検証は行いません。</translation>
+    </message>
+    <message id="hand_order.basic_layout_feedback">
+        <source>Basic layout: %1 changed; %2 existing annotations kept; %3 partial tokens skipped; %4 unsupported; %5 diagnostics.</source>
+        <translation>基本配置：変更 %1、既存注釈の保持 %2、部分選択の除外 %3、未対応 %4、診断 %5。</translation>
+    </message>
+    <message id="hand_order.basic_layout_notice">
+        <source>Keys 1–4 use right, 5–8 left. Slides keep their starting hand throughout. Wifi uses two opposite hands; centre-axis Touch is Either. No action-feasibility replay is performed.</source>
+        <translation>キー1–4は右手、5–8は左手です。slide は始点の手を全軌道で維持し、Wifi の2区画には左右を割り当て、中央軸上のTouchは左右任意とします。動作の実行可能性は再生検証しません。</translation>
+    </message>
+    <message id="hand_order.basic_layout_next_step">
+        <source>Basic layout writes normal annotations. To optimize them, enable “Recompute existing annotations in selection” and analyze again.</source>
+        <translation>基本配置は通常の注釈を書き込みます。続けて自動最適化する場合は「選択内の既存手順を再計算」を有効にして再解析してください。</translation>
     </message>
 </context>
 </TS>

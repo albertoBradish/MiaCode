@@ -907,7 +907,8 @@ bool ScintillaEditorBridge::applyHandOrderIntervals()
 bool ScintillaEditorBridge::applyChartTransform(const QString& operation)
 {
     if (operation == QStringLiteral("hand_order.split_native_slide")) return prepareNativeSlideSplit();
-    if (send(SCI_GETREADONLY) || selectionStart() == selectionEnd()) return false;
+    if (send(SCI_GETREADONLY)
+        || (selectionStart() == selectionEnd() && operation != QStringLiteral("hand_order.basic_layout"))) return false;
     if (operation.startsWith(QStringLiteral("hand_order."))) {
         if (!controller_) return false;
         return applyEditorTransaction(controller_->handOrderCommand(document_.text(),
