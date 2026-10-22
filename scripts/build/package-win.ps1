@@ -164,6 +164,9 @@ function Ensure-PackageBuildReady {
         [object]$ExpectedVersionInfo
     )
 
+    if ($BuildJobs -lt 1 -or $BuildJobs -gt 4) {
+        throw "BuildJobs must be between 1 and 4 in this workspace."
+    }
     $cmakeFilePath = Join-Path $RepoRoot "CMakeLists.txt"
     $appVersionTemplatePath = Join-Path $RepoRoot "src\\app\\AppVersion.h.in"
     $cachePath = Join-Path $BuildDir "CMakeCache.txt"
@@ -213,10 +216,16 @@ function Ensure-PackageBuildReady {
             Write-Host "  - $reason"
         }
         Invoke-MiaCodeConfigure -RepoRoot $RepoRoot -BuildDir $BuildDir
-        Invoke-MiaCodeBuild -BuildDir $BuildDir -Config $Config -BuildJobs $BuildJobs
     } else {
-        Write-Host "Precheck: package build is up to date."
+        Write-Host "Precheck: version metadata matches; checking incremental build inputs."
     }
+
+    # Version equality cannot establish source/QML/resource freshness.
+    # Let the configured build system check all dependencies on every package.
+    Invoke-MiaCodeBuild -BuildDir $BuildDir -Config $Config -BuildJobs $BuildJobs
+    $buildOutputDir = Resolve-BuildOutputDir -BuildDir $BuildDir -Config $Config
+    $exePath = Join-Path $buildOutputDir "MiaCode.exe"
+    $launcherExePath = Join-Path $buildOutputDir "MiaCodeLauncher.exe"
 
     if (!(Test-Path $exePath)) {
         throw "Executable not found after precheck build: $exePath"
@@ -647,6 +656,34 @@ foreach ($releaseDoc in $releaseDocs) {
     }
     Copy-Item $releaseDocSrc (Join-Path $DistDir $releaseDoc) -Force
 }
+
+# Record the identity of the executable being packaged, without hard-coding a
+# commit in the source README. Configure again after committing to refresh it.
+$packagedVersionHeader = Get-Content -LiteralPath $versionHeader -Raw
+$packagedRevision = [regex]::Match($packagedVersionHeader,
+    '#define MIACODE_GIT_REVISION "([^"]+)"').Groups[1].Value
+$packagedDirty = [regex]::Match($packagedVersionHeader,
+    '#define MIACODE_GIT_DIRTY "([^"]+)"').Groups[1].Value
+$buildIdentity = @"
+
+## Build identity
+
+- Version: $($versionInfo.DisplayVersion)
+- Channel: $releaseChannel
+- Git revision: $packagedRevision
+- Git dirty: $packagedDirty
+
+The identity above comes from the packaged build's generated AppVersion.h.
+"@
+Add-Content -LiteralPath (Join-Path $DistDir 'README_HAND_ORDER_ZH.md') -Value $buildIdentity -Encoding UTF8
+
+$acceptanceSrc = Join-Path $repoRoot 'docs\qa\hand_order'
+foreach ($acceptanceFile in @('MANUAL_CHECKLIST_ZH.md', 'maidata.txt')) {
+    if (!(Test-Path -LiteralPath (Join-Path $acceptanceSrc $acceptanceFile) -PathType Leaf)) {
+        throw "Missing synthetic acceptance file: $acceptanceFile"
+    }
+}
+Copy-Item -LiteralPath $acceptanceSrc -Destination (Join-Path $DistDir 'acceptance') -Recurse -Force
 
 New-Item -ItemType Directory -Path (Join-Path $DistDir 'runtime') -Force | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $DistDir 'exports') -Force | Out-Null
