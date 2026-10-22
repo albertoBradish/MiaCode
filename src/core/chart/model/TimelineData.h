@@ -38,6 +38,8 @@ enum class HandOrderWifiMode { Legacy, Split, Single };
 
 struct TimelineNoteMarker {
     double second = 0.0;
+    // Tempo at this note's head, used for local 1/64-note timing comparisons.
+    double tempoBpm = 120.0;
     double endSecond = -1.0;
     double slideTraceSecond = -1.0;
     double availableSecond = -1.0;

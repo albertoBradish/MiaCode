@@ -5604,8 +5604,8 @@ Error: %1</source>
         <translation>基础排布：改写 %1 个；保留已有标注 %2 个；跳过部分 token %3 个；不支持 %4 个；诊断 %5 条。</translation>
     </message>
     <message id="hand_order.basic_layout_notice">
-        <source>Keys 1–4 use right, 5–8 left. Slides keep their starting hand throughout. Wifi uses two opposite hands; centre-axis Touch is Either. No action-feasibility replay is performed.</source>
-        <translation>1–4 右手、5–8 左手；slide 全程沿用起点手；Wifi 双扇区分配左右；中轴 Touch 为任选。此操作不做动作可行性回放。</translation>
+        <source>Keys 1–4 default right, 5–8 left. Each pairs use opposite hands; active slides and holds reserve a hand. Slide tracks may change their whole-track hand for nearby notes. Wifi uses two hands; centre-axis Touch is Either. No action-feasibility replay is performed.</source>
+        <translation>1–4 默认右手、5–8 默认左手；双押分配两手，运行中的 slide 和 hold 占手。轨迹可根据邻近音符调整整条手别；Wifi 使用双手，中轴 Touch 为任选。此操作不做动作可行性回放。</translation>
     </message>
     <message id="hand_order.basic_layout_next_step">
         <source>Basic layout writes normal annotations. To optimize them, enable “Recompute existing annotations in selection” and analyze again.</source>

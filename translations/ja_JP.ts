@@ -5604,8 +5604,8 @@ Error: %1</source>
         <translation>基本配置：変更 %1、既存注釈の保持 %2、部分選択の除外 %3、未対応 %4、診断 %5。</translation>
     </message>
     <message id="hand_order.basic_layout_notice">
-        <source>Keys 1–4 use right, 5–8 left. Slides keep their starting hand throughout. Wifi uses two opposite hands; centre-axis Touch is Either. No action-feasibility replay is performed.</source>
-        <translation>キー1–4は右手、5–8は左手です。slide は始点の手を全軌道で維持し、Wifi の2区画には左右を割り当て、中央軸上のTouchは左右任意とします。動作の実行可能性は再生検証しません。</translation>
+        <source>Keys 1–4 default right, 5–8 left. Each pairs use opposite hands; active slides and holds reserve a hand. Slide tracks may change their whole-track hand for nearby notes. Wifi uses two hands; centre-axis Touch is Either. No action-feasibility replay is performed.</source>
+        <translation>キー1–4は右手、5–8は左手が基本です。Each は左右の手に分け、動作中の slide と hold は片手を占有します。近くの音符に応じて slide 軌道全体の担当手を変える場合があります。Wifi は両手を使い、中央軸の Touch は左右任意です。動作の実行可能性は再生検証しません。</translation>
     </message>
     <message id="hand_order.basic_layout_next_step">
         <source>Basic layout writes normal annotations. To optimize them, enable “Recompute existing annotations in selection” and analyze again.</source>
