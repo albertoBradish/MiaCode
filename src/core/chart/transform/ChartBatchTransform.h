@@ -14,8 +14,15 @@ enum class ChartTransformOp {
     Rotate45Clockwise,
 };
 
-QString transformChartText(const QString& input, ChartTransformOp op, int* changedCount = nullptr);
-QString transformChartSelectionText(const QString& input, ChartTransformOp op, int* changedCount = nullptr);
+enum class HandOrderMirrorPolicy {
+    Preserve,
+    SwapLeftRight,
+};
+
+QString transformChartText(const QString& input, ChartTransformOp op, int* changedCount = nullptr,
+                           HandOrderMirrorPolicy handPolicy = HandOrderMirrorPolicy::Preserve);
+QString transformChartSelectionText(const QString& input, ChartTransformOp op, int* changedCount = nullptr,
+                                    HandOrderMirrorPolicy handPolicy = HandOrderMirrorPolicy::Preserve);
 QString toggleBreakForSelection(const QString& input, int* changedCount = nullptr);
 QString toggleExForSelection(const QString& input, int* changedCount = nullptr);
 QString toggleFireworkForSelection(const QString& input, int* changedCount = nullptr);

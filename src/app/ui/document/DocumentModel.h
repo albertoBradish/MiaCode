@@ -178,6 +178,7 @@ public:
 
     // Fresh values for every open, shared by the shell and save-before-leave.
     Q_INVOKABLE QVariantMap fileDialogLocation(bool saveMode) const;
+    Q_INVOKABLE QVariantMap plainSimaiExportLocation() const;
     Q_INVOKABLE bool openFile(const QUrl& fileUrl);
     QJsonObject documentIdentity() const;
     net::NetEnginePort::Cancel openNetPreview(const QString& path, const QJsonObject& expected,
@@ -185,6 +186,7 @@ public:
     Q_INVOKABLE bool save();
     Q_INVOKABLE bool saveWholeDocument();
     Q_INVOKABLE bool saveAs(const QUrl& fileUrl);
+    Q_INVOKABLE bool exportPlainSimai(const QUrl& fileUrl);
     // Flush current form input and refuse to hide or save a rejected draft.
     Q_INVOKABLE bool finishPendingEdits();
     Q_INVOKABLE bool discardChanges();
@@ -234,6 +236,9 @@ public:
     // the menubar's 调整 menu and the editor's context menu build from this, so
     // neither carries its own copy of the operation list or its labels.
     Q_INVOKABLE QVariantList chartTransformMenu() const;
+    Q_INVOKABLE QVariantList handOrderMenu() const;
+    miacode::simai::SimaiTimingMetadata chartTimingMetadata() const;
+    miacode::ChartWorkspaceSnapshot chartWorkspaceSnapshot() const;
     Q_INVOKABLE QString chartTransformMoreLabel() const;
 
     // Stored normalize options, as the same map normalizeChartSelection takes.

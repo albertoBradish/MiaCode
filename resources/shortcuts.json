@@ -5,7 +5,9 @@
     "Users may copy this file next to MiaCode.exe as shortcuts.json and override action/shortcut sequences without rebuilding."
   ],
   "editable": [
-    "transform.mirror_lr", "transform.mirror_ud", "transform.rotate_180",
+    "hand_order.basic_layout", "hand_order.analyze", "hand_order.set_left", "hand_order.set_right", "hand_order.set_either", "hand_order.split_annotation", "hand_order.split_native_slide",
+    "transform.mirror_lr", "transform.mirror_lr_swap_hands", "transform.mirror_ud",
+    "transform.mirror_ud_swap_hands", "transform.rotate_180",
     "transform.rotate_ccw_45", "transform.rotate_cw_45", "transform.subdivision_up",
     "transform.subdivision_down", "transform.subdivision_half_up", "transform.subdivision_half_down",
     "transform.toggle_break", "transform.toggle_ex", "transform.toggle_firework",
@@ -15,6 +17,56 @@
     "ui.zoom_out", "ui.zoom_in", "ui.zoom_reset", "editor.overwrite_mode"
   ],
   "actions": {
+    "hand_order.basic_layout": {
+      "label_key": "hand_order.basic_layout", "label_zh": "基础排布",
+      "label_en": "Basic Layout", "default": "Ctrl+Alt+B",
+      "context": "window", "owner": "EditorController"
+    },
+    "hand_order.analyze": {
+      "label_key": "hand_order.analyze", "label_zh": "基础自动手序（实验性）",
+      "label_en": "Basic Automatic Hand Order (Experimental)", "default": "Ctrl+Alt+H",
+      "context": "window", "owner": "HandOrderAnalysisService"
+    },
+    "hand_order.set_left": {
+          "label_key": "hand_order.set_left",
+          "label_zh": "选中内容设为左手",
+          "label_en": "Set Selection to Left Hand",
+          "default": "Ctrl+Alt+1",
+          "context": "window",
+          "owner": "EditorController"
+    },
+    "hand_order.set_right": {
+          "label_key": "hand_order.set_right",
+          "label_zh": "选中内容设为右手",
+          "label_en": "Set Selection to Right Hand",
+          "default": "Ctrl+Alt+2",
+          "context": "window",
+          "owner": "EditorController"
+    },
+    "hand_order.set_either": {
+          "label_key": "hand_order.set_either",
+          "label_zh": "选中内容设为无色/任选",
+          "label_en": "Set Selection to Either Hand",
+          "default": "Ctrl+Alt+3",
+          "context": "window",
+          "owner": "EditorController"
+    },
+    "hand_order.split_annotation": {
+          "label_key": "hand_order.split_annotation",
+          "label_zh": "拆分手序区间",
+          "label_en": "Split Hand-order Intervals",
+          "default": "Ctrl+Alt+4",
+          "context": "window",
+          "owner": "EditorController"
+    },
+    "hand_order.split_native_slide": {
+      "label_key": "hand_order.split_native_slide",
+      "label_zh": "拆成独立 slide",
+      "label_en": "Split into Independent Slides",
+      "default": "Ctrl+Alt+5",
+      "context": "window",
+      "owner": "EditorController"
+    },
     "file.quit": {
       "label_key": "shortcut.file.quit",
       "label_zh": "退出",
@@ -31,11 +83,27 @@
       "context": "application",
       "owner": "MainWindow.BootstrapAndMenus"
     },
+    "transform.mirror_lr_swap_hands": {
+      "label_key": "action.transform.mirror_lr_swap_hands",
+      "label_zh": "左右镜像并交换左右手",
+      "label_en": "Mirror Left/Right and Swap Hands",
+      "default": "",
+      "context": "application",
+      "owner": "MainWindow.BootstrapAndMenus"
+    },
     "transform.mirror_ud": {
       "label_key": "action.transform.mirror_ud",
       "label_zh": "上下镜像",
       "label_en": "Mirror Up/Down",
       "default": "Ctrl+K",
+      "context": "application",
+      "owner": "MainWindow.BootstrapAndMenus"
+    },
+    "transform.mirror_ud_swap_hands": {
+      "label_key": "action.transform.mirror_ud_swap_hands",
+      "label_zh": "上下镜像并交换左右手",
+      "label_en": "Mirror Up/Down and Swap Hands",
+      "default": "",
       "context": "application",
       "owner": "MainWindow.BootstrapAndMenus"
     },

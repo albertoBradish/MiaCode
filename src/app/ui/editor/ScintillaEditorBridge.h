@@ -5,6 +5,7 @@
 #include "app/ui/document/DocumentModel.h"
 #include "app/ui/document/AnalysisModel.h"
 #include "app/services/EditorSyncController.h"
+#include "app/services/HandOrderAnalysisService.h"
 #include <QtQmlIntegration/qqmlintegration.h>
 #include <optional>
 
@@ -20,6 +21,7 @@ class ScintillaEditorBridge : public ScintillaQuick_item
 {
     Q_OBJECT
     QML_NAMED_ELEMENT(ScintillaEditor)
+    Q_PROPERTY(miacode::HandOrderAnalysisService* handOrderService READ handOrderService WRITE setHandOrderService)
     Q_PROPERTY(DocumentModel* documentSession READ documentSession WRITE setDocumentSession NOTIFY bindingsChanged)
     Q_PROPERTY(EditorController* controller READ controller WRITE setController NOTIFY bindingsChanged)
     Q_PROPERTY(miacode::EditorSyncController* syncController READ syncController WRITE setSyncController NOTIFY bindingsChanged)
@@ -54,6 +56,8 @@ class ScintillaEditorBridge : public ScintillaQuick_item
     Q_PROPERTY(bool overviewFollowing READ overviewFollowing NOTIFY overviewChanged)
     Q_PROPERTY(bool imeComposing READ imeComposing NOTIFY imeComposingChanged)
 public:
+    miacode::HandOrderAnalysisService* handOrderService() const { return handOrderService_; }
+    void setHandOrderService(miacode::HandOrderAnalysisService* service) { handOrderService_ = service; }
     QColor sceneBackgroundColor() const { return Qt::transparent; }
     explicit ScintillaEditorBridge(QQuickItem* parent = nullptr);
     ~ScintillaEditorBridge() override;
@@ -119,6 +123,12 @@ public:
     Q_INVOKABLE void exportSelectionRange();
     Q_INVOKABLE bool applyNormalization(const QVariantMap& options);
     Q_INVOKABLE bool applyChartTransform(const QString& operation);
+    Q_INVOKABLE bool applyHandOrderIntervals();
+    Q_INVOKABLE bool requestHandOrderAnalysis(bool wholeDifficulty = false);
+    Q_INVOKABLE bool applyHandOrderAnalysis();
+    Q_INVOKABLE bool navigateHandOrderResult(int row);
+    Q_INVOKABLE bool prepareNativeSlideSplit();
+    Q_INVOKABLE bool applyNativeSlideSplit();
     Q_INVOKABLE bool createBookmarkAtLine(int line, const QString& title);
     Q_INVOKABLE bool renameBookmarkAtLine(int line, const QString& title);
     Q_INVOKABLE bool deleteBookmarkAtLine(int line);
@@ -149,6 +159,7 @@ protected:
     void wheelEvent(QWheelEvent* event) override;
     void inputMethodEvent(QInputMethodEvent* event) override;
 private:
+    NativeSlideSplitContext nativeSlideSplitContext() const;
     enum OverviewProjectionPart {
         OverviewMarkersDirty = 0x01,
         OverviewCurrentLineDirty = 0x02,
@@ -182,6 +193,7 @@ private:
     ScintillaDslStyler styler_;
     QPointer<DocumentModel> documentSession_;
     QPointer<EditorController> controller_;
+    QPointer<miacode::HandOrderAnalysisService> handOrderService_;
     QPointer<miacode::EditorSyncController> syncController_;
     QPointer<AnalysisModel> analysisSession_;
     QVariantMap palette_;

@@ -44,6 +44,12 @@ inline QVector<ChartTransformSpec> chartTransformSpecs()
             return transform::transformChartSelectionText(selection, op, changed);
         };
     };
+    const auto mirrorAndSwapHands = [](ChartTransformOp op) {
+        return [op](const QString& selection, const transform::SelectionContext&, int* changed) {
+            return transform::transformChartSelectionText(
+                selection, op, changed, transform::HandOrderMirrorPolicy::SwapLeftRight);
+        };
+    };
     const auto selectionOnly = [](QString (*fn)(const QString&, int*)) {
         return [fn](const QString& selection, const transform::SelectionContext&, int* changed) {
             return fn(selection, changed);
@@ -58,9 +64,15 @@ inline QVector<ChartTransformSpec> chartTransformSpecs()
         {QStringLiteral("transform.mirror_lr"),
          plain(ChartTransformOp::MirrorLeftRight),
          QStringLiteral("action.transform.mirror_lr"), 0},
+        {QStringLiteral("transform.mirror_lr_swap_hands"),
+         mirrorAndSwapHands(ChartTransformOp::MirrorLeftRight),
+         QStringLiteral("action.transform.mirror_lr_swap_hands"), 0},
         {QStringLiteral("transform.mirror_ud"),
          plain(ChartTransformOp::MirrorUpDown),
          QStringLiteral("action.transform.mirror_ud"), 0},
+        {QStringLiteral("transform.mirror_ud_swap_hands"),
+         mirrorAndSwapHands(ChartTransformOp::MirrorUpDown),
+         QStringLiteral("action.transform.mirror_ud_swap_hands"), 0},
         {QStringLiteral("transform.rotate_180"),
          plain(ChartTransformOp::Rotate180),
          QStringLiteral("action.transform.rotate_180"), 0},

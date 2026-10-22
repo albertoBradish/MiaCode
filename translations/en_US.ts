@@ -213,13 +213,25 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
         <source>Save As...</source>
         <translation>Save As...</translation>
     </message>
+    <message id="action.export_plain_simai">
+        <source>Export plain Simai...</source>
+        <translation>Export plain Simai...</translation>
+    </message>
     <message id="action.transform.mirror_lr">
         <source>Mirror Left/Right</source>
         <translation>Mirror Left/Right</translation>
     </message>
+    <message id="action.transform.mirror_lr_swap_hands">
+        <source>Mirror Left/Right and swap hands</source>
+        <translation>Mirror Left/Right and swap hands</translation>
+    </message>
     <message id="action.transform.mirror_ud">
         <source>Mirror Up/Down</source>
         <translation>Mirror Up/Down</translation>
+    </message>
+    <message id="action.transform.mirror_ud_swap_hands">
+        <source>Mirror Up/Down and swap hands</source>
+        <translation>Mirror Up/Down and swap hands</translation>
     </message>
     <message id="action.transform.more">
         <source>More...</source>
@@ -312,6 +324,10 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
     <message id="cli.export.chart_read_failed">
         <source>failed to read chart file</source>
         <translation>failed to read chart file</translation>
+    </message>
+    <message id="cli.export.hand_order_annotation_invalid">
+        <source>hand-order annotation is invalid</source>
+        <translation>hand-order annotation is invalid</translation>
     </message>
     <message id="cli.export.difficulty_invalid">
         <source>invalid difficulty token</source>
@@ -432,6 +448,14 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
     <message id="cli.video_export.hide_timestamp">
         <source>Hide timestamp overlay in output video.</source>
         <translation>Hide timestamp overlay in output video.</translation>
+    </message>
+    <message id="cli.video_export.hand_order">
+        <source>Hand-order display: annotated or original.</source>
+        <translation>Hand-order display: annotated or original.</translation>
+    </message>
+    <message id="cli.video_export.hand_order_invalid">
+        <source>--hand-order must be annotated or original</source>
+        <translation>--hand-order must be annotated or original</translation>
     </message>
     <message id="cli.video_export.inner_brightness">
         <source>Inner background brightness (0.0-1.0).</source>
@@ -1561,6 +1585,10 @@ Failed: %2</translation>
         <source>Show preview debug info</source>
         <translation>Show preview debug info</translation>
     </message>
+    <message id="dialog.render_settings.gameplay.hand_order">
+        <source>Show hand-order annotations</source>
+        <translation>Show hand-order annotations</translation>
+    </message>
     <message id="dialog.render_settings.preview_group">
         <source>Preview</source>
         <translation>Preview</translation>
@@ -1849,6 +1877,22 @@ Restore the backup from %1?</translation>
         <source>Show object stats</source>
         <translation>Show object stats</translation>
     </message>
+    <message id="dialog.video_export.option.hand_order_mode">
+        <source>Hand-order display</source>
+        <translation>Hand-order display</translation>
+    </message>
+    <message id="dialog.video_export.hand_order.follow_preview">
+        <source>Follow preview</source>
+        <translation>Follow preview</translation>
+    </message>
+    <message id="dialog.video_export.hand_order.original">
+        <source>Original chart</source>
+        <translation>Original chart</translation>
+    </message>
+    <message id="dialog.video_export.hand_order.annotated">
+        <source>Hand-order colors</source>
+        <translation>Hand-order colors</translation>
+    </message>
     <message id="dialog.video_export.option.show_timestamp">
         <source>Show bottom-left timestamp</source>
         <translation>Show bottom-left timestamp</translation>
@@ -2086,6 +2130,10 @@ Restore the backup from %1?</translation>
     <message id="document.save_failed">
         <source>Save failed</source>
         <translation>Save failed</translation>
+    </message>
+    <message id="document.plain_export_same_path">
+        <source>Choose a different file to keep the annotated chart.</source>
+        <translation>Choose a different file to keep the annotated chart.</translation>
     </message>
     <message id="document.selection_beats">
         <source>Selection beats: %1</source>
@@ -4821,60 +4869,747 @@ Error: %1</translation>
         <source>Could not open the system folder picker.</source>
         <translation>Could not open the system folder picker.</translation>
     </message>
+
+<message id="hand_order.title">
+        <source>Hand Order</source>
+        <translation>Hand Order</translation>
+    </message>
+    <message id="hand_order.set_left">
+        <source>Set Selection to Left Hand</source>
+        <translation>Set Selection to Left Hand</translation>
+    </message>
+    <message id="hand_order.set_right">
+        <source>Set Selection to Right Hand</source>
+        <translation>Set Selection to Right Hand</translation>
+    </message>
+    <message id="hand_order.set_either">
+        <source>Set Selection to Either Hand</source>
+        <translation>Set Selection to Either Hand</translation>
+    </message>
+    <message id="hand_order.split_annotation">
+        <source>Split Hand-order Intervals</source>
+        <translation>Split Hand-order Intervals</translation>
+    </message>
+    <message id="hand_order.selection_scope">
+        <source>Edit complete notes in the source selection, including slide heads and all branches</source>
+        <translation>Edit complete notes in the source selection, including slide heads and all branches</translation>
+    </message>
+    <message id="hand_order.feedback">
+        <source>Hand order: %1 changed, %2 partial tokens skipped, %3 unsupported, %4 diagnostics (click for details)</source>
+        <translation>Hand order: %1 changed, %2 partial tokens skipped, %3 unsupported, %4 diagnostics (click for details)</translation>
+    </message>
+    <message id="hand_order.diagnostic">
+        <source>Line %1, column %2: %3</source>
+        <translation>Line %1, column %2: %3</translation>
+    </message>
+    <message id="hand_order.intervals">
+        <source>Hand-order Intervals</source>
+        <translation>Hand-order Intervals</translation>
+    </message>
+    <message id="hand_order.draft_notice">
+        <source>Changes affect the corresponding interval. Assign every track interval, then write them to the chart in one edit. An unspecified head keeps its original skin. Unwritten choices remain in this session for the matching document version and are not saved with the chart.</source>
+        <translation>Changes affect the corresponding interval. Assign every track interval, then write them to the chart in one edit. An unspecified head keeps its original skin. Unwritten choices remain in this session for the matching document version and are not saved with the chart.</translation>
+    </message>
+    <message id="hand_order.head_row">
+        <source>%1:%2 · Head</source>
+        <translation>%1:%2 · Head</translation>
+    </message>
+    <message id="hand_order.track_row">
+        <source>%1:%2 · Branch %3 · %4–%5%</source>
+        <translation>%1:%2 · Branch %3 · %4–%5%</translation>
+    </message>
+    <message id="hand_order.unspecified">
+        <source>Unspecified</source>
+        <translation>Unspecified</translation>
+    </message>
+    <message id="hand_order.left">
+        <source>Left</source>
+        <translation>Left</translation>
+    </message>
+    <message id="hand_order.right">
+        <source>Right</source>
+        <translation>Right</translation>
+    </message>
+    <message id="hand_order.either">
+        <source>Either</source>
+        <translation>Either</translation>
+    </message>
+    <message id="hand_order.apply_intervals">
+        <source>Write to Chart</source>
+        <translation>Write to Chart</translation>
+    </message>
+    <message id="hand_order.applied">
+        <source>Hand-order intervals written; undo restores them in one step.</source>
+        <translation>Hand-order intervals written; undo restores them in one step.</translation>
+    </message>
+
+<message id="hand_order.analyze">
+        <source>Basic Automatic Hand Order (Experimental)</source>
+        <translation>Basic Automatic Hand Order (Experimental)</translation>
+    </message>
+    <message id="hand_order.auto.notice">
+        <source>Review every suggestion before applying. Full judgement replay checks ordinary and chained slides, shared actions and both Wifi modes. Confidence scores are experimental, not correctness probabilities or proof of playability. Existing annotations remain unchanged unless recomputation is selected.</source>
+        <translation>Review every suggestion before applying. Full judgement replay checks ordinary and chained slides, shared actions and both Wifi modes. Confidence scores are experimental, not correctness probabilities or proof of playability. Existing annotations remain unchanged unless recomputation is selected.</translation>
+    </message>
+    <message id="hand_order.auto.selection">
+        <source>Analyze Selection (Empty: Current Difficulty)</source>
+        <translation>Analyze Selection (Empty: Current Difficulty)</translation>
+    </message>
+    <message id="hand_order.auto.difficulty">
+        <source>Analyze Current Difficulty</source>
+        <translation>Analyze Current Difficulty</translation>
+    </message>
+    <message id="hand_order.auto.cancel">
+        <source>Cancel Analysis</source>
+        <translation>Cancel Analysis</translation>
+    </message>
+    <message id="hand_order.auto.apply">
+        <source>Apply Writable Suggestions (Review Required)</source>
+        <translation>Apply Writable Suggestions (Review Required)</translation>
+    </message>
+    <message id="hand_order.auto.running">
+        <source>Building and searching basic action candidates…</source>
+        <translation>Building and searching basic action candidates…</translation>
+    </message>
+    <message id="hand_order.auto.cancelled">
+        <source>Analysis cancelled.</source>
+        <translation>Analysis cancelled.</translation>
+    </message>
+    <message id="hand_order.auto.stale">
+        <source>Document, difficulty or parameters changed; analyze again.</source>
+        <translation>Document, difficulty or parameters changed; analyze again.</translation>
+    </message>
+    <message id="hand_order.auto.summary">
+        <source>Writable %1; preserved %2; conflicts %3; unresolved %4; unsupported/invalid/partial %5; read-only context %6.</source>
+        <translation>Writable %1; preserved %2; conflicts %3; unresolved %4; unsupported/invalid/partial %5; read-only context %6.</translation>
+    </message>
+    <message id="hand_order.auto.truncated">
+        <source> The search beam was pruned; a failed bounded search does not prove impossibility.</source>
+        <translation> The search beam was pruned; a failed bounded search does not prove impossibility.</translation>
+    </message>
+    <message id="hand_order.auto.invalid_parameters">
+        <source>Parameters exceed the basic model limits; no suggestions generated.</source>
+        <translation>Parameters exceed the basic model limits; no suggestions generated.</translation>
+    </message>
+    <message id="hand_order.auto.invalid_output">
+        <source>Suggested output failed strict syntax validation; chart unchanged.</source>
+        <translation>Suggested output failed strict syntax validation; chart unchanged.</translation>
+    </message>
+    <message id="hand_order.auto.suggestion">
+        <source>Head: %1; track: %2. Block peak speed estimate %3 radii/s; block cost %4.</source>
+        <translation>Head: %1; track: %2. Block peak speed estimate %3 radii/s; block cost %4.</translation>
+    </message>
+    <message id="hand_order.auto.motion_metrics">
+        <source>Block peak speed estimate %1 radii/s; block cost %2.</source>
+        <translation>Block peak speed estimate %1 radii/s; block cost %2.</translation>
+    </message>
+    <message id="hand_order.auto.counterfactual">
+        <source> Reverse-hand component %1: signed complete-block cost gap %2, peak-tier gap %3 (not a probability).</source>
+        <translation> Reverse-hand component %1: signed complete-block cost gap %2, peak-tier gap %3 (not a probability).</translation>
+    </message>
+    <message id="hand_order.auto.no_counterfactual">
+        <source> No usable reverse-hand evidence; this does not prove the other hand infeasible.</source>
+        <translation> No usable reverse-hand evidence; this does not prove the other hand infeasible.</translation>
+    </message>
+    <message id="hand_order.auto.status.review">
+        <source>Suggestion: review required</source>
+        <translation>Suggestion: review required</translation>
+    </message>
+    <message id="hand_order.auto.status.preserved">
+        <source>Existing annotation preserved</source>
+        <translation>Existing annotation preserved</translation>
+    </message>
+    <message id="hand_order.auto.status.unsupported">
+        <source>Unsupported</source>
+        <translation>Unsupported</translation>
+    </message>
+    <message id="hand_order.auto.status.invalid">
+        <source>Invalid input</source>
+        <translation>Invalid input</translation>
+    </message>
+    <message id="hand_order.auto.status.skipped">
+        <source>Partial selection: skipped</source>
+        <translation>Partial selection: skipped</translation>
+    </message>
+    <message id="hand_order.auto.status.conflict">
+        <source>Candidate constraint conflict</source>
+        <translation>Candidate constraint conflict</translation>
+    </message>
+    <message id="hand_order.auto.status.not_found">
+        <source>No candidate found</source>
+        <translation>No candidate found</translation>
+    </message>
+    <message id="hand_order.auto.status.undecided">
+        <source>Resource/search unresolved</source>
+        <translation>Resource/search unresolved</translation>
+    </message>
+    <message id="hand_order.auto.reason.partial_token">
+        <source>Partial token is read as context and not written</source>
+        <translation>Partial token is read as context and not written</translation>
+    </message>
+    <message id="hand_order.auto.reason.invalid_native">
+        <source>Native chart errors make timing untrusted</source>
+        <translation>Native chart errors make timing untrusted</translation>
+    </message>
+    <message id="hand_order.auto.reason.invalid_annotation">
+        <source>Invalid annotation preserved; repair it first</source>
+        <translation>Invalid annotation preserved; repair it first</translation>
+    </message>
+    <message id="hand_order.auto.reason.unsupported_object">
+        <source>Touch, Touch Hold, Wifi or another object is not modeled</source>
+        <translation>Touch, Touch Hold, Wifi or another object is not modeled</translation>
+    </message>
+    <message id="hand_order.auto.reason.mine_unsupported">
+        <source>Mine is not inferred as an ordinary strike</source>
+        <translation>Mine is not inferred as an ordinary strike</translation>
+    </message>
+    <message id="hand_order.auto.reason.shared_action_unsupported">
+        <source>Shared contact, joins or overlapping paths require validation</source>
+        <translation>Shared contact, joins or overlapping paths require validation</translation>
+    </message>
+    <message id="hand_order.auto.reason.branches_unsupported">
+        <source>Shared-head branches require a joint action model</source>
+        <translation>Shared-head branches require a joint action model</translation>
+    </message>
+    <message id="hand_order.auto.reason.handoff_unsupported">
+        <source>Existing track handoffs exceed this basic model</source>
+        <translation>Existing track handoffs exceed this basic model</translation>
+    </message>
+    <message id="hand_order.auto.reason.geometry_unsupported">
+        <source>Native path or duration is unavailable</source>
+        <translation>Native path or duration is unavailable</translation>
+    </message>
+    <message id="hand_order.auto.reason.unsupported_context">
+        <source>Associated with an unsupported risk window or spanning occupancy</source>
+        <translation>Associated with an unsupported risk window or spanning occupancy</translation>
+    </message>
+    <message id="hand_order.auto.reason.resource_limit">
+        <source>Dependency block exceeds task budget; no partial fragment applied</source>
+        <translation>Dependency block exceeds task budget; no partial fragment applied</translation>
+    </message>
+    <message id="hand_order.auto.reason.button_down_conflict">
+        <source>Exterior button remains down; no fresh DOWN is available</source>
+        <translation>Exterior button remains down; no fresh DOWN is available</translation>
+    </message>
+    <message id="hand_order.auto.reason.candidate_search_failed">
+        <source>No independent two-hand fixed-event candidate found; this is not proof of unplayability</source>
+        <translation>No independent two-hand fixed-event candidate found; this is not proof of unplayability</translation>
+    </message>
+    <message id="hand_order.auto.reason.counterfactual_unstable">
+        <source>Reverse-hand search still improves the complete plan; unresolved</source>
+        <translation>Reverse-hand search still improves the complete plan; unresolved</translation>
+    </message>
+    <message id="hand_order.auto.reason.existing_annotation">
+        <source>Source preserved exactly; existing labels constrain occupancy</source>
+        <translation>Source preserved exactly; existing labels constrain occupancy</translation>
+    </message>
+    <message id="hand_order.auto.reason.fixed_event_candidate">
+        <source>Exterior buttons, full occupancy and natural-path candidate; real judging and stray contact unverified</source>
+        <translation>Exterior buttons, full occupancy and natural-path candidate; real judging and stray contact unverified</translation>
+    </message>
+
+<message id="hand_order.auto.status.context">
+        <source>Read-only Context Candidate</source>
+        <translation>Read-only Context Candidate</translation>
+    </message>
+    <message id="hand_order.auto.reason.context_hypothesis">
+        <source>Context assignment used by this complete candidate; not written</source>
+        <translation>Context assignment used by this complete candidate; not written</translation>
+    </message>
+    <message id="hand_order.auto.context_notice">
+        <source>Context hypothesis: not written. Only participating action components are shown.</source>
+        <translation>Context hypothesis: not written. Only participating action components are shown.</translation>
+    </message>
+    <message id="hand_order.auto.original_annotation">
+        <source>Original annotation retained: %1. The hands below belong to this conditional plan and do not replace it.</source>
+        <translation>Original annotation retained: %1. The hands below belong to this conditional plan and do not replace it.</translation>
+    </message>
+    <message id="hand_order.auto.original_unannotated">
+        <source>Source is unannotated; the context assignment below is for reviewing the complete plan.</source>
+        <translation>Source is unannotated; the context assignment below is for reviewing the complete plan.</translation>
+    </message>
+
+<message id="hand_order.auto.interval">
+        <source>Branch %1: %2–%3% %4</source>
+        <translation>Branch %1: %2–%3% %4</translation>
+    </message>
+    <message id="hand_order.auto.both_contributors">
+        <source>Left and right contributors</source>
+        <translation>Left and right contributors</translation>
+    </message>
+    <message id="hand_order.auto.cause">
+        <source>Source @%1 branch %2 (%3), %4 at %5s, motion %6%, %7</source>
+        <translation>Source @%1 branch %2 (%3), %4 at %5s, motion %6%, %7</translation>
+    </message>
+    <message id="hand_order.auto.judgement">
+        <source>%1 · %2 · %3s · target margin %4ms</source>
+        <translation>%1 · %2 · %3s · target margin %4ms</translation>
+    </message>
+    <message id="hand_order.auto.handoffs">
+        <source>Track transfers: %1 · %2 · at-most-one baseline peak %3, cost %4 (zero means no baseline found)</source>
+        <translation>Track transfers: %1 · %2 · at-most-one baseline peak %3, cost %4 (zero means no baseline found)</translation>
+    </message>
+    <message id="hand_order.auto.conditions">
+        <source>Execution conditions:</source>
+        <translation>Execution conditions:</translation>
+    </message>
+    <message id="hand_order.auto.conditions_text">
+        <source>Community profile v2; high-quality target; finite contacts; combined candidate-scope replay; rolling local choices with committed inputs. Scores are experimental.</source>
+        <translation>Community profile v2; high-quality target; finite contacts; combined candidate-scope replay; rolling local choices with committed inputs. Scores are experimental.</translation>
+    </message>
+    <message id="hand_order.auto.reason.joint_action_candidate">
+        <source>Joint motion and contact candidate</source>
+        <translation>Joint motion and contact candidate</translation>
+    </message>
+    <message id="hand_order.auto.reason.slide_cover">
+        <source>Triggered by a real slide contact; no extra press</source>
+        <translation>Triggered by a real slide contact; no extra press</translation>
+    </message>
+    <message id="hand_order.auto.reason.direct_touch">
+        <source>Independent screen contact</source>
+        <translation>Independent screen contact</translation>
+    </message>
+    <message id="hand_order.auto.reason.group_carry">
+        <source>Touchgroup threshold reached; no extra contact</source>
+        <translation>Touchgroup threshold reached; no extra contact</translation>
+    </message>
+    <message id="hand_order.auto.reason.mixed_touch_responsibility">
+        <source>Multiple contributors; current notation cannot express sole responsibility</source>
+        <translation>Multiple contributors; current notation cannot express sole responsibility</translation>
+    </message>
+    <message id="hand_order.auto.reason.one_handoff_candidate_not_found">
+        <source>At-most-one transfer search found no candidate in this model</source>
+        <translation>At-most-one transfer search found no candidate in this model</translation>
+    </message>
+    <message id="hand_order.auto.reason.significant_context_improvement">
+        <source>Per-track counterfactual shows significant context improvement</source>
+        <translation>Per-track counterfactual shows significant context improvement</translation>
+    </message>
+
+<message id="hand_order.auto.reason.touch_slide_side_effect_unverified">
+        <source>Screen contact may advance an active slide before its natural judging pad; review required</source>
+        <translation>Screen contact may advance an active slide before its natural judging pad; review required</translation>
+    </message>
+    <message id="hand_order.auto.reason.unstable_touch_responsibility">
+        <source>Near-optimal candidates disagree on carry responsibility; review required</source>
+        <translation>Near-optimal candidates disagree on carry responsibility; review required</translation>
+    </message>
+    <message id="hand_order.auto.reason.single_handoff_occupation">
+        <source>One transfer with verified preparation and brief joint occupation; first-transfer cost included</source>
+        <translation>One transfer with verified preparation and brief joint occupation; first-transfer cost included</translation>
+    </message>
+    <message id="hand_order.auto.reason.existing_handoff_constraint">
+        <source>Transfers follow the preserved original interval constraints</source>
+        <translation>Transfers follow the preserved original interval constraints</translation>
+    </message>
+    <message id="hand_order.auto.quality.critical">
+        <source>Target quality</source>
+        <translation>Target quality</translation>
+    </message>
+    <message id="hand_order.auto.quality.late_bad">
+        <source>Late / expired</source>
+        <translation>Late / expired</translation>
+    </message>
+    <message id="hand_order.auto.quality.outside_target">
+        <source>Outside target quality</source>
+        <translation>Outside target quality</translation>
+    </message>
+    <message id="hand_order.auto.evidence_truncated">
+        <source> Optional reverse-hand evidence stopped at its work budget; the validated candidate is retained for review.</source>
+        <translation> Optional reverse-hand evidence stopped at its work budget; the validated candidate is retained for review.</translation>
+    </message>
+
+<message id="hand_order.auto.handoff_branch">
+        <source>Branch %1: %2 transfers · %3</source>
+        <translation>Branch %1: %2 transfers · %3</translation>
+    </message>
+    <message id="hand_order.auto.handoff_baseline">
+        <source> · at-most-one baseline peak %1, cost %2</source>
+        <translation> · at-most-one baseline peak %1, cost %2</translation>
+    </message>
+    <message id="hand_order.auto.action.slide">
+        <source>Slide motion</source>
+        <translation>Slide motion</translation>
+    </message>
+    <message id="hand_order.auto.action.touch">
+        <source>Screen touch</source>
+        <translation>Screen touch</translation>
+    </message>
+    <message id="hand_order.auto.action.touch_hold">
+        <source>Sustained screen contact</source>
+        <translation>Sustained screen contact</translation>
+    </message>
+    <message id="hand_order.auto.component.head">
+        <source>Slide head</source>
+        <translation>Slide head</translation>
+    </message>
+    <message id="hand_order.auto.component.note">
+        <source>Note %1</source>
+        <translation>Note %1</translation>
+    </message>
+    <message id="hand_order.auto.reason.expired">
+        <source>No valid contact before expiry</source>
+        <translation>No valid contact before expiry</translation>
+    </message>
+    <message id="hand_order.wifi_mode_notice">
+        <source>Wifi sectors 1/2 follow the native sides and exchange on reflection. Single mode selects one hand for the whole track; the circled 1 marks explicit single-hand execution. Either still means one selected hand.</source>
+        <translation>Wifi sectors 1/2 follow the native sides and exchange on reflection. Single mode selects one hand for the whole track; the circled 1 marks explicit single-hand execution. Either still means one selected hand.</translation>
+    </message>
+    <message id="hand_order.wifi_single_row">
+        <source>%1:%2 branch %3 · whole-track single hand</source>
+        <translation>%1:%2 branch %3 · whole-track single hand</translation>
+    </message>
+    <message id="hand_order.wifi_sector_row">
+        <source>%1:%2 branch %3 · sector %4 · %5–%6%</source>
+        <translation>%1:%2 branch %3 · sector %4 · %5–%6%</translation>
+    </message>
+    <message id="hand_order.wifi_legacy">
+        <source>Legacy whole track</source>
+        <translation>Legacy whole track</translation>
+    </message>
+    <message id="hand_order.wifi_split">
+        <source>Two sectors</source>
+        <translation>Two sectors</translation>
+    </message>
+    <message id="hand_order.wifi_single">
+        <source>Explicit single hand</source>
+        <translation>Explicit single hand</translation>
+    </message>
+    <message id="hand_order.auto.wifi_sector">
+        <source>Wifi sector %1 · %2</source>
+        <translation>Wifi sector %1 · %2</translation>
+    </message>
+    <message id="hand_order.auto.wifi_single">
+        <source>Explicit single-hand Wifi · %1</source>
+        <translation>Explicit single-hand Wifi · %1</translation>
+    </message>
+    <message id="hand_order.auto.full_replay_verified">
+        <source>Full judgement replay verified</source>
+        <translation>Full judgement replay verified</translation>
+    </message>
+    <message id="hand_order.auto.reason.full_replay_target_failed">
+        <source>No searched physical candidate met the full replay target</source>
+        <translation>No searched physical candidate met the full replay target</translation>
+    </message>
+    <message id="hand_order.auto.action.button">
+        <source>Exterior button press</source>
+        <translation>Exterior button press</translation>
+    </message>
+    <message id="hand_order.auto.action.screen_button">
+        <source>A-pad screen press</source>
+        <translation>A-pad screen press</translation>
+    </message>
+    <message id="hand_order.auto.reason.tap">
+        <source>Tap judgement</source>
+        <translation>Tap judgement</translation>
+    </message>
+    <message id="hand_order.auto.reason.hold">
+        <source>Complete Hold judgement</source>
+        <translation>Complete Hold judgement</translation>
+    </message>
+    <message id="hand_order.auto.reason.slide">
+        <source>Complete slide judgement</source>
+        <translation>Complete slide judgement</translation>
+    </message>
+    <message id="hand_order.auto.reason.wifi">
+        <source>All three Wifi queues verified</source>
+        <translation>All three Wifi queues verified</translation>
+    </message>
+    <message id="hand_order.auto.reason.star_head">
+        <source>Star head judgement</source>
+        <translation>Star head judgement</translation>
+    </message>
+    <message id="hand_order.auto.reason.direct_input">
+        <source>Direct physical input</source>
+        <translation>Direct physical input</translation>
+    </message>
+    <message id="hand_order.auto.input_preference">
+        <source>Input preference</source>
+        <translation>Input preference</translation>
+    </message>
+    <message id="hand_order.auto.input_buttons">
+        <source>Exterior preferred</source>
+        <translation>Exterior preferred</translation>
+    </message>
+    <message id="hand_order.auto.input_screen">
+        <source>Screen preferred</source>
+        <translation>Screen preferred</translation>
+    </message>
+    <message id="hand_order.auto.input_mixed">
+        <source>Mixed channels</source>
+        <translation>Mixed channels</translation>
+    </message>
+    <message id="hand_order.auto.overwrite_existing">
+        <source>Recompute existing annotations within the selection; keep outside annotations locked</source>
+        <translation>Recompute existing annotations within the selection; keep outside annotations locked</translation>
+    </message>
+    <message id="hand_order.auto.high_confidence_only">
+        <source>Apply only high-confidence complete dependency units</source>
+        <translation>Apply only high-confidence complete dependency units</translation>
+    </message>
+    <message id="hand_order.auto.high_confidence_closed">
+        <source> Only complete high-confidence dependency units are writable.</source>
+        <translation> Only complete high-confidence dependency units are writable.</translation>
+    </message>
+    <message id="hand_order.auto.confidence_text">
+        <source>Heuristic score %1/100 · %2 (not a probability)</source>
+        <translation>Heuristic score %1/100 · %2 (not a probability)</translation>
+    </message>
+    <message id="hand_order.auto.confidence.high">
+        <source>High</source>
+        <translation>High</translation>
+    </message>
+    <message id="hand_order.auto.confidence.medium">
+        <source>Medium</source>
+        <translation>Medium</translation>
+    </message>
+    <message id="hand_order.auto.confidence.low">
+        <source>Low</source>
+        <translation>Low</translation>
+    </message>
+    <message id="hand_order.auto.confidence.insufficient_evidence">
+        <source>Insufficient evidence</source>
+        <translation>Insufficient evidence</translation>
+    </message>
+    <message id="hand_order.auto.component.touch">
+        <source>Touch responsibility</source>
+        <translation>Touch responsibility</translation>
+    </message>
+    <message id="hand_order.auto.component.track">
+        <source>Branch %1 at movement %2%</source>
+        <translation>Branch %1 at movement %2%</translation>
+    </message>
+    <message id="hand_order.auto.evidence_limited">
+        <source>Evidence limited by the candidate or work budget</source>
+        <translation>Evidence limited by the candidate or work budget</translation>
+    </message>
+    <message id="hand_order.auto.evidence_alternative">
+        <source>Opposite hand replayed in the full dependency unit</source>
+        <translation>Opposite hand replayed in the full dependency unit</translation>
+    </message>
+    <message id="hand_order.auto.evidence_no_alternative">
+        <source>No opposite-hand candidate in the unpruned discrete search</source>
+        <translation>No opposite-hand candidate in the unpruned discrete search</translation>
+    </message>
+    <message id="hand_order.auto.evidence_gap">
+        <source> · risk tier %1, peak tier %2, cost gap %3</source>
+        <translation> · risk tier %1, peak tier %2, cost gap %3</translation>
+    </message>
+    <message id="hand_order.auto.pressure.low">
+        <source>Low motion pressure</source>
+        <translation>Low motion pressure</translation>
+    </message>
+    <message id="hand_order.auto.pressure.medium">
+        <source>Moderate motion pressure</source>
+        <translation>Moderate motion pressure</translation>
+    </message>
+    <message id="hand_order.auto.pressure.high">
+        <source>High motion pressure</source>
+        <translation>High motion pressure</translation>
+    </message>
+    <message id="hand_order.auto.pressure.extreme">
+        <source>Extreme motion pressure; requires review</source>
+        <translation>Extreme motion pressure; requires review</translation>
+    </message>
+    <message id="hand_order.auto.locate">
+        <source>Locate</source>
+        <translation>Locate</translation>
+    </message>
+    <message id="hand_order.auto.reason.touch_hold">
+        <source>Complete Touch Hold replay</source>
+        <translation>Complete Touch Hold replay</translation>
+    </message>
+    <message id="hand_order.split_native_slide">
+        <source>Split into Independent Slides</source>
+        <translation>Split into Independent Slides</translation>
+    </message>
+    <message id="hand_order.native.notice">
+        <source>An applicable plan preserves native geometry and actual motion times, but gives each segment an independent judgement. Counting, scoring (especially Break), Each, track appearance/disappearance, sounds and Muri may change. Review every item. Any unreliable complete slide target blocks the batch; Cancel makes no edit.</source>
+        <translation>An applicable plan preserves native geometry and actual motion times, but gives each segment an independent judgement. Counting, scoring (especially Break), Each, track appearance/disappearance, sounds and Muri may change. Review every item. Any unreliable complete slide target blocks the batch; Cancel makes no edit.</translation>
+    </message>
+    <message id="hand_order.native.summary">
+        <source>Prepared %1 · ignored non-slides %2 · partial tokens skipped %3 · unsupported %4</source>
+        <translation>Prepared %1 · ignored non-slides %2 · partial tokens skipped %3 · unsupported %4</translation>
+    </message>
+    <message id="hand_order.native.blocked">
+        <source>The whole batch is blocked. Close this preview and select convertible chains again.</source>
+        <translation>The whole batch is blocked. Close this preview and select convertible chains again.</translation>
+    </message>
+    <message id="hand_order.native.stale">
+        <source>The document, timing or parser policy changed. Prepare a new preview.</source>
+        <translation>The document, timing or parser policy changed. Prepare a new preview.</translation>
+    </message>
+    <message id="hand_order.native.counts">
+        <source>Tracks %1 → %2 · heads %3 → %4 · %5 additional independent judgement boundaries</source>
+        <translation>Tracks %1 → %2 · heads %3 → %4 · %5 additional independent judgement boundaries</translation>
+    </message>
+    <message id="hand_order.native.before">
+        <source>Before</source>
+        <translation>Before</translation>
+    </message>
+    <message id="hand_order.native.after">
+        <source>Proposed result</source>
+        <translation>Proposed result</translation>
+    </message>
+    <message id="hand_order.native.apply">
+        <source>Apply Entire Prepared Batch</source>
+        <translation>Apply Entire Prepared Batch</translation>
+    </message>
+    <message id="hand_order.native.status.ready">
+        <source>Prepared draft</source>
+        <translation>Prepared draft</translation>
+    </message>
+    <message id="hand_order.native.status.partial">
+        <source>Skipped partial token</source>
+        <translation>Skipped partial token</translation>
+    </message>
+    <message id="hand_order.native.status.ignored">
+        <source>Ignored non-slide</source>
+        <translation>Ignored non-slide</translation>
+    </message>
+    <message id="hand_order.native.status.unsupported">
+        <source>Blocks this batch</source>
+        <translation>Blocks this batch</translation>
+    </message>
+    <message id="hand_order.native.reason.empty_selection">
+        <source>Select complete native chains first.</source>
+        <translation>Select complete native chains first.</translation>
+    </message>
+    <message id="hand_order.native.reason.partial_token">
+        <source>This token is only partly selected and will stay unchanged.</source>
+        <translation>This token is only partly selected and will stay unchanged.</translation>
+    </message>
+    <message id="hand_order.native.reason.non_slide">
+        <source>This ordinary note is not a slide target and will stay unchanged.</source>
+        <translation>This ordinary note is not a slide target and will stay unchanged.</translation>
+    </message>
+    <message id="hand_order.native.reason.native_segments">
+        <source>Draft generated from the existing native segments.</source>
+        <translation>Draft generated from the existing native segments.</translation>
+    </message>
+    <message id="hand_order.native.reason.invalid_chart">
+        <source>Native syntax errors prevent a reliable conversion.</source>
+        <translation>Native syntax errors prevent a reliable conversion.</translation>
+    </message>
+    <message id="hand_order.native.reason.invalid_annotation">
+        <source>A selected target has an invalid hand annotation.</source>
+        <translation>A selected target has an invalid hand annotation.</translation>
+    </message>
+    <message id="hand_order.native.reason.wifi_not_supported">
+        <source>Wifi paths cannot be split into independent native segments here. Use hand-order interval splitting for colouring.</source>
+        <translation>Wifi paths cannot be split into independent native segments here. Use hand-order interval splitting for colouring.</translation>
+    </message>
+    <message id="hand_order.native.reason.missing_markers">
+        <source>Parsed native objects are missing.</source>
+        <translation>Parsed native objects are missing.</translation>
+    </message>
+    <message id="hand_order.native.reason.single_segment">
+        <source>This slide has one native segment. Use hand-order interval splitting for colouring.</source>
+        <translation>This slide has one native segment. Use hand-order interval splitting for colouring.</translation>
+    </message>
+    <message id="hand_order.native.reason.invalid_geometry">
+        <source>Native geometry or motion times are missing or invalid.</source>
+        <translation>Native geometry or motion times are missing or invalid.</translation>
+    </message>
+    <message id="hand_order.native.reason.unrepresentable_native">
+        <source>The native segment cannot be represented reliably in Simai.</source>
+        <translation>The native segment cannot be represented reliably in Simai.</translation>
+    </message>
+    <message id="hand_order.native.reason.hand_order_unrepresentable">
+        <source>The original hand intervals cannot be mapped reliably to every new segment.</source>
+        <translation>The original hand intervals cannot be mapped reliably to every new segment.</translation>
+    </message>
+    <message id="hand_order.native.reason.no_chain_selected">
+        <source>No convertible native chain is fully selected.</source>
+        <translation>No convertible native chain is fully selected.</translation>
+    </message>
+    <message id="hand_order.native.reason.round_trip_invalid">
+        <source>The proposed result failed strict Simai validation.</source>
+        <translation>The proposed result failed strict Simai validation.</translation>
+    </message>
+    <message id="hand_order.native.reason.round_trip_mismatch">
+        <source>Reparsing did not preserve geometry, actual motion times or annotations.</source>
+        <translation>Reparsing did not preserve geometry, actual motion times or annotations.</translation>
+    </message>
+    <message id="hand_order.native.reason.head_count_mismatch">
+        <source>The proposed result would change the real shared-head count.</source>
+        <translation>The proposed result would change the real shared-head count.</translation>
+    </message>
+    <message id="hand_order.native.change.independent_judgement_boundaries">
+        <source>Each resulting segment has an independent judgement boundary.</source>
+        <translation>Each resulting segment has an independent judgement boundary.</translation>
+    </message>
+    <message id="hand_order.native.change.slide_count_changes">
+        <source>The number of slide track objects increases as shown above.</source>
+        <translation>The number of slide track objects increases as shown above.</translation>
+    </message>
+    <message id="hand_order.native.change.availability_may_change">
+        <source>Independent segments may accept input at different times or react differently to early contact.</source>
+        <translation>Independent segments may accept input at different times or react differently to early contact.</translation>
+    </message>
+    <message id="hand_order.native.change.scoring_may_change">
+        <source>Scoring may change; this is not a per-chart score simulation.</source>
+        <translation>Scoring may change; this is not a per-chart score simulation.</translation>
+    </message>
+    <message id="hand_order.native.change.each_may_change">
+        <source>Each relationships may change.</source>
+        <translation>Each relationships may change.</translation>
+    </message>
+    <message id="hand_order.native.change.disappearance_may_change">
+        <source>Track appearance and disappearance may change, including headless-track presentation.</source>
+        <translation>Track appearance and disappearance may change, including headless-track presentation.</translation>
+    </message>
+    <message id="hand_order.native.change.sfx_may_change">
+        <source>Sound events may change.</source>
+        <translation>Sound events may change.</translation>
+    </message>
+    <message id="hand_order.native.change.muri_may_change">
+        <source>Muri results may change; before/after Muri is not calculated in this preview.</source>
+        <translation>Muri results may change; before/after Muri is not calculated in this preview.</translation>
+    </message>
+    <message id="hand_order.native.change.break_count_scoring_changes">
+        <source>Split native Break segments retain Break, which may change Break counts and scoring.</source>
+        <translation>Split native Break segments retain Break, which may change Break counts and scoring.</translation>
+    </message>
+    <message id="hand_order.auto.search_scope">
+        <source> Solve %1 objects; audit %6 native judgements; %2 rolling windows; largest window %3 tasks; work %4/%5.</source>
+        <translation> Solve %1 objects; audit %6 native judgements; %2 rolling windows; largest window %3 tasks; work %4/%5.</translation>
+    </message>
+    <message id="hand_order.auto.reason.task_limit">
+        <source>The inseparable local window exceeds the task limit; no candidate was validated</source>
+        <translation>The inseparable local window exceeds the task limit; no candidate was validated</translation>
+    </message>
+    <message id="hand_order.auto.reason.work_limit">
+        <source>The request work budget was exhausted; no candidate was validated for this window</source>
+        <translation>The request work budget was exhausted; no candidate was validated for this window</translation>
+    </message>
+    <message id="hand_order.auto.reason.boundary_replay_failed">
+        <source>Combined inputs changed an earlier judgement; this dependent scope cannot be applied</source>
+        <translation>Combined inputs changed an earlier judgement; this dependent scope cannot be applied</translation>
+    </message>
+    <message id="hand_order.auto.reason.window_work_limit">
+        <source>This local window reached its work share; independent later windows can still be checked</source>
+        <translation>This local window reached its work share; independent later windows can still be checked</translation>
+    </message>
+    <message id="hand_order.basic_layout">
+        <source>Basic Layout</source>
+        <translation>Basic Layout</translation>
+    </message>
+    <message id="hand_order.basic_layout_scope">
+        <source>Use complete selected notes, or the current difficulty when no text is selected. Keep existing annotations; no playability replay.</source>
+        <translation>Use complete selected notes, or the current difficulty when no text is selected. Keep existing annotations; no playability replay.</translation>
+    </message>
+    <message id="hand_order.basic_layout_feedback">
+        <source>Basic layout: %1 changed; %2 existing annotations kept; %3 partial tokens skipped; %4 unsupported; %5 diagnostics.</source>
+        <translation>Basic layout: %1 changed; %2 existing annotations kept; %3 partial tokens skipped; %4 unsupported; %5 diagnostics.</translation>
+    </message>
+    <message id="hand_order.basic_layout_notice">
+        <source>Keys 1–4 use right, 5–8 left. Slides keep their starting hand throughout. Wifi uses two opposite hands; centre-axis Touch is Either. No action-feasibility replay is performed.</source>
+        <translation>Keys 1–4 use right, 5–8 left. Slides keep their starting hand throughout. Wifi uses two opposite hands; centre-axis Touch is Either. No action-feasibility replay is performed.</translation>
+    </message>
+    <message id="hand_order.basic_layout_next_step">
+        <source>Basic layout writes normal annotations. To optimize them, enable “Recompute existing annotations in selection” and analyze again.</source>
+        <translation>Basic layout writes normal annotations. To optimize them, enable “Recompute existing annotations in selection” and analyze again.</translation>
+    </message>
 </context>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 </TS>

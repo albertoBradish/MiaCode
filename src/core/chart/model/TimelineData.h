@@ -18,6 +18,24 @@ struct TimelineBeatMarker {
     int sourceCol = 1;
 };
 
+enum class HandOrderHand {
+    Unspecified,
+    Left,
+    Right,
+    Either,
+};
+
+// Track movement progress excludes the wait before slide tracing. Stops are
+// left-inclusive; the final stop also owns progress 1.0.
+struct HandOrderTrackStop {
+    double progress = 0.0;
+    HandOrderHand hand = HandOrderHand::Unspecified;
+};
+
+// Split sectors follow the native outer lane indices 0 and 2, not screen left/right.
+// Single requires one selected hand for the entire native Wifi.
+enum class HandOrderWifiMode { Legacy, Split, Single };
+
 struct TimelineNoteMarker {
     double second = 0.0;
     double endSecond = -1.0;
@@ -27,6 +45,18 @@ struct TimelineNoteMarker {
     int eachGroupId = -1;
     int sourceLine = 1;
     int sourceCol = 1;
+    // The annotation range is one-based and inclusive in the original line.
+    int handOrderAnnotationCol = 0;
+    int handOrderAnnotationEndCol = 0;
+    // Source-order branch index for a '*' slide group; zero for other notes.
+    int slideBranchIndex = 0;
+    int slideBranchSourceCol = 0;
+    int slideBranchSourceEndCol = 0;
+    HandOrderHand handOrderHead = HandOrderHand::Unspecified;
+    QVector<HandOrderTrackStop> handOrderTrackStops;
+    HandOrderWifiMode handOrderWifiMode = HandOrderWifiMode::Legacy;
+    // The two sides follow native wifi lane order (outer lanes 0 and 2).
+    QVector<QVector<HandOrderTrackStop>> handOrderWifiSectorStops;
     int lane = 1;
     int endLane = 1;
     QString type;

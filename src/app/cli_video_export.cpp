@@ -121,6 +121,12 @@ int runCliVideoExport(QGuiApplication& app, QString* errorMessage)
         qtTrId("cli.video_export.hide_timestamp")
     ));
     parser.addOption(QCommandLineOption(
+        QStringLiteral("hand-order"),
+        qtTrId("cli.video_export.hand_order"),
+        QStringLiteral("mode"),
+        QStringLiteral("annotated")
+    ));
+    parser.addOption(QCommandLineOption(
         QStringLiteral("show-object-stats"),
         qtTrId("cli.video_export.object_stats")
     ));
@@ -337,6 +343,14 @@ int runCliVideoExport(QGuiApplication& app, QString* errorMessage)
     }
 
     Session::CliVideoExportRequest request;
+    const QString handOrderMode = parser.value(QStringLiteral("hand-order")).trimmed().toLower();
+    if (handOrderMode != QLatin1String("annotated")
+        && handOrderMode != QLatin1String("original")) {
+        if (errorMessage != nullptr) {
+            *errorMessage = qtTrId("cli.video_export.hand_order_invalid");
+        }
+        return 2;
+    }
     request.chartPathOrDirectory = chartInput;
     request.difficulty = parser.value(QStringLiteral("difficulty")).trimmed();
     request.outputPath = parser.value(QStringLiteral("output")).trimmed();
@@ -346,6 +360,7 @@ int runCliVideoExport(QGuiApplication& app, QString* errorMessage)
     request.exportStartSeconds = startSeconds;
     request.contentDurationSeconds = durationSeconds;
     request.showTimestamp = !parser.isSet(QStringLiteral("hide-timestamp"));
+    request.showHandOrderAnnotations = handOrderMode == QLatin1String("annotated");
     request.showObjectStatsHud = parser.isSet(QStringLiteral("show-object-stats"));
     request.showChartInfoHud = parser.isSet(QStringLiteral("show-chart-info"));
     request.addIntro = parser.isSet(QStringLiteral("intro")) || introPvPreview;

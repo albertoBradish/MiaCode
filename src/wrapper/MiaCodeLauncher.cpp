@@ -768,6 +768,7 @@ int APIENTRY wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
     const std::wstring rootDir(modulePath);
     const std::wstring appDir = rootDir + L"\\" + kAppSubdir;
     const std::wstring realExe = appDir + L"\\" + kRealExeName;
+    const std::wstring packageMarker = rootDir + L"\\HandOrderPackage.marker";
 
     // Resolve the log path as soon as rootDir is known, so every failure
     // path below leaves a durable record next to the app.
@@ -785,6 +786,21 @@ int APIENTRY wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
             L"Re-extract MiaCode-*.zip preserving the full app\\ subfolder";
         ::MessageBoxW(nullptr, msg.c_str(), L"MiaCode",
                       MB_OK | MB_ICONERROR | MB_SETFOREGROUND | MB_TOPMOST);
+        return 1;
+    }
+
+    const DWORD markerAttributes = ::GetFileAttributesW(packageMarker.c_str());
+    if (markerAttributes == INVALID_FILE_ATTRIBUTES || (markerAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0) {
+        appendLauncherLog(L"package_marker_missing", L"path=\"" + packageMarker + L"\"");
+        ::MessageBoxW(nullptr, L"Hand-order package marker is missing. Re-extract the complete archive.",
+                      L"MiaCode HandOrder", MB_OK | MB_ICONERROR | MB_SETFOREGROUND);
+        return 1;
+    }
+    const std::wstring runtimeRoot = rootDir + L"\\runtime";
+    if (!::SetEnvironmentVariableW(L"MIACODE_HAND_ORDER_RUNTIME_ROOT", runtimeRoot.c_str())) {
+        appendLauncherLog(L"runtime_environment_failed", L"root=\"" + runtimeRoot + L"\"");
+        ::MessageBoxW(nullptr, L"Cannot initialize the hand-order runtime directory.",
+                      L"MiaCode HandOrder", MB_OK | MB_ICONERROR | MB_SETFOREGROUND);
         return 1;
     }
 

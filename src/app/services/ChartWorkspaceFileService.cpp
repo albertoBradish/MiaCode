@@ -95,16 +95,6 @@ bool stageProjectFiles(ProjectSaveTransaction& transaction, const QDir& source,
             if (!transaction.add({}, name)) return false;
         }
     }
-    const QDir settings(source.filePath(QStringLiteral(".miacode")));
-    for (const auto& file : settings.entryInfoList(QDir::Files | QDir::Hidden)) {
-        if (!transaction.add(file.absoluteFilePath(), QStringLiteral(".miacode/") + file.fileName()))
-            return false;
-    }
-    const QDir targetSettings(target.filePath(QStringLiteral(".miacode")));
-    for (const auto& file : targetSettings.entryInfoList(QDir::Files | QDir::Hidden)) {
-        if (!QFileInfo::exists(settings.filePath(file.fileName()))
-            && !transaction.add({}, QStringLiteral(".miacode/") + file.fileName())) return false;
-    }
     return true;
 }
 

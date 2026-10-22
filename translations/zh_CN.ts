@@ -213,13 +213,25 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
         <source>Save As...</source>
         <translation>另存为</translation>
     </message>
+    <message id="action.export_plain_simai">
+        <source>Export plain Simai...</source>
+        <translation>导出纯 Simai...</translation>
+    </message>
     <message id="action.transform.mirror_lr">
         <source>Mirror Left/Right</source>
         <translation>左右镜像</translation>
     </message>
+    <message id="action.transform.mirror_lr_swap_hands">
+        <source>Mirror Left/Right and swap hands</source>
+        <translation>左右镜像并交换左右手</translation>
+    </message>
     <message id="action.transform.mirror_ud">
         <source>Mirror Up/Down</source>
         <translation>上下镜像</translation>
+    </message>
+    <message id="action.transform.mirror_ud_swap_hands">
+        <source>Mirror Up/Down and swap hands</source>
+        <translation>上下镜像并交换左右手</translation>
     </message>
     <message id="action.transform.more">
         <source>More...</source>
@@ -312,6 +324,10 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
     <message id="cli.export.chart_read_failed">
         <source>failed to read chart file</source>
         <translation>读取谱面文件失败</translation>
+    </message>
+    <message id="cli.export.hand_order_annotation_invalid">
+        <source>hand-order annotation is invalid</source>
+        <translation>手序标注无效</translation>
     </message>
     <message id="cli.export.difficulty_invalid">
         <source>invalid difficulty token</source>
@@ -432,6 +448,14 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
     <message id="cli.video_export.hide_timestamp">
         <source>Hide timestamp overlay in output video.</source>
         <translation>隐藏输出视频中的时间戳。</translation>
+    </message>
+    <message id="cli.video_export.hand_order">
+        <source>Hand-order display: annotated or original.</source>
+        <translation>手序显示：annotated 或 original。</translation>
+    </message>
+    <message id="cli.video_export.hand_order_invalid">
+        <source>--hand-order must be annotated or original</source>
+        <translation>--hand-order 必须是 annotated 或 original</translation>
     </message>
     <message id="cli.video_export.inner_brightness">
         <source>Inner background brightness (0.0-1.0).</source>
@@ -1561,6 +1585,10 @@ Failed: %2</source>
         <source>Show preview debug info</source>
         <translation>显示预览调试信息</translation>
     </message>
+    <message id="dialog.render_settings.gameplay.hand_order">
+        <source>Show hand-order annotations</source>
+        <translation>显示手序标注</translation>
+    </message>
     <message id="dialog.render_settings.preview_group">
         <source>Preview</source>
         <translation>预览</translation>
@@ -1849,6 +1877,22 @@ Restore the backup from %1?</source>
         <source>Show object stats</source>
         <translation>显示物量统计</translation>
     </message>
+    <message id="dialog.video_export.option.hand_order_mode">
+        <source>Hand-order display</source>
+        <translation>手序显示</translation>
+    </message>
+    <message id="dialog.video_export.hand_order.follow_preview">
+        <source>Follow preview</source>
+        <translation>跟随预览</translation>
+    </message>
+    <message id="dialog.video_export.hand_order.original">
+        <source>Original chart</source>
+        <translation>强制原谱</translation>
+    </message>
+    <message id="dialog.video_export.hand_order.annotated">
+        <source>Hand-order colors</source>
+        <translation>强制手序</translation>
+    </message>
     <message id="dialog.video_export.option.show_timestamp">
         <source>Show bottom-left timestamp</source>
         <translation>显示左下角时间戳</translation>
@@ -2086,6 +2130,10 @@ Restore the backup from %1?</source>
     <message id="document.save_failed">
         <source>Save failed</source>
         <translation>保存失败</translation>
+    </message>
+    <message id="document.plain_export_same_path">
+        <source>Choose a different file to keep the annotated chart.</source>
+        <translation>请选择其他文件，以保留含手序标注的原谱。</translation>
     </message>
     <message id="document.selection_beats">
         <source>Selection beats: %1</source>
@@ -4821,60 +4869,747 @@ Error: %1</source>
         <source>Could not open the system folder picker.</source>
         <translation>无法打开系统文件夹选择窗口。</translation>
     </message>
+
+<message id="hand_order.title">
+        <source>Hand Order</source>
+        <translation>手序</translation>
+    </message>
+    <message id="hand_order.set_left">
+        <source>Set Selection to Left Hand</source>
+        <translation>选中内容设为左手</translation>
+    </message>
+    <message id="hand_order.set_right">
+        <source>Set Selection to Right Hand</source>
+        <translation>选中内容设为右手</translation>
+    </message>
+    <message id="hand_order.set_either">
+        <source>Set Selection to Either Hand</source>
+        <translation>选中内容设为无色/任选</translation>
+    </message>
+    <message id="hand_order.split_annotation">
+        <source>Split Hand-order Intervals</source>
+        <translation>拆分手序区间</translation>
+    </message>
+    <message id="hand_order.selection_scope">
+        <source>Edit complete notes in the source selection, including slide heads and all branches</source>
+        <translation>对源文本选区中的完整音符操作；整条 slide 的头与全部分支一并修改</translation>
+    </message>
+    <message id="hand_order.feedback">
+        <source>Hand order: %1 changed, %2 partial tokens skipped, %3 unsupported, %4 diagnostics (click for details)</source>
+        <translation>手序：修改 %1 项，跳过部分 token %2 项、不支持 %3 项，诊断 %4 项（点击查看）</translation>
+    </message>
+    <message id="hand_order.diagnostic">
+        <source>Line %1, column %2: %3</source>
+        <translation>第 %1 行，第 %2 列：%3</translation>
+    </message>
+    <message id="hand_order.intervals">
+        <source>Hand-order Intervals</source>
+        <translation>手序区间</translation>
+    </message>
+    <message id="hand_order.draft_notice">
+        <source>Changes affect the corresponding interval. Assign every track interval, then write them to the chart in one edit. An unspecified head keeps its original skin. Unwritten choices remain in this session for the matching document version and are not saved with the chart.</source>
+        <translation>更改只作用于对应区间。所有轨迹区间都赋予手别后，点击“写入谱面”一次应用。未指定的头保持原皮肤。关闭后暂存于当前会话的对应文档版本，尚未写入的区间不会随谱面保存。</translation>
+    </message>
+    <message id="hand_order.head_row">
+        <source>%1:%2 · Head</source>
+        <translation>%1:%2 · 头</translation>
+    </message>
+    <message id="hand_order.track_row">
+        <source>%1:%2 · Branch %3 · %4–%5%</source>
+        <translation>%1:%2 · 分支 %3 · %4–%5%</translation>
+    </message>
+    <message id="hand_order.unspecified">
+        <source>Unspecified</source>
+        <translation>未指定</translation>
+    </message>
+    <message id="hand_order.left">
+        <source>Left</source>
+        <translation>左手</translation>
+    </message>
+    <message id="hand_order.right">
+        <source>Right</source>
+        <translation>右手</translation>
+    </message>
+    <message id="hand_order.either">
+        <source>Either</source>
+        <translation>无色/任选</translation>
+    </message>
+    <message id="hand_order.apply_intervals">
+        <source>Write to Chart</source>
+        <translation>写入谱面</translation>
+    </message>
+    <message id="hand_order.applied">
+        <source>Hand-order intervals written; undo restores them in one step.</source>
+        <translation>手序区间已写入谱面，可一次撤销。</translation>
+    </message>
+
+<message id="hand_order.analyze">
+        <source>Basic Automatic Hand Order (Experimental)</source>
+        <translation>基础自动手序（实验性）</translation>
+    </message>
+    <message id="hand_order.auto.notice">
+        <source>Review every suggestion before applying. Full judgement replay checks ordinary and chained slides, shared actions and both Wifi modes. Confidence scores are experimental, not correctness probabilities or proof of playability. Existing annotations remain unchanged unless recomputation is selected.</source>
+        <translation>应用前请人工复核。完整判定回放检查普通与链式 slide、共享动作及 Wifi 双扇区/单手方案。置信分是实验性启发值，不是正确率或可玩性保证。默认保留已有标注，可选择重算选区。</translation>
+    </message>
+    <message id="hand_order.auto.selection">
+        <source>Analyze Selection (Empty: Current Difficulty)</source>
+        <translation>分析选区（空选区为当前难度）</translation>
+    </message>
+    <message id="hand_order.auto.difficulty">
+        <source>Analyze Current Difficulty</source>
+        <translation>分析当前难度</translation>
+    </message>
+    <message id="hand_order.auto.cancel">
+        <source>Cancel Analysis</source>
+        <translation>取消分析</translation>
+    </message>
+    <message id="hand_order.auto.apply">
+        <source>Apply Writable Suggestions (Review Required)</source>
+        <translation>应用可写建议（需复核）</translation>
+    </message>
+    <message id="hand_order.auto.running">
+        <source>Building and searching basic action candidates…</source>
+        <translation>正在构建并搜索基础动作候选…</translation>
+    </message>
+    <message id="hand_order.auto.cancelled">
+        <source>Analysis cancelled.</source>
+        <translation>已取消分析。</translation>
+    </message>
+    <message id="hand_order.auto.stale">
+        <source>Document, difficulty or parameters changed; analyze again.</source>
+        <translation>文档、难度或参数已变化；请重新分析。</translation>
+    </message>
+    <message id="hand_order.auto.summary">
+        <source>Writable %1; preserved %2; conflicts %3; unresolved %4; unsupported/invalid/partial %5; read-only context %6.</source>
+        <translation>可写建议 %1；保留 %2；冲突 %3；未决 %4；不支持/无效/部分选中 %5；只读上下文 %6。</translation>
+    </message>
+    <message id="hand_order.auto.truncated">
+        <source> The search beam was pruned; a failed bounded search does not prove impossibility.</source>
+        <translation> 搜索束曾被裁剪；有限搜索未找到不代表无解。</translation>
+    </message>
+    <message id="hand_order.auto.invalid_parameters">
+        <source>Parameters exceed the basic model limits; no suggestions generated.</source>
+        <translation>参数超出基础模型支持范围，未生成建议。</translation>
+    </message>
+    <message id="hand_order.auto.invalid_output">
+        <source>Suggested output failed strict syntax validation; chart unchanged.</source>
+        <translation>建议无法通过严格语法校验，未写入谱面。</translation>
+    </message>
+    <message id="hand_order.auto.suggestion">
+        <source>Head: %1; track: %2. Block peak speed estimate %3 radii/s; block cost %4.</source>
+        <translation>头：%1；轨迹：%2。片段估计峰值速度 %3 半径/秒；片段代价 %4。</translation>
+    </message>
+    <message id="hand_order.auto.motion_metrics">
+        <source>Block peak speed estimate %1 radii/s; block cost %2.</source>
+        <translation>片段估计峰值速度 %1 半径/秒；片段代价 %2。</translation>
+    </message>
+    <message id="hand_order.auto.counterfactual">
+        <source> Reverse-hand component %1: signed complete-block cost gap %2, peak-tier gap %3 (not a probability).</source>
+        <translation> 反手对象 %1：完整片段的有符号代价差 %2、峰值档差 %3（非概率）。</translation>
+    </message>
+    <message id="hand_order.auto.no_counterfactual">
+        <source> No usable reverse-hand evidence; this does not prove the other hand infeasible.</source>
+        <translation> 未得到可用的反手证据，不能解释为另一只手不可行。</translation>
+    </message>
+    <message id="hand_order.auto.status.review">
+        <source>Suggestion: review required</source>
+        <translation>建议，待复核</translation>
+    </message>
+    <message id="hand_order.auto.status.preserved">
+        <source>Existing annotation preserved</source>
+        <translation>保留已有标注</translation>
+    </message>
+    <message id="hand_order.auto.status.unsupported">
+        <source>Unsupported</source>
+        <translation>尚未支持</translation>
+    </message>
+    <message id="hand_order.auto.status.invalid">
+        <source>Invalid input</source>
+        <translation>输入无效</translation>
+    </message>
+    <message id="hand_order.auto.status.skipped">
+        <source>Partial selection: skipped</source>
+        <translation>部分选中，跳过</translation>
+    </message>
+    <message id="hand_order.auto.status.conflict">
+        <source>Candidate constraint conflict</source>
+        <translation>候选约束冲突</translation>
+    </message>
+    <message id="hand_order.auto.status.not_found">
+        <source>No candidate found</source>
+        <translation>候选模型内未找到</translation>
+    </message>
+    <message id="hand_order.auto.status.undecided">
+        <source>Resource/search unresolved</source>
+        <translation>资源/搜索未决</translation>
+    </message>
+    <message id="hand_order.auto.reason.partial_token">
+        <source>Partial token is read as context and not written</source>
+        <translation>只读取完整上下文，部分 token 不写入</translation>
+    </message>
+    <message id="hand_order.auto.reason.invalid_native">
+        <source>Native chart errors make timing untrusted</source>
+        <translation>原生谱面存在错误，时序未被信任</translation>
+    </message>
+    <message id="hand_order.auto.reason.invalid_annotation">
+        <source>Invalid annotation preserved; repair it first</source>
+        <translation>非法标注已保留，请先修正</translation>
+    </message>
+    <message id="hand_order.auto.reason.unsupported_object">
+        <source>Touch, Touch Hold, Wifi or another object is not modeled</source>
+        <translation>Touch/Touch Hold/Wifi 等尚未建模</translation>
+    </message>
+    <message id="hand_order.auto.reason.mine_unsupported">
+        <source>Mine is not inferred as an ordinary strike</source>
+        <translation>Mine 不作为普通击打推断</translation>
+    </message>
+    <message id="hand_order.auto.reason.shared_action_unsupported">
+        <source>Shared contact, joins or overlapping paths require validation</source>
+        <translation>接触共享、接头或重合轨迹需要进一步验证</translation>
+    </message>
+    <message id="hand_order.auto.reason.branches_unsupported">
+        <source>Shared-head branches require a joint action model</source>
+        <translation>同头多分支尚未支持联合动作</translation>
+    </message>
+    <message id="hand_order.auto.reason.handoff_unsupported">
+        <source>Existing track handoffs exceed this basic model</source>
+        <translation>已有轨迹换手超出基础模型</translation>
+    </message>
+    <message id="hand_order.auto.reason.geometry_unsupported">
+        <source>Native path or duration is unavailable</source>
+        <translation>缺少有效的原生轨迹或时长</translation>
+    </message>
+    <message id="hand_order.auto.reason.unsupported_context">
+        <source>Associated with an unsupported risk window or spanning occupancy</source>
+        <translation>与未支持对象的风险窗口或跨窗占用有关联</translation>
+    </message>
+    <message id="hand_order.auto.reason.resource_limit">
+        <source>Dependency block exceeds task budget; no partial fragment applied</source>
+        <translation>该依赖片段超过任务预算，未应用近似残片</translation>
+    </message>
+    <message id="hand_order.auto.reason.button_down_conflict">
+        <source>Exterior button remains down; no fresh DOWN is available</source>
+        <translation>同一外键仍处于按住状态，无法产生新 DOWN</translation>
+    </message>
+    <message id="hand_order.auto.reason.candidate_search_failed">
+        <source>No independent two-hand fixed-event candidate found; this is not proof of unplayability</source>
+        <translation>独立双手固定时刻候选中未找到方案；不代表真实不可打</translation>
+    </message>
+    <message id="hand_order.auto.reason.counterfactual_unstable">
+        <source>Reverse-hand search still improves the complete plan; unresolved</source>
+        <translation>反手复算仍找到更好完整方案，保留未决</translation>
+    </message>
+    <message id="hand_order.auto.reason.existing_annotation">
+        <source>Source preserved exactly; existing labels constrain occupancy</source>
+        <translation>原文完全保留，已有手序参与占用约束</translation>
+    </message>
+    <message id="hand_order.auto.reason.fixed_event_candidate">
+        <source>Exterior buttons, full occupancy and natural-path candidate; real judging and stray contact unverified</source>
+        <translation>外键/完整持续占用/自然轨迹候选；未验证真实判定及误触</translation>
+    </message>
+
+<message id="hand_order.auto.status.context">
+        <source>Read-only Context Candidate</source>
+        <translation>只读上下文候选</translation>
+    </message>
+    <message id="hand_order.auto.reason.context_hypothesis">
+        <source>Context assignment used by this complete candidate; not written</source>
+        <translation>本完整候选采用的上下文分配，不写入谱面</translation>
+    </message>
+    <message id="hand_order.auto.context_notice">
+        <source>Context hypothesis: not written. Only participating action components are shown.</source>
+        <translation>上下文假设，不写入。仅显示参与本候选的动作部分。</translation>
+    </message>
+    <message id="hand_order.auto.original_annotation">
+        <source>Original annotation retained: %1. The hands below belong to this conditional plan and do not replace it.</source>
+        <translation>原标注保持：%1；下面是本条件方案采用的手，不替换原标注。</translation>
+    </message>
+    <message id="hand_order.auto.original_unannotated">
+        <source>Source is unannotated; the context assignment below is for reviewing the complete plan.</source>
+        <translation>原文未标注；下面的上下文分配只供复核完整方案。</translation>
+    </message>
+
+<message id="hand_order.auto.interval">
+        <source>Branch %1: %2–%3% %4</source>
+        <translation>分支 %1：%2–%3% %4</translation>
+    </message>
+    <message id="hand_order.auto.both_contributors">
+        <source>Left and right contributors</source>
+        <translation>左右手共同贡献</translation>
+    </message>
+    <message id="hand_order.auto.cause">
+        <source>Source @%1 branch %2 (%3), %4 at %5s, motion %6%, %7</source>
+        <translation>来源 @%1 分支 %2（%3），%4 于 %5秒，运动进度 %6%，%7</translation>
+    </message>
+    <message id="hand_order.auto.judgement">
+        <source>%1 · %2 · %3s · target margin %4ms</source>
+        <translation>%1 · %2 · %3秒 · 目标判定余量 %4毫秒</translation>
+    </message>
+    <message id="hand_order.auto.handoffs">
+        <source>Track transfers: %1 · %2 · at-most-one baseline peak %3, cost %4 (zero means no baseline found)</source>
+        <translation>轨迹换手 %1 次 · %2 · 至多一次基线峰值 %3、代价 %4（零表示未找到基线）</translation>
+    </message>
+    <message id="hand_order.auto.conditions">
+        <source>Execution conditions:</source>
+        <translation>执行条件：</translation>
+    </message>
+    <message id="hand_order.auto.conditions_text">
+        <source>Community profile v2; high-quality target; finite contacts; combined candidate-scope replay; rolling local choices with committed inputs. Scores are experimental.</source>
+        <translation>社区参考 profile v2；高判定质量目标；有限接触；合并候选范围完整回放；局部滚动选择保留已承诺输入。评分仍为实验模型。</translation>
+    </message>
+    <message id="hand_order.auto.reason.joint_action_candidate">
+        <source>Joint motion and contact candidate</source>
+        <translation>联合运动与接触候选</translation>
+    </message>
+    <message id="hand_order.auto.reason.slide_cover">
+        <source>Triggered by a real slide contact; no extra press</source>
+        <translation>真实 slide 接触触发；无需额外按压</translation>
+    </message>
+    <message id="hand_order.auto.reason.direct_touch">
+        <source>Independent screen contact</source>
+        <translation>独立内屏触碰</translation>
+    </message>
+    <message id="hand_order.auto.reason.group_carry">
+        <source>Touchgroup threshold reached; no extra contact</source>
+        <translation>Touchgroup 达阈值联动；不产生额外接触</translation>
+    </message>
+    <message id="hand_order.auto.reason.mixed_touch_responsibility">
+        <source>Multiple contributors; current notation cannot express sole responsibility</source>
+        <translation>左右共同贡献；现有语法无法表达唯一责任，保留待复核</translation>
+    </message>
+    <message id="hand_order.auto.reason.one_handoff_candidate_not_found">
+        <source>At-most-one transfer search found no candidate in this model</source>
+        <translation>本候选模型未找到至多一次换手方案</translation>
+    </message>
+    <message id="hand_order.auto.reason.significant_context_improvement">
+        <source>Per-track counterfactual shows significant context improvement</source>
+        <translation>逐轨反事实显示上下文压力显著改善</translation>
+    </message>
+
+<message id="hand_order.auto.reason.touch_slide_side_effect_unverified">
+        <source>Screen contact may advance an active slide before its natural judging pad; review required</source>
+        <translation>内屏触碰可能提前推进活动 slide 的未来判定区，需复核</translation>
+    </message>
+    <message id="hand_order.auto.reason.unstable_touch_responsibility">
+        <source>Near-optimal candidates disagree on carry responsibility; review required</source>
+        <translation>已找到的近优候选对联动归属不一致，保留待复核</translation>
+    </message>
+    <message id="hand_order.auto.reason.single_handoff_occupation">
+        <source>One transfer with verified preparation and brief joint occupation; first-transfer cost included</source>
+        <translation>一次接手已验证准备时间与双方短暂占用，并计入首次接手成本</translation>
+    </message>
+    <message id="hand_order.auto.reason.existing_handoff_constraint">
+        <source>Transfers follow the preserved original interval constraints</source>
+        <translation>按保留的原手序区间执行换手约束</translation>
+    </message>
+    <message id="hand_order.auto.quality.critical">
+        <source>Target quality</source>
+        <translation>满足目标质量</translation>
+    </message>
+    <message id="hand_order.auto.quality.late_bad">
+        <source>Late / expired</source>
+        <translation>超时 / 失效</translation>
+    </message>
+    <message id="hand_order.auto.quality.outside_target">
+        <source>Outside target quality</source>
+        <translation>未满足目标质量</translation>
+    </message>
+    <message id="hand_order.auto.evidence_truncated">
+        <source> Optional reverse-hand evidence stopped at its work budget; the validated candidate is retained for review.</source>
+        <translation> 可选反手证据达到工作量预算；保留已验证候选供复核。</translation>
+    </message>
+
+<message id="hand_order.auto.handoff_branch">
+        <source>Branch %1: %2 transfers · %3</source>
+        <translation>分支 %1：换手 %2 次 · %3</translation>
+    </message>
+    <message id="hand_order.auto.handoff_baseline">
+        <source> · at-most-one baseline peak %1, cost %2</source>
+        <translation> · 至多一次基线峰值 %1、代价 %2</translation>
+    </message>
+    <message id="hand_order.auto.action.slide">
+        <source>Slide motion</source>
+        <translation>slide 运动</translation>
+    </message>
+    <message id="hand_order.auto.action.touch">
+        <source>Screen touch</source>
+        <translation>内屏触碰</translation>
+    </message>
+    <message id="hand_order.auto.action.touch_hold">
+        <source>Sustained screen contact</source>
+        <translation>内屏持续按压</translation>
+    </message>
+    <message id="hand_order.auto.component.head">
+        <source>Slide head</source>
+        <translation>slide 头</translation>
+    </message>
+    <message id="hand_order.auto.component.note">
+        <source>Note %1</source>
+        <translation>音符 %1</translation>
+    </message>
+    <message id="hand_order.auto.reason.expired">
+        <source>No valid contact before expiry</source>
+        <translation>有效窗口结束前无有效接触</translation>
+    </message>
+    <message id="hand_order.wifi_mode_notice">
+        <source>Wifi sectors 1/2 follow the native sides and exchange on reflection. Single mode selects one hand for the whole track; the circled 1 marks explicit single-hand execution. Either still means one selected hand.</source>
+        <translation>Wifi 扇区 1/2 对应原生两侧，镜像会交换扇区。单手模式整条选择同一只手；预览中的圈 1 表示显式单手，m 仍为左右任选一只手。</translation>
+    </message>
+    <message id="hand_order.wifi_single_row">
+        <source>%1:%2 branch %3 · whole-track single hand</source>
+        <translation>%1:%2 分支 %3 · 整条单手</translation>
+    </message>
+    <message id="hand_order.wifi_sector_row">
+        <source>%1:%2 branch %3 · sector %4 · %5–%6%</source>
+        <translation>%1:%2 分支 %3 · 扇区 %4 · %5–%6%</translation>
+    </message>
+    <message id="hand_order.wifi_legacy">
+        <source>Legacy whole track</source>
+        <translation>兼容整体轨迹</translation>
+    </message>
+    <message id="hand_order.wifi_split">
+        <source>Two sectors</source>
+        <translation>双扇区</translation>
+    </message>
+    <message id="hand_order.wifi_single">
+        <source>Explicit single hand</source>
+        <translation>显式单手</translation>
+    </message>
+    <message id="hand_order.auto.wifi_sector">
+        <source>Wifi sector %1 · %2</source>
+        <translation>Wifi 扇区 %1 · %2</translation>
+    </message>
+    <message id="hand_order.auto.wifi_single">
+        <source>Explicit single-hand Wifi · %1</source>
+        <translation>显式单手 Wifi · %1</translation>
+    </message>
+    <message id="hand_order.auto.full_replay_verified">
+        <source>Full judgement replay verified</source>
+        <translation>已通过完整判定回放</translation>
+    </message>
+    <message id="hand_order.auto.reason.full_replay_target_failed">
+        <source>No searched physical candidate met the full replay target</source>
+        <translation>有限搜索中未找到满足完整回放目标的实际动作</translation>
+    </message>
+    <message id="hand_order.auto.action.button">
+        <source>Exterior button press</source>
+        <translation>外键击打</translation>
+    </message>
+    <message id="hand_order.auto.action.screen_button">
+        <source>A-pad screen press</source>
+        <translation>A 区内屏击打</translation>
+    </message>
+    <message id="hand_order.auto.reason.tap">
+        <source>Tap judgement</source>
+        <translation>Tap 判定</translation>
+    </message>
+    <message id="hand_order.auto.reason.hold">
+        <source>Complete Hold judgement</source>
+        <translation>完整 Hold 判定</translation>
+    </message>
+    <message id="hand_order.auto.reason.slide">
+        <source>Complete slide judgement</source>
+        <translation>完整 slide 判定</translation>
+    </message>
+    <message id="hand_order.auto.reason.wifi">
+        <source>All three Wifi queues verified</source>
+        <translation>Wifi 三条判定队列全部通过</translation>
+    </message>
+    <message id="hand_order.auto.reason.star_head">
+        <source>Star head judgement</source>
+        <translation>星头判定</translation>
+    </message>
+    <message id="hand_order.auto.reason.direct_input">
+        <source>Direct physical input</source>
+        <translation>真实直接输入</translation>
+    </message>
+    <message id="hand_order.auto.input_preference">
+        <source>Input preference</source>
+        <translation>输入通道偏好</translation>
+    </message>
+    <message id="hand_order.auto.input_buttons">
+        <source>Exterior preferred</source>
+        <translation>外键优先</translation>
+    </message>
+    <message id="hand_order.auto.input_screen">
+        <source>Screen preferred</source>
+        <translation>内屏优先</translation>
+    </message>
+    <message id="hand_order.auto.input_mixed">
+        <source>Mixed channels</source>
+        <translation>混合通道</translation>
+    </message>
+    <message id="hand_order.auto.overwrite_existing">
+        <source>Recompute existing annotations within the selection; keep outside annotations locked</source>
+        <translation>重算选区已有手序；选区外已有标注保持锁定</translation>
+    </message>
+    <message id="hand_order.auto.high_confidence_only">
+        <source>Apply only high-confidence complete dependency units</source>
+        <translation>仅应用高置信且完整闭合的依赖单元</translation>
+    </message>
+    <message id="hand_order.auto.high_confidence_closed">
+        <source> Only complete high-confidence dependency units are writable.</source>
+        <translation> 仅完整闭合的高置信依赖单元可写入。</translation>
+    </message>
+    <message id="hand_order.auto.confidence_text">
+        <source>Heuristic score %1/100 · %2 (not a probability)</source>
+        <translation>启发分 %1/100 · %2（不是正确率）</translation>
+    </message>
+    <message id="hand_order.auto.confidence.high">
+        <source>High</source>
+        <translation>高</translation>
+    </message>
+    <message id="hand_order.auto.confidence.medium">
+        <source>Medium</source>
+        <translation>中</translation>
+    </message>
+    <message id="hand_order.auto.confidence.low">
+        <source>Low</source>
+        <translation>低</translation>
+    </message>
+    <message id="hand_order.auto.confidence.insufficient_evidence">
+        <source>Insufficient evidence</source>
+        <translation>证据不足</translation>
+    </message>
+    <message id="hand_order.auto.component.touch">
+        <source>Touch responsibility</source>
+        <translation>Touch 责任手</translation>
+    </message>
+    <message id="hand_order.auto.component.track">
+        <source>Branch %1 at movement %2%</source>
+        <translation>分支 %1 运动进度 %2%</translation>
+    </message>
+    <message id="hand_order.auto.evidence_limited">
+        <source>Evidence limited by the candidate or work budget</source>
+        <translation>候选或工作预算内证据不足</translation>
+    </message>
+    <message id="hand_order.auto.evidence_alternative">
+        <source>Opposite hand replayed in the full dependency unit</source>
+        <translation>已在完整依赖单元中回放反手方案</translation>
+    </message>
+    <message id="hand_order.auto.evidence_no_alternative">
+        <source>No opposite-hand candidate in the unpruned discrete search</source>
+        <translation>未剪枝的离散候选中未找到反手方案</translation>
+    </message>
+    <message id="hand_order.auto.evidence_gap">
+        <source> · risk tier %+1, peak tier %2, cost gap %3</source>
+        <translation> · 风险档差 %1，峰值档差 %2，代价差 %3</translation>
+    </message>
+    <message id="hand_order.auto.pressure.low">
+        <source>Low motion pressure</source>
+        <translation>移动压力低</translation>
+    </message>
+    <message id="hand_order.auto.pressure.medium">
+        <source>Moderate motion pressure</source>
+        <translation>移动压力中</translation>
+    </message>
+    <message id="hand_order.auto.pressure.high">
+        <source>High motion pressure</source>
+        <translation>移动压力高</translation>
+    </message>
+    <message id="hand_order.auto.pressure.extreme">
+        <source>Extreme motion pressure; requires review</source>
+        <translation>移动压力极高，必须复核</translation>
+    </message>
+    <message id="hand_order.auto.locate">
+        <source>Locate</source>
+        <translation>定位</translation>
+    </message>
+    <message id="hand_order.auto.reason.touch_hold">
+        <source>Complete Touch Hold replay</source>
+        <translation>完整 Touch Hold 回放</translation>
+    </message>
+    <message id="hand_order.split_native_slide">
+        <source>Split into Independent Slides</source>
+        <translation>拆成独立 slide</translation>
+    </message>
+    <message id="hand_order.native.notice">
+        <source>An applicable plan preserves native geometry and actual motion times, but gives each segment an independent judgement. Counting, scoring (especially Break), Each, track appearance/disappearance, sounds and Muri may change. Review every item. Any unreliable complete slide target blocks the batch; Cancel makes no edit.</source>
+        <translation>可应用方案保持原生几何与实际运动时刻，但每段会独立判定。物量、计分（尤其 Break）、Each、轨迹出现/消失、音效和 Muri 可能改变。请逐项复核；任一完整 slide 目标不可靠时整批不应用，取消不编辑。</translation>
+    </message>
+    <message id="hand_order.native.summary">
+        <source>Prepared %1 · ignored non-slides %2 · partial tokens skipped %3 · unsupported %4</source>
+        <translation>准备转换 %1 项 · 忽略非 slide %2 项 · 跳过部分 token %3 项 · 不支持 %4 项</translation>
+    </message>
+    <message id="hand_order.native.blocked">
+        <source>The whole batch is blocked. Close this preview and select convertible chains again.</source>
+        <translation>本批不可应用。请关闭预览，重新选择可转换的链式 slide。</translation>
+    </message>
+    <message id="hand_order.native.stale">
+        <source>The document, timing or parser policy changed. Prepare a new preview.</source>
+        <translation>文档、时序或解析策略已变化，请重新生成预览。</translation>
+    </message>
+    <message id="hand_order.native.counts">
+        <source>Tracks %1 → %2 · heads %3 → %4 · %5 additional independent judgement boundaries</source>
+        <translation>轨迹物件 %1 → %2 · 可打头 %3 → %4 · 新增 %5 个独立判定边界</translation>
+    </message>
+    <message id="hand_order.native.before">
+        <source>Before</source>
+        <translation>修改前</translation>
+    </message>
+    <message id="hand_order.native.after">
+        <source>Proposed result</source>
+        <translation>修改后草案</translation>
+    </message>
+    <message id="hand_order.native.apply">
+        <source>Apply Entire Prepared Batch</source>
+        <translation>应用整批拆分</translation>
+    </message>
+    <message id="hand_order.native.status.ready">
+        <source>Prepared draft</source>
+        <translation>转换草案</translation>
+    </message>
+    <message id="hand_order.native.status.partial">
+        <source>Skipped partial token</source>
+        <translation>跳过部分选中</translation>
+    </message>
+    <message id="hand_order.native.status.ignored">
+        <source>Ignored non-slide</source>
+        <translation>忽略非 slide</translation>
+    </message>
+    <message id="hand_order.native.status.unsupported">
+        <source>Blocks this batch</source>
+        <translation>阻止本批</translation>
+    </message>
+    <message id="hand_order.native.reason.empty_selection">
+        <source>Select complete native chains first.</source>
+        <translation>请先完整选中原生链式 slide。</translation>
+    </message>
+    <message id="hand_order.native.reason.partial_token">
+        <source>This token is only partly selected and will stay unchanged.</source>
+        <translation>此 token 仅部分选中，保持原文。</translation>
+    </message>
+    <message id="hand_order.native.reason.non_slide">
+        <source>This ordinary note is not a slide target and will stay unchanged.</source>
+        <translation>普通音符不是 slide 拆分目标，保持原文。</translation>
+    </message>
+    <message id="hand_order.native.reason.native_segments">
+        <source>Draft generated from the existing native segments.</source>
+        <translation>按已有原生链段生成的独立轨迹草案。</translation>
+    </message>
+    <message id="hand_order.native.reason.invalid_chart">
+        <source>Native syntax errors prevent a reliable conversion.</source>
+        <translation>原生语法错误使转换无法可靠完成。</translation>
+    </message>
+    <message id="hand_order.native.reason.invalid_annotation">
+        <source>A selected target has an invalid hand annotation.</source>
+        <translation>选中目标含非法手序标注。</translation>
+    </message>
+    <message id="hand_order.native.reason.wifi_not_supported">
+        <source>Wifi paths cannot be split into independent native segments here. Use hand-order interval splitting for colouring.</source>
+        <translation>Wifi 展开路径不在原生结构拆分范围；精细染色可用“拆分手序区间”。</translation>
+    </message>
+    <message id="hand_order.native.reason.missing_markers">
+        <source>Parsed native objects are missing.</source>
+        <translation>缺少可核对的原生解析对象。</translation>
+    </message>
+    <message id="hand_order.native.reason.single_segment">
+        <source>This slide has one native segment. Use hand-order interval splitting for colouring.</source>
+        <translation>此 slide 只有一个原生段；精细染色可用“拆分手序区间”。</translation>
+    </message>
+    <message id="hand_order.native.reason.invalid_geometry">
+        <source>Native geometry or motion times are missing or invalid.</source>
+        <translation>原生几何或运动时刻缺失/无效。</translation>
+    </message>
+    <message id="hand_order.native.reason.unrepresentable_native">
+        <source>The native segment cannot be represented reliably in Simai.</source>
+        <translation>此原生段无法可靠表示为合法 Simai。</translation>
+    </message>
+    <message id="hand_order.native.reason.hand_order_unrepresentable">
+        <source>The original hand intervals cannot be mapped reliably to every new segment.</source>
+        <translation>原有手序无法可靠重映射到全部新段。</translation>
+    </message>
+    <message id="hand_order.native.reason.no_chain_selected">
+        <source>No convertible native chain is fully selected.</source>
+        <translation>未完整选中可转换的原生链式 slide。</translation>
+    </message>
+    <message id="hand_order.native.reason.round_trip_invalid">
+        <source>The proposed result failed strict Simai validation.</source>
+        <translation>转换草案未通过 Simai 严格验证。</translation>
+    </message>
+    <message id="hand_order.native.reason.round_trip_mismatch">
+        <source>Reparsing did not preserve geometry, actual motion times or annotations.</source>
+        <translation>复读核对未能保持几何、实际运动时刻或手序。</translation>
+    </message>
+    <message id="hand_order.native.reason.head_count_mismatch">
+        <source>The proposed result would change the real shared-head count.</source>
+        <translation>转换草案改变了实际共享头数量。</translation>
+    </message>
+    <message id="hand_order.native.change.independent_judgement_boundaries">
+        <source>Each resulting segment has an independent judgement boundary.</source>
+        <translation>每个新段都会拥有独立判定边界。</translation>
+    </message>
+    <message id="hand_order.native.change.slide_count_changes">
+        <source>The number of slide track objects increases as shown above.</source>
+        <translation>slide 轨迹物件数量按上方实际计数增加。</translation>
+    </message>
+    <message id="hand_order.native.change.availability_may_change">
+        <source>Independent segments may accept input at different times or react differently to early contact.</source>
+        <translation>独立段的判定起效与提前接触关系可能改变。</translation>
+    </message>
+    <message id="hand_order.native.change.scoring_may_change">
+        <source>Scoring may change; this is not a per-chart score simulation.</source>
+        <translation>计分可能改变；此处不是逐谱计分模拟。</translation>
+    </message>
+    <message id="hand_order.native.change.each_may_change">
+        <source>Each relationships may change.</source>
+        <translation>Each 关系可能改变。</translation>
+    </message>
+    <message id="hand_order.native.change.disappearance_may_change">
+        <source>Track appearance and disappearance may change, including headless-track presentation.</source>
+        <translation>轨迹出现与消失方式可能改变，包括无头轨迹的显示。</translation>
+    </message>
+    <message id="hand_order.native.change.sfx_may_change">
+        <source>Sound events may change.</source>
+        <translation>音效事件可能改变。</translation>
+    </message>
+    <message id="hand_order.native.change.muri_may_change">
+        <source>Muri results may change; before/after Muri is not calculated in this preview.</source>
+        <translation>Muri 结果可能改变；本预览未计算前后 Muri 结果。</translation>
+    </message>
+    <message id="hand_order.native.change.break_count_scoring_changes">
+        <source>Split native Break segments retain Break, which may change Break counts and scoring.</source>
+        <translation>拆出的原生 Break 段保留 Break，Break 物量和计分可能改变。</translation>
+    </message>
+    <message id="hand_order.auto.search_scope">
+        <source> Solve %1 objects; audit %6 native judgements; %2 rolling windows; largest window %3 tasks; work %4/%5.</source>
+        <translation> 求解 %1 个物件；审计 %6 个原生判定；%2 个局部窗口，单窗最多 %3 项任务；工作量 %4/%5。</translation>
+    </message>
+    <message id="hand_order.auto.reason.task_limit">
+        <source>The inseparable local window exceeds the task limit; no candidate was validated</source>
+        <translation>不可分的局部窗口超过任务数上限，尚无已验证方案</translation>
+    </message>
+    <message id="hand_order.auto.reason.work_limit">
+        <source>The request work budget was exhausted; no candidate was validated for this window</source>
+        <translation>本次分析工作量预算耗尽，此窗口尚无已验证方案</translation>
+    </message>
+    <message id="hand_order.auto.reason.boundary_replay_failed">
+        <source>Combined inputs changed an earlier judgement; this dependent scope cannot be applied</source>
+        <translation>合并输入改变了先前判定，该依赖范围不能应用</translation>
+    </message>
+    <message id="hand_order.auto.reason.window_work_limit">
+        <source>This local window reached its work share; independent later windows can still be checked</source>
+        <translation>该局部窗口达到工作量份额，后续独立窗口仍可继续检查</translation>
+    </message>
+    <message id="hand_order.basic_layout">
+        <source>Basic Layout</source>
+        <translation>基础排布</translation>
+    </message>
+    <message id="hand_order.basic_layout_scope">
+        <source>Use complete selected notes, or the current difficulty when no text is selected. Keep existing annotations; no playability replay.</source>
+        <translation>选区内完整音符；无选区时处理当前难度。保护已有标注，不做可玩性回放。</translation>
+    </message>
+    <message id="hand_order.basic_layout_feedback">
+        <source>Basic layout: %1 changed; %2 existing annotations kept; %3 partial tokens skipped; %4 unsupported; %5 diagnostics.</source>
+        <translation>基础排布：改写 %1 个；保留已有标注 %2 个；跳过部分 token %3 个；不支持 %4 个；诊断 %5 条。</translation>
+    </message>
+    <message id="hand_order.basic_layout_notice">
+        <source>Keys 1–4 use right, 5–8 left. Slides keep their starting hand throughout. Wifi uses two opposite hands; centre-axis Touch is Either. No action-feasibility replay is performed.</source>
+        <translation>1–4 右手、5–8 左手；slide 全程沿用起点手；Wifi 双扇区分配左右；中轴 Touch 为任选。此操作不做动作可行性回放。</translation>
+    </message>
+    <message id="hand_order.basic_layout_next_step">
+        <source>Basic layout writes normal annotations. To optimize them, enable “Recompute existing annotations in selection” and analyze again.</source>
+        <translation>基础排布会写入正常标注；继续自动优化时，请勾选“重算选区已有手序”并重新分析。</translation>
+    </message>
 </context>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 </TS>
