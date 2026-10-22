@@ -135,29 +135,52 @@ HandOrderCompletion handOrderCompletionAt(const QString& chartText, int position
         const QStringList candidates = handCandidates(value);
         return candidates.isEmpty() ? HandOrderCompletion{} : HandOrderCompletion{valueStart, candidates};
     }
+    int trackBranch = 0;
     bool validTrackKey = branchCount == 1 && key == QLatin1String("track");
     if (branchCount > 1 && key.startsWith(QLatin1String("branch"))) {
         bool numberOk = false;
         const int branch = key.mid(6).toInt(&numberOk);
         validTrackKey = numberOk && branch >= 0 && branch < branchCount;
+        trackBranch = branch;
     }
     if (!validTrackKey) return {};
-    const int colon = value.lastIndexOf(QLatin1Char(':'));
-    const int pipe = value.lastIndexOf(QLatin1Char('|'));
+    const bool wifi = base.section(QLatin1Char('*'), trackBranch, trackBranch).contains(QLatin1Char('w'));
+    if (wifi && !value.contains(QLatin1Char(':'))) {
+        const auto candidates = matchingCandidates({QStringLiteral("0:l"), QStringLiteral("0:r"), QStringLiteral("0:m"),
+            QStringLiteral("split:0:l&0:r"), QStringLiteral("split:0:r&0:l"), QStringLiteral("single:0:l"),
+            QStringLiteral("single:0:r"), QStringLiteral("single:0:m")}, value);
+        return candidates.isEmpty() ? HandOrderCompletion{} : HandOrderCompletion{valueStart, candidates};
+    }
+    const bool single = wifi && value.startsWith(QStringLiteral("single:"));
+    const bool split = wifi && value.startsWith(QStringLiteral("split:"));
+    int nodeOffset = single ? 7 : split ? 6 : 0;
+    if (split) nodeOffset = qMax(nodeOffset, int(value.lastIndexOf(QLatin1Char('&')) + 1));
+    const QString nodes = value.mid(nodeOffset);
+    const auto nodeCandidates = [&](const QString& prefix) {
+        if (single && nodes.contains(QLatin1Char('|'))) {
+            const QString selected = nodes.section(QLatin1Char('|'), 0, 0).section(QLatin1Char(':'), 1);
+            if (selected == QStringLiteral("l") || selected == QStringLiteral("r") || selected == QStringLiteral("m"))
+                return matchingCandidates({selected}, prefix);
+        }
+        return handCandidates(prefix);
+    };
+    const int colon = nodes.lastIndexOf(QLatin1Char(':'));
+    const int pipe = nodes.lastIndexOf(QLatin1Char('|'));
     if (colon > pipe) {
-        const int handStart = valueStart + colon + 1;
-        const QStringList candidates = handCandidates(value.mid(colon + 1));
+        const int handStart = valueStart + nodeOffset + colon + 1;
+        const QStringList candidates = nodeCandidates(nodes.mid(colon + 1));
         return candidates.isEmpty() ? HandOrderCompletion{} : HandOrderCompletion{handStart, candidates};
     }
-    if (value.isEmpty()) {
-        return {valueStart, {QStringLiteral("0:l"), QStringLiteral("0:r"), QStringLiteral("0:m")}};
+    if (nodes.isEmpty()) {
+        return {valueStart + nodeOffset, {QStringLiteral("0:l"), QStringLiteral("0:r"), QStringLiteral("0:m")}};
     }
-    if (pipe > 0 && value.mid(pipe + 1).isEmpty()) {
-        const int previousPipe = value.lastIndexOf(QLatin1Char('|'), pipe - 1);
-        const QString priorNode = value.mid(previousPipe + 1, pipe - previousPipe - 1);
+    if (pipe > 0 && nodes.mid(pipe + 1).isEmpty()) {
+        const int previousPipe = nodes.lastIndexOf(QLatin1Char('|'), pipe - 1);
+        const QString priorNode = nodes.mid(previousPipe + 1, pipe - previousPipe - 1);
         if (priorNode.startsWith(QLatin1String("0:"))) {
-            return {valueStart + pipe + 1,
-                    {QStringLiteral("0.5:l"), QStringLiteral("0.5:r"), QStringLiteral("0.5:m")}};
+            QStringList candidates;
+            for (const auto& hand : nodeCandidates({})) candidates.append(QStringLiteral("0.5:") + hand);
+            return {valueStart + nodeOffset + pipe + 1, candidates};
         }
     }
     return {};

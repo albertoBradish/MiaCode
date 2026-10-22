@@ -31,9 +31,10 @@ bool require(bool condition, const QString& message, QTextStream& err)
 bool verifyHandOrderDoesNotChangeSfx(QTextStream& err)
 {
     const auto plain = SimaiParser::parseForTimeline(
-        QStringLiteral("(120){4}1m/2-5[4:2],"));
+        QStringLiteral("(120){4}1m/2-5[4:2],3w7[4:1],4w8[4:1],"));
     const auto annotated = SimaiParser::parseForTimeline(
-        QStringLiteral("(120){4}1m~l/2-5[4:2]~[head=r;track=0:r|0.5:l],"));
+        QStringLiteral("(120){4}1m~l/2-5[4:2]~[head=r;track=0:r|0.5:l],"
+            "3w7[4:1]~[track=split:0:l|0.5:r&0:r],4w8[4:1]~[track=single:0:m|0.5:m],"));
     QVector<Event> plainEvents;
     QVector<Event> annotatedEvents;
     QVector<TouchholdSpan> plainSpans;

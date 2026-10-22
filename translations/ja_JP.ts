@@ -4869,60 +4869,707 @@ Error: %1</source>
         <source>Could not open the system folder picker.</source>
         <translation>システムのフォルダー選択画面を開けませんでした。</translation>
     </message>
+
+<message id="hand_order.title">
+        <source>Hand Order</source>
+        <translation>運指</translation>
+    </message>
+    <message id="hand_order.set_left">
+        <source>Set Selection to Left Hand</source>
+        <translation>選択範囲を左手に設定</translation>
+    </message>
+    <message id="hand_order.set_right">
+        <source>Set Selection to Right Hand</source>
+        <translation>選択範囲を右手に設定</translation>
+    </message>
+    <message id="hand_order.set_either">
+        <source>Set Selection to Either Hand</source>
+        <translation>選択範囲を指定なしに設定</translation>
+    </message>
+    <message id="hand_order.split_annotation">
+        <source>Split Hand-order Intervals</source>
+        <translation>運指区間を分割</translation>
+    </message>
+    <message id="hand_order.selection_scope">
+        <source>Edit complete notes in the source selection, including slide heads and all branches</source>
+        <translation>ソースの選択範囲内の完全なノーツを編集（スライド始点と全分岐を含む）</translation>
+    </message>
+    <message id="hand_order.feedback">
+        <source>Hand order: %1 changed, %2 partial tokens skipped, %3 unsupported, %4 diagnostics (click for details)</source>
+        <translation>運指：%1 件変更、部分トークン %2 件・未対応 %3 件をスキップ、診断 %4 件（詳細を表示）</translation>
+    </message>
+    <message id="hand_order.diagnostic">
+        <source>Line %1, column %2: %3</source>
+        <translation>%1 行 %2 列：%3</translation>
+    </message>
+    <message id="hand_order.intervals">
+        <source>Hand-order Intervals</source>
+        <translation>運指区間</translation>
+    </message>
+    <message id="hand_order.draft_notice">
+        <source>Changes affect the corresponding interval. Assign every track interval, then write them to the chart in one edit. An unspecified head keeps its original skin. Unwritten choices remain in this session for the matching document version and are not saved with the chart.</source>
+        <translation>変更は対応する区間だけに適用されます。全軌道区間に手を指定してから一括で譜面に書き込みます。未指定の始点は元のスキンを使用します。未反映の選択は現在のセッションと文書バージョンに一時保存され、譜面には保存されません。</translation>
+    </message>
+    <message id="hand_order.head_row">
+        <source>%1:%2 · Head</source>
+        <translation>%1:%2 · 始点</translation>
+    </message>
+    <message id="hand_order.track_row">
+        <source>%1:%2 · Branch %3 · %4–%5%</source>
+        <translation>%1:%2 · 分岐 %3 · %4–%5%</translation>
+    </message>
+    <message id="hand_order.unspecified">
+        <source>Unspecified</source>
+        <translation>未指定</translation>
+    </message>
+    <message id="hand_order.left">
+        <source>Left</source>
+        <translation>左手</translation>
+    </message>
+    <message id="hand_order.right">
+        <source>Right</source>
+        <translation>右手</translation>
+    </message>
+    <message id="hand_order.either">
+        <source>Either</source>
+        <translation>任意</translation>
+    </message>
+    <message id="hand_order.apply_intervals">
+        <source>Write to Chart</source>
+        <translation>譜面に反映</translation>
+    </message>
+    <message id="hand_order.applied">
+        <source>Hand-order intervals written; undo restores them in one step.</source>
+        <translation>運指区間を反映しました。1 回の取り消しで元に戻せます。</translation>
+    </message>
+
+<message id="hand_order.analyze">
+        <source>Basic Automatic Hand Order (Experimental)</source>
+        <translation>基本自動運指（実験的）</translation>
+    </message>
+    <message id="hand_order.auto.notice">
+        <source>Review every suggestion before applying. Full judgement replay checks ordinary and chained slides, shared actions and both Wifi modes. Confidence scores are experimental, not correctness probabilities or proof of playability. Existing annotations remain unchanged unless recomputation is selected.</source>
+        <translation>適用前に各候補を確認してください。全判定リプレイで通常・連結 slide、共有動作、Wifi の両モードを検証します。信頼度は実験的な指標で、正解率やプレイ可能性の保証ではありません。再計算を選ばない限り既存の注釈を保持します。</translation>
+    </message>
+    <message id="hand_order.auto.selection">
+        <source>Analyze Selection (Empty: Current Difficulty)</source>
+        <translation>選択範囲を解析（未選択なら現在の難易度）</translation>
+    </message>
+    <message id="hand_order.auto.difficulty">
+        <source>Analyze Current Difficulty</source>
+        <translation>現在の難易度を解析</translation>
+    </message>
+    <message id="hand_order.auto.cancel">
+        <source>Cancel Analysis</source>
+        <translation>解析をキャンセル</translation>
+    </message>
+    <message id="hand_order.auto.apply">
+        <source>Apply Writable Suggestions (Review Required)</source>
+        <translation>書き込み可能な候補を反映（要確認）</translation>
+    </message>
+    <message id="hand_order.auto.running">
+        <source>Building and searching basic action candidates…</source>
+        <translation>基本動作の候補を検索中…</translation>
+    </message>
+    <message id="hand_order.auto.cancelled">
+        <source>Analysis cancelled.</source>
+        <translation>解析をキャンセルしました。</translation>
+    </message>
+    <message id="hand_order.auto.stale">
+        <source>Document, difficulty or parameters changed; analyze again.</source>
+        <translation>文書・難易度・パラメーターが変更されました。再解析してください。</translation>
+    </message>
+    <message id="hand_order.auto.summary">
+        <source>Writable %1; preserved %2; conflicts %3; unresolved %4; unsupported/invalid/partial %5; read-only context %6.</source>
+        <translation>反映可能 %1、維持 %2、競合 %3、未解決 %4、未対応・無効・部分選択 %5、読み取り専用の前後文脈 %6。</translation>
+    </message>
+    <message id="hand_order.auto.truncated">
+        <source> Search beam was pruned; results are bounded approximations.</source>
+        <translation> 探索幅を制限した近似結果です。</translation>
+    </message>
+    <message id="hand_order.auto.invalid_parameters">
+        <source>Parameters exceed the basic model limits; no suggestions generated.</source>
+        <translation>パラメーターが対応範囲外のため候補を生成できません。</translation>
+    </message>
+    <message id="hand_order.auto.invalid_output">
+        <source>Suggested output failed strict syntax validation; chart unchanged.</source>
+        <translation>候補が構文検証に失敗したため反映しませんでした。</translation>
+    </message>
+    <message id="hand_order.auto.suggestion">
+        <source>Head: %1; track: %2. Block peak speed estimate %3 radii/s; block cost %4.</source>
+        <translation>始点：%1、軌道：%2。区間の推定最大速度 %3 半径/秒、区間コスト %4。</translation>
+    </message>
+    <message id="hand_order.auto.motion_metrics">
+        <source>Block peak speed estimate %1 radii/s; block cost %2.</source>
+        <translation>区間の推定最大速度 %1 半径/秒、区間コスト %2。</translation>
+    </message>
+    <message id="hand_order.auto.counterfactual">
+        <source> Reverse-hand component %1: signed complete-block cost gap %2, peak-tier gap %3 (not a probability).</source>
+        <translation> 逆手候補 %1：区間全体の符号付きコスト差 %2、ピーク段階差 %3（確率ではありません）。</translation>
+    </message>
+    <message id="hand_order.auto.no_counterfactual">
+        <source> No usable reverse-hand evidence; this does not prove the other hand infeasible.</source>
+        <translation> 有効な逆手の根拠がありません。逆手が不可能という意味ではありません。</translation>
+    </message>
+    <message id="hand_order.auto.status.review">
+        <source>Suggestion: review required</source>
+        <translation>候補・要確認</translation>
+    </message>
+    <message id="hand_order.auto.status.preserved">
+        <source>Existing annotation preserved</source>
+        <translation>既存注釈を維持</translation>
+    </message>
+    <message id="hand_order.auto.status.unsupported">
+        <source>Unsupported</source>
+        <translation>未対応</translation>
+    </message>
+    <message id="hand_order.auto.status.invalid">
+        <source>Invalid input</source>
+        <translation>入力が無効</translation>
+    </message>
+    <message id="hand_order.auto.status.skipped">
+        <source>Partial selection: skipped</source>
+        <translation>部分選択・スキップ</translation>
+    </message>
+    <message id="hand_order.auto.status.conflict">
+        <source>Candidate constraint conflict</source>
+        <translation>候補の制約が競合</translation>
+    </message>
+    <message id="hand_order.auto.status.not_found">
+        <source>No candidate found</source>
+        <translation>候補を発見できず</translation>
+    </message>
+    <message id="hand_order.auto.status.undecided">
+        <source>Resource/search unresolved</source>
+        <translation>探索・リソース上未解決</translation>
+    </message>
+    <message id="hand_order.auto.reason.partial_token">
+        <source>Partial token is read as context and not written</source>
+        <translation>部分トークンは読み取り専用</translation>
+    </message>
+    <message id="hand_order.auto.reason.invalid_native">
+        <source>Native chart errors make timing untrusted</source>
+        <translation>原譜面にエラーがあり時刻を信頼できません</translation>
+    </message>
+    <message id="hand_order.auto.reason.invalid_annotation">
+        <source>Invalid annotation preserved; repair it first</source>
+        <translation>無効な注釈を維持。先に修正してください</translation>
+    </message>
+    <message id="hand_order.auto.reason.unsupported_object">
+        <source>Touch, Touch Hold, Wifi or another object is not modeled</source>
+        <translation>Touch・Touch Hold・Wifi等は未対応</translation>
+    </message>
+    <message id="hand_order.auto.reason.mine_unsupported">
+        <source>Mine is not inferred as an ordinary strike</source>
+        <translation>Mineを通常打撃として推定しません</translation>
+    </message>
+    <message id="hand_order.auto.reason.shared_action_unsupported">
+        <source>Shared contact, joins or overlapping paths require validation</source>
+        <translation>接触共有・接続・重複軌道は要検証</translation>
+    </message>
+    <message id="hand_order.auto.reason.branches_unsupported">
+        <source>Shared-head branches require a joint action model</source>
+        <translation>同始点分岐には共同動作モデルが必要</translation>
+    </message>
+    <message id="hand_order.auto.reason.handoff_unsupported">
+        <source>Existing track handoffs exceed this basic model</source>
+        <translation>既存の軌道途中の持ち替えは未対応</translation>
+    </message>
+    <message id="hand_order.auto.reason.geometry_unsupported">
+        <source>Native path or duration is unavailable</source>
+        <translation>有効な元軌道・長さがありません</translation>
+    </message>
+    <message id="hand_order.auto.reason.unsupported_context">
+        <source>Associated with an unsupported risk window or spanning occupancy</source>
+        <translation>未対応のリスク窓・継続占有に関連</translation>
+    </message>
+    <message id="hand_order.auto.reason.resource_limit">
+        <source>Dependency block exceeds task budget; no partial fragment applied</source>
+        <translation>依存区間がタスク上限を超えています</translation>
+    </message>
+    <message id="hand_order.auto.reason.button_down_conflict">
+        <source>Exterior button remains down; no fresh DOWN is available</source>
+        <translation>外側ボタンが押下中で新規DOWNを生成できません</translation>
+    </message>
+    <message id="hand_order.auto.reason.candidate_search_failed">
+        <source>No independent two-hand fixed-event candidate found; this is not proof of unplayability</source>
+        <translation>独立した両手・固定時刻候補では解なし。実際に不可能とは限りません</translation>
+    </message>
+    <message id="hand_order.auto.reason.counterfactual_unstable">
+        <source>Reverse-hand search still improves the complete plan; unresolved</source>
+        <translation>逆手再探索でよりよい全体解があり保留</translation>
+    </message>
+    <message id="hand_order.auto.reason.existing_annotation">
+        <source>Source preserved exactly; existing labels constrain occupancy</source>
+        <translation>元の注釈を維持し、占有制約に使用</translation>
+    </message>
+    <message id="hand_order.auto.reason.fixed_event_candidate">
+        <source>Exterior buttons, full occupancy and natural-path candidate; real judging and stray contact unverified</source>
+        <translation>外側ボタン・全長占有・自然軌道の候補。実判定と誤接触は未検証</translation>
+    </message>
+
+<message id="hand_order.auto.status.context">
+        <source>Read-only Context Candidate</source>
+        <translation>読み取り専用の前後候補</translation>
+    </message>
+    <message id="hand_order.auto.reason.context_hypothesis">
+        <source>Context assignment used by this complete candidate; not written</source>
+        <translation>この全体候補で採用する前後の割り当て。譜面には反映しません</translation>
+    </message>
+    <message id="hand_order.auto.context_notice">
+        <source>Context hypothesis: not written. Only participating action components are shown.</source>
+        <translation>文脈上の仮定です。反映しません。参加する動作部分のみ表示します。</translation>
+    </message>
+    <message id="hand_order.auto.original_annotation">
+        <source>Original annotation retained: %1. The hands below belong to this conditional plan and do not replace it.</source>
+        <translation>元の注釈を維持：%1。下の手はこの条件付き候補のもので、元の注釈は置き換えません。</translation>
+    </message>
+    <message id="hand_order.auto.original_unannotated">
+        <source>Source is unannotated; the context assignment below is for reviewing the complete plan.</source>
+        <translation>元は未注釈です。下の割り当ては全体候補を確認するためのものです。</translation>
+    </message>
+
+<message id="hand_order.auto.interval">
+        <source>Branch %1: %2–%3% %4</source>
+        <translation>分岐 %1：%2–%3% %4</translation>
+    </message>
+    <message id="hand_order.auto.both_contributors">
+        <source>Left and right contributors</source>
+        <translation>左右の手が共同で担当</translation>
+    </message>
+    <message id="hand_order.auto.cause">
+        <source>Source @%1 branch %2 (%3), %4 at %5s, motion %6%, %7</source>
+        <translation>出典 @%1 分岐 %2（%3）、%4、%5秒、進行度 %6%、%7</translation>
+    </message>
+    <message id="hand_order.auto.judgement">
+        <source>%1 · %2 · %3s · target margin %4ms</source>
+        <translation>%1 · %2 · %3秒 · 判定余裕 %4ms</translation>
+    </message>
+    <message id="hand_order.auto.handoffs">
+        <source>Track transfers: %1 · %2 · at-most-one baseline peak %3, cost %4 (zero means no baseline found)</source>
+        <translation>軌跡の持ち替え %1 回 · %2 · 最大1回の基準ピーク %3、コスト %4（0は基準未検出）</translation>
+    </message>
+    <message id="hand_order.auto.conditions">
+        <source>Execution conditions:</source>
+        <translation>実行条件：</translation>
+    </message>
+    <message id="hand_order.auto.conditions_text">
+        <source>Community profile v2; high-quality target; finite hand contacts; full judgement replay; conditional context. Scores are experimental.</source>
+        <translation>コミュニティ参照 profile v2、高判定品質目標、有限の手の接触、全判定リプレイ、文脈の手割りを前提とします。評価は実験モデルです。</translation>
+    </message>
+    <message id="hand_order.auto.reason.joint_action_candidate">
+        <source>Joint motion and contact candidate</source>
+        <translation>運動と接触の共同候補</translation>
+    </message>
+    <message id="hand_order.auto.reason.slide_cover">
+        <source>Triggered by a real slide contact; no extra press</source>
+        <translation>slideの実接触で判定・追加タッチ不要</translation>
+    </message>
+    <message id="hand_order.auto.reason.direct_touch">
+        <source>Independent screen contact</source>
+        <translation>独立した画面タッチ</translation>
+    </message>
+    <message id="hand_order.auto.reason.group_carry">
+        <source>Touchgroup threshold reached; no extra contact</source>
+        <translation>Touchgroupの閾値到達・追加接触なし</translation>
+    </message>
+    <message id="hand_order.auto.reason.mixed_touch_responsibility">
+        <source>Multiple contributors; current notation cannot express sole responsibility</source>
+        <translation>複数の手が担当・現在の表記で単独の担当を表現できず要確認</translation>
+    </message>
+    <message id="hand_order.auto.reason.one_handoff_candidate_not_found">
+        <source>At-most-one transfer search found no candidate in this model</source>
+        <translation>この候補モデルでは最大1回の候補が見つかりません</translation>
+    </message>
+    <message id="hand_order.auto.reason.significant_context_improvement">
+        <source>Per-track counterfactual shows significant context improvement</source>
+        <translation>軌跡ごとの反実仮想で周辺負荷が明確に改善</translation>
+    </message>
+
+<message id="hand_order.auto.reason.touch_slide_side_effect_unverified">
+        <source>Screen contact may advance an active slide before its natural judging pad; review required</source>
+        <translation>画面タッチが進行中slideの将来判定区を早める可能性・要確認</translation>
+    </message>
+    <message id="hand_order.auto.reason.unstable_touch_responsibility">
+        <source>Near-optimal candidates disagree on carry responsibility; review required</source>
+        <translation>近い候補間で連動担当が異なるため要確認</translation>
+    </message>
+    <message id="hand_order.auto.reason.single_handoff_occupation">
+        <source>One transfer with verified preparation and brief joint occupation; first-transfer cost included</source>
+        <translation>準備時間と短い両手占有を確認した1回の持ち替え・初回コスト込み</translation>
+    </message>
+    <message id="hand_order.auto.reason.existing_handoff_constraint">
+        <source>Transfers follow the preserved original interval constraints</source>
+        <translation>保持した元の手順区間に従う持ち替え</translation>
+    </message>
+    <message id="hand_order.auto.quality.critical">
+        <source>Target quality</source>
+        <translation>目標判定を満たす</translation>
+    </message>
+    <message id="hand_order.auto.quality.late_bad">
+        <source>Late / expired</source>
+        <translation>遅延・失効</translation>
+    </message>
+    <message id="hand_order.auto.quality.outside_target">
+        <source>Outside target quality</source>
+        <translation>目標判定外</translation>
+    </message>
+    <message id="hand_order.auto.evidence_truncated">
+        <source> Optional reverse-hand evidence stopped at its work budget; the validated candidate is retained for review.</source>
+        <translation> 反対の手の任意検証が予算に達したため、検証済み候補を確認用に保持します。</translation>
+    </message>
+
+<message id="hand_order.auto.handoff_branch">
+        <source>Branch %1: %2 transfers · %3</source>
+        <translation>分岐 %1：持ち替え %2 回 · %3</translation>
+    </message>
+    <message id="hand_order.auto.handoff_baseline">
+        <source> · at-most-one baseline peak %1, cost %2</source>
+        <translation> · 最大1回の基準ピーク %1、コスト %2</translation>
+    </message>
+    <message id="hand_order.auto.action.slide">
+        <source>Slide motion</source>
+        <translation>slideの移動</translation>
+    </message>
+    <message id="hand_order.auto.action.touch">
+        <source>Screen touch</source>
+        <translation>画面タッチ</translation>
+    </message>
+    <message id="hand_order.auto.action.touch_hold">
+        <source>Sustained screen contact</source>
+        <translation>画面の継続接触</translation>
+    </message>
+    <message id="hand_order.auto.component.head">
+        <source>Slide head</source>
+        <translation>slideの始点</translation>
+    </message>
+    <message id="hand_order.auto.component.note">
+        <source>Note %1</source>
+        <translation>ノーツ %1</translation>
+    </message>
+    <message id="hand_order.auto.reason.expired">
+        <source>No valid contact before expiry</source>
+        <translation>時間窓内に有効な接触なし</translation>
+    </message>
+    <message id="hand_order.wifi_mode_notice">
+        <source>Wifi sectors 1/2 follow the native sides and exchange on reflection. Single mode selects one hand for the whole track; the circled 1 marks explicit single-hand execution. Either still means one selected hand.</source>
+        <translation>Wifi の区画 1/2 はネイティブの両側に対応し、反転で入れ替わります。片手モードは全軌道で同じ片手を選び、丸付き 1 で表示します。左右任意も片手を選ぶ意味です。</translation>
+    </message>
+    <message id="hand_order.wifi_single_row">
+        <source>%1:%2 branch %3 · whole-track single hand</source>
+        <translation>%1:%2 分岐 %3 · 全軌道片手</translation>
+    </message>
+    <message id="hand_order.wifi_sector_row">
+        <source>%1:%2 branch %3 · sector %4 · %5–%6%</source>
+        <translation>%1:%2 分岐 %3 · 区画 %4 · %5–%6%</translation>
+    </message>
+    <message id="hand_order.wifi_legacy">
+        <source>Legacy whole track</source>
+        <translation>従来の全軌道</translation>
+    </message>
+    <message id="hand_order.wifi_split">
+        <source>Two sectors</source>
+        <translation>2 区画</translation>
+    </message>
+    <message id="hand_order.wifi_single">
+        <source>Explicit single hand</source>
+        <translation>明示的な片手</translation>
+    </message>
+    <message id="hand_order.auto.wifi_sector">
+        <source>Wifi sector %1 · %2</source>
+        <translation>Wifi 区画 %1 · %2</translation>
+    </message>
+    <message id="hand_order.auto.wifi_single">
+        <source>Explicit single-hand Wifi · %1</source>
+        <translation>明示的な片手 Wifi · %1</translation>
+    </message>
+    <message id="hand_order.auto.full_replay_verified">
+        <source>Full judgement replay verified</source>
+        <translation>全判定リプレイ検証済み</translation>
+    </message>
+    <message id="hand_order.auto.reason.full_replay_target_failed">
+        <source>No searched physical candidate met the full replay target</source>
+        <translation>全リプレイ目標を満たす物理候補が探索内に見つかりません</translation>
+    </message>
+    <message id="hand_order.auto.action.button">
+        <source>Exterior button press</source>
+        <translation>外周ボタン押下</translation>
+    </message>
+    <message id="hand_order.auto.action.screen_button">
+        <source>A-pad screen press</source>
+        <translation>A センサー画面押下</translation>
+    </message>
+    <message id="hand_order.auto.reason.tap">
+        <source>Tap judgement</source>
+        <translation>Tap 判定</translation>
+    </message>
+    <message id="hand_order.auto.reason.hold">
+        <source>Complete Hold judgement</source>
+        <translation>Hold 全体判定</translation>
+    </message>
+    <message id="hand_order.auto.reason.slide">
+        <source>Complete slide judgement</source>
+        <translation>Slide 全体判定</translation>
+    </message>
+    <message id="hand_order.auto.reason.wifi">
+        <source>All three Wifi queues verified</source>
+        <translation>Wifi の判定3列を全て検証</translation>
+    </message>
+    <message id="hand_order.auto.reason.star_head">
+        <source>Star head judgement</source>
+        <translation>星頭判定</translation>
+    </message>
+    <message id="hand_order.auto.reason.direct_input">
+        <source>Direct physical input</source>
+        <translation>実際の直接入力</translation>
+    </message>
+    <message id="hand_order.auto.input_preference">
+        <source>Input preference</source>
+        <translation>入力経路の優先</translation>
+    </message>
+    <message id="hand_order.auto.input_buttons">
+        <source>Exterior preferred</source>
+        <translation>外周ボタン優先</translation>
+    </message>
+    <message id="hand_order.auto.input_screen">
+        <source>Screen preferred</source>
+        <translation>画面優先</translation>
+    </message>
+    <message id="hand_order.auto.input_mixed">
+        <source>Mixed channels</source>
+        <translation>混合入力</translation>
+    </message>
+    <message id="hand_order.auto.overwrite_existing">
+        <source>Recompute existing annotations within the selection; keep outside annotations locked</source>
+        <translation>選択範囲の既存手順を再計算（範囲外は固定）</translation>
+    </message>
+    <message id="hand_order.auto.high_confidence_only">
+        <source>Apply only high-confidence complete dependency units</source>
+        <translation>高信頼の完全な依存単位のみ適用</translation>
+    </message>
+    <message id="hand_order.auto.high_confidence_closed">
+        <source> Only complete high-confidence dependency units are writable.</source>
+        <translation> 完全な高信頼の依存単位のみ書き込めます。</translation>
+    </message>
+    <message id="hand_order.auto.confidence_text">
+        <source>Heuristic score %1/100 · %2 (not a probability)</source>
+        <translation>ヒューリスティック評価 %1/100 · %2（確率ではありません）</translation>
+    </message>
+    <message id="hand_order.auto.confidence.high">
+        <source>High</source>
+        <translation>高</translation>
+    </message>
+    <message id="hand_order.auto.confidence.medium">
+        <source>Medium</source>
+        <translation>中</translation>
+    </message>
+    <message id="hand_order.auto.confidence.low">
+        <source>Low</source>
+        <translation>低</translation>
+    </message>
+    <message id="hand_order.auto.confidence.insufficient_evidence">
+        <source>Insufficient evidence</source>
+        <translation>根拠不足</translation>
+    </message>
+    <message id="hand_order.auto.component.touch">
+        <source>Touch responsibility</source>
+        <translation>Touch の担当手</translation>
+    </message>
+    <message id="hand_order.auto.component.track">
+        <source>Branch %1 at movement %2%</source>
+        <translation>分岐 %1 の移動進度 %2%</translation>
+    </message>
+    <message id="hand_order.auto.evidence_limited">
+        <source>Evidence limited by the candidate or work budget</source>
+        <translation>候補数または計算予算により根拠が限定</translation>
+    </message>
+    <message id="hand_order.auto.evidence_alternative">
+        <source>Opposite hand replayed in the full dependency unit</source>
+        <translation>依存単位全体で逆の手をリプレイ済み</translation>
+    </message>
+    <message id="hand_order.auto.evidence_no_alternative">
+        <source>No opposite-hand candidate in the unpruned discrete search</source>
+        <translation>枝刈りなしの離散候補内で逆の手の候補なし</translation>
+    </message>
+    <message id="hand_order.auto.evidence_gap">
+        <source> · risk tier %+1, peak tier %2, cost gap %3</source>
+        <translation> · リスク段階差 %1、ピーク段階差 %2、コスト差 %3</translation>
+    </message>
+    <message id="hand_order.auto.pressure.low">
+        <source>Low motion pressure</source>
+        <translation>移動負荷：低</translation>
+    </message>
+    <message id="hand_order.auto.pressure.medium">
+        <source>Moderate motion pressure</source>
+        <translation>移動負荷：中</translation>
+    </message>
+    <message id="hand_order.auto.pressure.high">
+        <source>High motion pressure</source>
+        <translation>移動負荷：高</translation>
+    </message>
+    <message id="hand_order.auto.pressure.extreme">
+        <source>Extreme motion pressure; requires review</source>
+        <translation>移動負荷：非常に高い（要確認）</translation>
+    </message>
+    <message id="hand_order.auto.locate">
+        <source>Locate</source>
+        <translation>移動</translation>
+    </message>
+    <message id="hand_order.auto.reason.touch_hold">
+        <source>Complete Touch Hold replay</source>
+        <translation>Touch Hold 全体リプレイ</translation>
+    </message>
+    <message id="hand_order.split_native_slide">
+        <source>Split into Independent Slides</source>
+        <translation>独立 slide に分割</translation>
+    </message>
+    <message id="hand_order.native.notice">
+        <source>An applicable plan preserves native geometry and actual motion times, but gives each segment an independent judgement. Counting, scoring (especially Break), Each, track appearance/disappearance, sounds and Muri may change. Review every item. Any unreliable complete slide target blocks the batch; Cancel makes no edit.</source>
+        <translation>適用可能な案はネイティブ形状と実際の移動時刻を保ちますが、各区間が独立判定になります。物量・得点（特に Break）、Each、軌道の出現・消去、音声、Muri は変わる可能性があります。全項目を確認してください。完全選択の slide に変換不能な対象があれば一括適用を禁止し、キャンセルでは編集しません。</translation>
+    </message>
+    <message id="hand_order.native.summary">
+        <source>Prepared %1 · ignored non-slides %2 · partial tokens skipped %3 · unsupported %4</source>
+        <translation>変換案 %1 件・slide 以外を除外 %2 件・部分選択を除外 %3 件・非対応 %4 件</translation>
+    </message>
+    <message id="hand_order.native.blocked">
+        <source>The whole batch is blocked. Close this preview and select convertible chains again.</source>
+        <translation>この一括処理は適用できません。プレビューを閉じ、変換できる連結 slide を選び直してください。</translation>
+    </message>
+    <message id="hand_order.native.stale">
+        <source>The document, timing or parser policy changed. Prepare a new preview.</source>
+        <translation>文書・時刻情報・解析設定が変わりました。プレビューを作り直してください。</translation>
+    </message>
+    <message id="hand_order.native.counts">
+        <source>Tracks %1 → %2 · heads %3 → %4 · %5 additional independent judgement boundaries</source>
+        <translation>軌道 %1 → %2・打てる始点 %3 → %4・独立判定境界を %5 個追加</translation>
+    </message>
+    <message id="hand_order.native.before">
+        <source>Before</source>
+        <translation>変更前</translation>
+    </message>
+    <message id="hand_order.native.after">
+        <source>Proposed result</source>
+        <translation>変更案</translation>
+    </message>
+    <message id="hand_order.native.apply">
+        <source>Apply Entire Prepared Batch</source>
+        <translation>変換案を一括適用</translation>
+    </message>
+    <message id="hand_order.native.status.ready">
+        <source>Prepared draft</source>
+        <translation>変換案</translation>
+    </message>
+    <message id="hand_order.native.status.partial">
+        <source>Skipped partial token</source>
+        <translation>部分選択を除外</translation>
+    </message>
+    <message id="hand_order.native.status.ignored">
+        <source>Ignored non-slide</source>
+        <translation>slide 以外を除外</translation>
+    </message>
+    <message id="hand_order.native.status.unsupported">
+        <source>Blocks this batch</source>
+        <translation>一括適用を禁止</translation>
+    </message>
+    <message id="hand_order.native.reason.empty_selection">
+        <source>Select complete native chains first.</source>
+        <translation>ネイティブの連結 slide を完全に選択してください。</translation>
+    </message>
+    <message id="hand_order.native.reason.partial_token">
+        <source>This token is only partly selected and will stay unchanged.</source>
+        <translation>このトークンは部分選択のため変更しません。</translation>
+    </message>
+    <message id="hand_order.native.reason.non_slide">
+        <source>This ordinary note is not a slide target and will stay unchanged.</source>
+        <translation>通常ノーツは slide 分割の対象ではないため変更しません。</translation>
+    </message>
+    <message id="hand_order.native.reason.native_segments">
+        <source>Draft generated from the existing native segments.</source>
+        <translation>既存のネイティブ区間から独立軌道案を生成しました。</translation>
+    </message>
+    <message id="hand_order.native.reason.invalid_chart">
+        <source>Native syntax errors prevent a reliable conversion.</source>
+        <translation>ネイティブ構文エラーのため安全に変換できません。</translation>
+    </message>
+    <message id="hand_order.native.reason.invalid_annotation">
+        <source>A selected target has an invalid hand annotation.</source>
+        <translation>選択対象の手順注釈が不正です。</translation>
+    </message>
+    <message id="hand_order.native.reason.wifi_not_supported">
+        <source>Wifi paths cannot be split into independent native segments here. Use hand-order interval splitting for colouring.</source>
+        <translation>Wifi の展開経路はネイティブ分割に非対応です。着色には手順区間分割を使ってください。</translation>
+    </message>
+    <message id="hand_order.native.reason.missing_markers">
+        <source>Parsed native objects are missing.</source>
+        <translation>照合する解析済みネイティブ対象がありません。</translation>
+    </message>
+    <message id="hand_order.native.reason.single_segment">
+        <source>This slide has one native segment. Use hand-order interval splitting for colouring.</source>
+        <translation>この slide はネイティブ区間が1つです。着色には手順区間分割を使ってください。</translation>
+    </message>
+    <message id="hand_order.native.reason.invalid_geometry">
+        <source>Native geometry or motion times are missing or invalid.</source>
+        <translation>ネイティブ形状または移動時刻が不足・不正です。</translation>
+    </message>
+    <message id="hand_order.native.reason.unrepresentable_native">
+        <source>The native segment cannot be represented reliably in Simai.</source>
+        <translation>このネイティブ区間を正しい Simai として表現できません。</translation>
+    </message>
+    <message id="hand_order.native.reason.hand_order_unrepresentable">
+        <source>The original hand intervals cannot be mapped reliably to every new segment.</source>
+        <translation>元の手順区間を全ての新しい区間へ確実に写せません。</translation>
+    </message>
+    <message id="hand_order.native.reason.no_chain_selected">
+        <source>No convertible native chain is fully selected.</source>
+        <translation>変換できるネイティブ連結 slide が完全選択されていません。</translation>
+    </message>
+    <message id="hand_order.native.reason.round_trip_invalid">
+        <source>The proposed result failed strict Simai validation.</source>
+        <translation>変換案が Simai の厳密検証に失敗しました。</translation>
+    </message>
+    <message id="hand_order.native.reason.round_trip_mismatch">
+        <source>Reparsing did not preserve geometry, actual motion times or annotations.</source>
+        <translation>再解析で形状・実移動時刻・手順を保持できませんでした。</translation>
+    </message>
+    <message id="hand_order.native.reason.head_count_mismatch">
+        <source>The proposed result would change the real shared-head count.</source>
+        <translation>変換案で共有始点の実数が変わってしまいます。</translation>
+    </message>
+    <message id="hand_order.native.change.independent_judgement_boundaries">
+        <source>Each resulting segment has an independent judgement boundary.</source>
+        <translation>新しい各区間が独立した判定境界を持ちます。</translation>
+    </message>
+    <message id="hand_order.native.change.slide_count_changes">
+        <source>The number of slide track objects increases as shown above.</source>
+        <translation>slide 軌道数は上記の実数どおり増えます。</translation>
+    </message>
+    <message id="hand_order.native.change.availability_may_change">
+        <source>Independent segments may accept input at different times or react differently to early contact.</source>
+        <translation>独立区間の判定開始や早い接触への反応が変わる可能性があります。</translation>
+    </message>
+    <message id="hand_order.native.change.scoring_may_change">
+        <source>Scoring may change; this is not a per-chart score simulation.</source>
+        <translation>得点は変わる可能性があります。ここでは譜面ごとの得点を計算していません。</translation>
+    </message>
+    <message id="hand_order.native.change.each_may_change">
+        <source>Each relationships may change.</source>
+        <translation>Each の関係は変わる可能性があります。</translation>
+    </message>
+    <message id="hand_order.native.change.disappearance_may_change">
+        <source>Track appearance and disappearance may change, including headless-track presentation.</source>
+        <translation>軌道の出現・消去や始点なし軌道の表示は変わる可能性があります。</translation>
+    </message>
+    <message id="hand_order.native.change.sfx_may_change">
+        <source>Sound events may change.</source>
+        <translation>音声イベントは変わる可能性があります。</translation>
+    </message>
+    <message id="hand_order.native.change.muri_may_change">
+        <source>Muri results may change; before/after Muri is not calculated in this preview.</source>
+        <translation>Muri の結果は変わる可能性があります。このプレビューでは前後の Muri を計算していません。</translation>
+    </message>
+    <message id="hand_order.native.change.break_count_scoring_changes">
+        <source>Split native Break segments retain Break, which may change Break counts and scoring.</source>
+        <translation>分割されたネイティブ Break 区間も Break を保つため、Break の物量と得点が変わる可能性があります。</translation>
+    </message>
 </context>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 </TS>

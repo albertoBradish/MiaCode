@@ -250,7 +250,11 @@ void ScintillaEditorBridge::setController(EditorController* value)
     if (controller_ == value) return;
     if (controller_) disconnect(controller_, nullptr, this, nullptr);
     controller_ = value;
-    if (value) connect(value, &EditorController::settingsChanged, this, &ScintillaEditorBridge::refreshSettings);
+    if (value) {
+        connect(value, &EditorController::settingsChanged, this, &ScintillaEditorBridge::refreshSettings);
+        value->activateHandOrderDocument(QString::number(generation_) + QLatin1Char('/') + document_.scope(), document_.text());
+        value->updateNativeSlideSplitContext(nativeSlideSplitContext());
+    }
     refreshSettings();
     emit bindingsChanged();
 }
@@ -415,7 +419,11 @@ void ScintillaEditorBridge::synchronizeDocument()
     }
     synchronizedRevision_ = documentSession_->documentRevision();
     if (identityChanged) styler_.reset();
-    if (controller_) controller_->setDifficulty(documentSession_->currentDifficultyId());
+    if (controller_) {
+        controller_->setDifficulty(documentSession_->currentDifficultyId());
+        controller_->activateHandOrderDocument(QString::number(generation_) + QLatin1Char('/') + document_.scope(), document_.text());
+        controller_->updateNativeSlideSplitContext(nativeSlideSplitContext());
+    }
     refreshDecorations();
     publishContext(false);
     emit selectionChanged();
@@ -429,7 +437,11 @@ void ScintillaEditorBridge::textMutated()
         QScopedValueRollback guard(synchronizing_, true);
         documentSession_->setChartText(document_.text());
         synchronizedRevision_ = documentSession_->documentRevision();
-        if (controller_) controller_->setDifficulty(documentSession_->currentDifficultyId());
+        if (controller_) {
+            controller_->setDifficulty(documentSession_->currentDifficultyId());
+            controller_->activateHandOrderDocument(QString::number(generation_) + QLatin1Char('/') + document_.scope(), document_.text());
+            controller_->updateNativeSlideSplitContext(nativeSlideSplitContext());
+        }
     }
     refreshDecorations();
     publishContext(!programmatic_);
@@ -844,8 +856,64 @@ bool ScintillaEditorBridge::applyNormalization(const QVariantMap& options)
 {
     return documentSession_ && applyEditorTransaction(documentSession_->normalizeChartSelection(document_.text(), selectionStart(), selectionEnd(), options));
 }
+bool ScintillaEditorBridge::requestHandOrderAnalysis(bool wholeDifficulty)
+{
+    return handOrderService_ && !send(SCI_GETREADONLY)
+        && handOrderService_->request(document_.text(), wholeDifficulty ? 0 : selectionStart(),
+            wholeDifficulty ? 0 : selectionEnd());
+}
+bool ScintillaEditorBridge::applyHandOrderAnalysis()
+{
+    return handOrderService_ && !send(SCI_GETREADONLY)
+        && applyEditorTransaction(handOrderService_->takeEdit(document_.text()));
+}
+
+bool ScintillaEditorBridge::navigateHandOrderResult(int row)
+{
+    if (!handOrderService_) return false;
+    const auto range = handOrderService_->navigationRange(row, editorText());
+    if (range.isEmpty()) return false;
+    select(range.value(QStringLiteral("start")).toInt(), range.value(QStringLiteral("end")).toInt());
+    revealPosition(range.value(QStringLiteral("start")).toInt(), true);
+    forceActiveFocus();
+    return true;
+}
+NativeSlideSplitContext ScintillaEditorBridge::nativeSlideSplitContext() const
+{
+    NativeSlideSplitContext context;
+    if (documentSession_) {
+        context.workspace = documentSession_->chartWorkspaceSnapshot();
+        context.scope = document_.scope();
+        context.chartText = document_.text();
+        context.timing = documentSession_->chartTimingMetadata();
+    }
+    return context;
+}
+bool ScintillaEditorBridge::prepareNativeSlideSplit()
+{
+    return controller_ && documentSession_ && !send(SCI_GETREADONLY) && selectionStart() != selectionEnd()
+        && controller_->prepareNativeSlideSplit(nativeSlideSplitContext(), selectionStart(), selectionEnd());
+}
+bool ScintillaEditorBridge::applyNativeSlideSplit()
+{
+    return controller_ && documentSession_ && !send(SCI_GETREADONLY)
+        && applyEditorTransaction(controller_->applyNativeSlideSplit(nativeSlideSplitContext()));
+}
+bool ScintillaEditorBridge::applyHandOrderIntervals()
+{
+    if (!controller_ || send(SCI_GETREADONLY)) return false;
+    return applyEditorTransaction(controller_->applyHandOrderIntervals(document_.text()));
+}
 bool ScintillaEditorBridge::applyChartTransform(const QString& operation)
 {
+    if (operation == QStringLiteral("hand_order.split_native_slide")) return prepareNativeSlideSplit();
+    if (send(SCI_GETREADONLY) || selectionStart() == selectionEnd()) return false;
+    if (operation.startsWith(QStringLiteral("hand_order."))) {
+        if (!controller_) return false;
+        return applyEditorTransaction(controller_->handOrderCommand(document_.text(),
+            document_.utf16Position(send(SCI_GETANCHOR)), cursorPosition(), operation, documentSession_ ? documentSession_->chartTimingMetadata()
+                : miacode::simai::SimaiTimingMetadata{}));
+    }
     return documentSession_ && applyEditorTransaction(documentSession_->transformChartSelection(document_.text(), selectionStart(), selectionEnd(), operation));
 }
 bool ScintillaEditorBridge::createBookmarkAtLine(int line, const QString& title)

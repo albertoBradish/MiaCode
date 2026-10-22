@@ -77,6 +77,10 @@ miacode_add_module(miacode_chart
         src/core/chart/transform/ChartBatchTransform.Subdivision.cpp
         src/core/chart/transform/ChartBatchTransform.Transform.cpp
         src/core/chart/transform/ChartBatchTransform.h
+        src/core/chart/transform/HandOrderEdit.cpp
+        src/core/chart/transform/HandOrderEdit.h
+        src/core/chart/transform/NativeSlideSplit.cpp
+        src/core/chart/transform/NativeSlideSplit.h
         src/core/chart/transform/ChartNormalization.cpp
         src/core/chart/transform/ChartNormalization.h
         src/core/chart/transform/ChartNormalizationSegmentPolicy.cpp
@@ -100,6 +104,16 @@ set_source_files_properties(
 # ---- analysis: Muri and the analysis pipeline -----------------------------
 miacode_add_module(miacode_analysis
     SOURCES
+        src/core/analysis/hand_order/BasicHandOrder.cpp
+        src/core/analysis/hand_order/BasicHandOrder.h
+        src/core/analysis/hand_order/HandOrderJudge.cpp
+        src/core/analysis/hand_order/HandOrderJudge.h
+        src/core/analysis/hand_order/HandOrderFullReplay.cpp
+        src/core/analysis/hand_order/HandOrderFullReplay.h
+        src/core/analysis/hand_order/BasicHandOrderActions.cpp
+        src/core/analysis/hand_order/BasicHandOrderActions.h
+        src/core/analysis/hand_order/BasicHandOrderWifi.cpp
+        src/core/analysis/hand_order/BasicHandOrderWifi.h
         src/core/analysis/MuriAnalyzer.cpp
         src/core/analysis/MuriAnalyzer.h
         src/core/analysis/MuriAnalyzerGeometry.cpp

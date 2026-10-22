@@ -1,3 +1,4 @@
+#include "app/ui/document/HandOrderCommands.h"
 #include "app/services/FileDialogPreferences.h"
 #include "common/LocalizedText.h"
 
@@ -801,6 +802,10 @@ QString DocumentModel::documentTitle() const
 bool DocumentModel::hasDocument() const
 {
     return workspace_ != nullptr && workspace_->snapshot().hasDocument;
+}
+miacode::ChartWorkspaceSnapshot DocumentModel::chartWorkspaceSnapshot() const
+{
+    return workspace_ ? workspace_->snapshot() : miacode::ChartWorkspaceSnapshot{};
 }
 QString DocumentModel::currentFilePath() const
 {
@@ -2113,6 +2118,21 @@ QVariantList DocumentModel::chartTransformMenu() const
             {QStringLiteral("section"), spec.section},
         });
     }
+    return rows;
+}
+
+miacode::simai::SimaiTimingMetadata DocumentModel::chartTimingMetadata() const
+{
+    return workspace_ ? miacode::simai::buildTimingMetadata(workspace_->document())
+        : miacode::simai::SimaiTimingMetadata{};
+}
+
+QVariantList DocumentModel::handOrderMenu() const
+{
+    QVariantList rows;
+    for (const auto& spec : handOrderCommandSpecs())
+        rows.append(QVariantMap{{QStringLiteral("id"), spec.id}, {QStringLiteral("labelKey"), spec.labelKey},
+            {QStringLiteral("requiresSelection"), spec.requiresSelection}});
     return rows;
 }
 

@@ -5,6 +5,9 @@
 #include "export/session/PreviewQuickD3D11ExportSession.h"
 #include "preview/runtime/PreviewRuntime.h"
 #include "preview/quick_scene/PreviewQuickHudLayer.h"
+#include "core/scene/PreviewSlideMotionLayerState.h"
+#include "core/scene/PreviewTrackLayerState.h"
+#include "core/scene/PreviewActiveMarkerView.h"
 
 #include <QGuiApplication>
 #include <QDir>
@@ -215,6 +218,22 @@ int main(int argc, char** argv)
     invalidHandOrder.showHandOrderAnnotations = false;
     ok &= require(buildVideoExportTaskFromSnapshot(invalidHandOrder, &task, &error),
                   "original output can ignore invalid hand-order annotation", err);
+
+    VideoExportSnapshot wifiSnapshot = source;
+    wifiSnapshot.showHandOrderAnnotations = true;
+    wifiSnapshot.chartTextUtf8 = QStringLiteral("&title=Wifi Spec\n&first=0\n&lv_5=12\n&inote_5=(120){4}"
+        "1w5[4:1]~[track=split:0:l|0.5:r&0:r|0.75:l],2w6[4:1]~[track=single:0:m],\n");
+    ok &= require(VideoExportSnapshot::fromJson(wifiSnapshot.toJson(), &restored, &error)
+        && buildVideoExportTaskFromSnapshot(restored, &task, &error)
+        && task.noteMarkers.size() == 2
+        && task.noteMarkers.at(0).handOrderWifiMode == HandOrderWifiMode::Split
+        && task.noteMarkers.at(0).handOrderWifiSectorStops.size() == 2
+        && task.noteMarkers.at(1).handOrderWifiMode == HandOrderWifiMode::Single
+        && task.noteMarkers.at(1).handOrderTrackStops.constFirst().hand == HandOrderHand::Either,
+        "snapshot worker rebuilds native Wifi sectors and explicit single-hand mode from source text", err);
+    wifiSnapshot.chartTextUtf8.replace(QStringLiteral("single:0:m"), QStringLiteral("single:0:m|0.5:l"));
+    ok &= require(!buildVideoExportTaskFromSnapshot(wifiSnapshot, &task, &error),
+        "worker refuses a single-hand Wifi that changes hand", err);
 
     AmbientPreferences ambient;
     miacode::preferences::installPreferenceProvider(&ambient);

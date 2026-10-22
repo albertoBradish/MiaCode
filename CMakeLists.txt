@@ -403,6 +403,8 @@ add_executable(MiaCode WIN32 MACOSX_BUNDLE
     src/app/services/ChartMediaImport.h
     src/app/services/ChartWorkspaceFileService.cpp
     src/app/services/ChartWorkspaceFileService.h
+    src/app/services/HandOrderAnalysisService.cpp
+    src/app/services/HandOrderAnalysisService.h
     src/app/services/AnalysisService.cpp
     src/app/services/AnalysisService.h
     src/app/services/EditorSyncController.cpp
@@ -695,6 +697,9 @@ set(MIACODE_UI_QML_FILES
     src/app/ui/editor/EditorPane.qml
     src/app/ui/editor/MetadataDifficultyCard.qml
     src/app/ui/editor/EditorTabBar.qml
+    src/app/ui/editor/HandOrderAnalysisDialog.qml
+    src/app/ui/editor/HandOrderIntervalsDialog.qml
+    src/app/ui/editor/NativeSlideSplitDialog.qml
     src/app/ui/editor/SourceEditor.qml
     src/app/ui/editor/CompletionPopup.qml
     src/app/ui/editor/NormalizeOptionsDialog.qml
@@ -899,6 +904,8 @@ set(MIACODE_TRANSLATION_TS_FILES
     translations/zh_CN.ts
     translations/ja_JP.ts
 )
+# Keep ID messages in the empty TS context. Qt 6.11 no longer converts
+# named-context source-text entries with the deprecated -idbased switch.
 qt_add_lrelease(
     LRELEASE_TARGET miacode_lrelease
     TS_FILES ${MIACODE_TRANSLATION_TS_FILES}

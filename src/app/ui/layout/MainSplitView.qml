@@ -13,6 +13,8 @@ Item {
     required property var viewState
     required property var documentSession
     required property var analysisSession
+    property var shortcuts: null
+    property var handOrderService: null
     required property var preferences
     required property var previewSession
     required property var previewSettings
@@ -526,6 +528,8 @@ Item {
                         documentSession: root.documentSession
                         commands: root.commands
                         preferences: root.preferences
+                        shortcuts: root.shortcuts
+                        handOrderService: root.handOrderService
                         latency: root.latency
                         previewSession: root.previewSession
                         net: root.net

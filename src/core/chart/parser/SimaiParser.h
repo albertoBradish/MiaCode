@@ -13,6 +13,16 @@ struct SimaiMessage {
     QString message;
 };
 
+// UTF-16 token ranges produced by the native parser's lexer.
+struct SimaiSourceToken {
+    int line = 1;
+    int col = 1;
+    int length = 0;
+    int firstParseOrder = 0;
+    int markerCount = 0;
+    bool nativeValid = false;
+};
+
 struct SimaiParseResult {
     bool ok = true;
     QVector<SimaiMessage> errors;
@@ -22,6 +32,7 @@ struct SimaiParseResult {
     QVector<double> measureLineSeconds;
     QVector<TimelineBeatMarker> beatMarkers;
     QVector<TimelineNoteMarker> noteMarkers;
+    QVector<SimaiSourceToken> sourceTokens;
     double durationSeconds = 0.0;
 };
 

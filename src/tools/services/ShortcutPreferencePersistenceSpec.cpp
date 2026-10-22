@@ -37,6 +37,36 @@ int main(int argc, char** argv)
     using miacode::ui::ShortcutRegistry;
     using miacode::ui::ShortcutModel;
     using namespace miacode::preference_json_file;
+    const QString handPath = temporary.filePath(QStringLiteral("hand-order-shortcuts.json"));
+    const QStringList handIds{QStringLiteral("hand_order.set_left"), QStringLiteral("hand_order.set_right"),
+        QStringLiteral("hand_order.set_either"), QStringLiteral("hand_order.split_annotation"), QStringLiteral("hand_order.split_native_slide")};
+    ShortcutRegistry handRegistry(handPath);
+    ShortcutModel handModel(handRegistry);
+    for (int index = 0; index < handIds.size(); ++index) {
+        const auto& handId = handIds.at(index);
+        expect(handRegistry.defaultShortcutText(handId) == QStringLiteral("Ctrl+Alt+%1").arg(index + 1),
+               "hand-order default is registered");
+        const QString custom = QStringLiteral("Ctrl+Shift+Alt+%1").arg(index + 1);
+        expect(handModel.setShortcutText(handId, custom), "hand-order shortcut is editable");
+        ShortcutRegistry handRestart(handPath);
+        expect(handRestart.shortcutText(handId) == QKeySequence(custom).toString(QKeySequence::PortableText)
+                   && read(handPath).object.value("actions").toObject().value(handId).toObject().value("shortcut")
+                       == QKeySequence(custom).toString(QKeySequence::PortableText),
+               "hand-order binding persists canonically and survives registry restart");
+    }
+    const QString cwdFixture = temporary.filePath(QStringLiteral("external-launch"));
+    expect(QDir().mkpath(cwdFixture), "create synthetic external launch directory");
+    const QString externalShortcuts = QDir(cwdFixture).filePath(QStringLiteral("shortcuts.json"));
+    expect(put(externalShortcuts, R"({"actions":{"hand_order.analyze":{"shortcut":"Ctrl+Alt+F12"}}})"),
+           "write synthetic external shortcut override");
+    const QString priorCwd = QDir::currentPath();
+    expect(QDir::setCurrent(cwdFixture), "enter synthetic external launch directory");
+    expect(ShortcutRegistry::instance().shortcutText(QStringLiteral("hand_order.analyze"))
+               != QStringLiteral("Ctrl+Alt+F12"), "default registry ignores external launch directory");
+    ShortcutRegistry explicitInput(temporary.filePath(QStringLiteral("owned.json")), externalShortcuts);
+    expect(explicitInput.shortcutText(QStringLiteral("hand_order.analyze")) == QStringLiteral("Ctrl+Alt+F12"),
+           "explicit hosts retain additional-input support");
+    expect(QDir::setCurrent(priorCwd), "restore isolated working directory");
     const QString id = QStringLiteral("transform.mirror_lr");
     const QString second = QStringLiteral("preview.stop_or_play");
     const QString path = temporary.filePath(QStringLiteral("shortcuts.json"));

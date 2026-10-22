@@ -22,6 +22,7 @@
 #include "app/ui/net/NetUploadModel.h"
 #include "app/services/ApplicationServices.h"
 #include "app/services/ImageResourceModel.h"
+#include "app/services/HandOrderAnalysisService.h"
 
 #include <QObject>
 
@@ -34,6 +35,7 @@ class ApplicationContext final : public QObject
     Q_OBJECT
     Q_PROPERTY(QObject* document READ document CONSTANT)
     Q_PROPERTY(QObject* analysis READ analysis CONSTANT)
+    Q_PROPERTY(QObject* handOrderAnalysis READ handOrderAnalysis CONSTANT)
     Q_PROPERTY(QObject* preferences READ preferences CONSTANT)
     Q_PROPERTY(QObject* appBackground READ appBackground CONSTANT)
     Q_PROPERTY(QObject* preview READ preview CONSTANT)
@@ -69,6 +71,7 @@ public:
 
     QObject* document();
     QObject* analysis();
+    QObject* handOrderAnalysis() { return &handOrderAnalysis_; }
     QObject* preferences();
     QObject* appBackground();
     QObject* preview();
@@ -107,6 +110,7 @@ private:
     miacode::ui::AppBackgroundModel appBackground_;
     DocumentModel document_;
     AnalysisModel analysis_;
+    miacode::HandOrderAnalysisService handOrderAnalysis_;
     PreviewModel preview_;
     miacode::ui::TimelineModel timeline_;
     CommandService commands_;

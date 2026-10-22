@@ -246,9 +246,22 @@ PreviewTrackLayerState buildPreviewTrackLayerState(
             }
 
             HandOrderHand hand = HandOrderHand::Unspecified;
-            if (state.render.showHandOrderAnnotations && !marker.handOrderTrackStops.isEmpty()) {
+            if (state.render.showHandOrderAnnotations) {
                 const qreal progress = previewWifiArrowMovementProgress(marker, points[pointIndex]);
-                hand = previewHandOrderAtProgress(marker.handOrderTrackStops, progress);
+                if (marker.handOrderWifiMode == HandOrderWifiMode::Split
+                    && marker.wifiLanePoints.size() >= 3 && !marker.wifiLanePoints.at(1).isEmpty()) {
+                    for (int sector = 0; sector < 2; ++sector) {
+                        appendSprite(baseImage, points[pointIndex], -rotations.value(pointIndex), opacity,
+                            effect, true, previewWifiHandAtProgress(marker, sector, progress));
+                        auto& sprite = layerState.sprites.last();
+                        const QPointF origin = marker.wifiLanePoints.at(1).constFirst();
+                        sprite.handOrderClipOrigin = mapLogicalPointToRect(
+                            QPointF(kLogicalCanvasCenter + origin.x(), kLogicalCanvasCenter + origin.y()), playfieldRect);
+                        sprite.handOrderClipNormal = previewWifiSectorNormal(marker, sector);
+                    }
+                    continue;
+                }
+                hand = previewWifiHandAtProgress(marker, 0, progress);
             }
             appendSprite(baseImage, points[pointIndex], -rotations.value(pointIndex), opacity, effect, true, hand);
         }

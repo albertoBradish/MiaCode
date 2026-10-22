@@ -32,6 +32,10 @@ struct HandOrderTrackStop {
     HandOrderHand hand = HandOrderHand::Unspecified;
 };
 
+// Split sectors follow the native outer lane indices 0 and 2, not screen left/right.
+// Single requires one selected hand for the entire native Wifi.
+enum class HandOrderWifiMode { Legacy, Split, Single };
+
 struct TimelineNoteMarker {
     double second = 0.0;
     double endSecond = -1.0;
@@ -50,6 +54,9 @@ struct TimelineNoteMarker {
     int slideBranchSourceEndCol = 0;
     HandOrderHand handOrderHead = HandOrderHand::Unspecified;
     QVector<HandOrderTrackStop> handOrderTrackStops;
+    HandOrderWifiMode handOrderWifiMode = HandOrderWifiMode::Legacy;
+    // The two sides follow native wifi lane order (outer lanes 0 and 2).
+    QVector<QVector<HandOrderTrackStop>> handOrderWifiSectorStops;
     int lane = 1;
     int endLane = 1;
     QString type;

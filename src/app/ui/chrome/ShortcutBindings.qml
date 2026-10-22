@@ -25,6 +25,8 @@ Item {
     property bool playbackCommandsEnabled: true
     property bool menuOwnsChartTransformShortcuts: false
     property bool menuOwnsPreviewRateShortcuts: false
+    property bool handOrderCommandsEnabled: false
+    property bool handOrderAnalyzeEnabled: false
 
     // A transform acts on the editor's selection, which only the editor knows.
     // Routing it through the backend meant reading a hidden widget's cursor
@@ -40,7 +42,10 @@ Item {
             sequence: root.shortcuts.revision >= 0
                 ? root.shortcuts.sequence(modelData)
                 : ""
-            enabled: root.chartCommandsEnabled
+            enabled: root.commandsEnabled && !root.shortcuts.captureActive
+                     && (!modelData.startsWith("hand_order.")
+                         || (modelData === "hand_order.analyze" ? root.handOrderAnalyzeEnabled : root.handOrderCommandsEnabled))
+                     && root.chartCommandsEnabled
                      && !root.menuOwnsChartTransformShortcuts
                      && sequence !== ""
             context: Qt.WindowShortcut

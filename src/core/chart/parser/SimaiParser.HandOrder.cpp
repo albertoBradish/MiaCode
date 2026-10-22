@@ -5,6 +5,8 @@ struct HandOrderAnnotation {
     int startOffset = -1;
     HandOrderHand head = HandOrderHand::Unspecified;
     QVector<QVector<HandOrderTrackStop>> branchTracks;
+    QVector<HandOrderWifiMode> wifiModes;
+    QVector<QVector<QVector<HandOrderTrackStop>>> wifiSectors;
 };
 
 bool parseHandOrderHand(const QString& text, HandOrderHand* hand)
@@ -55,6 +57,31 @@ bool parseHandOrderTrack(const QString& text, QVector<HandOrderTrackStop>* stops
         previous = progress;
     }
     return !stops->isEmpty() && stops->constFirst().progress == 0.0;
+}
+
+bool parseHandOrderTrackValue(const QString& text, QVector<HandOrderTrackStop>* stops,
+    HandOrderWifiMode* mode, QVector<QVector<HandOrderTrackStop>>* sectors)
+{
+    *mode = HandOrderWifiMode::Legacy;
+    stops->clear();
+    sectors->clear();
+    if (text.startsWith(QStringLiteral("single:"))) {
+        *mode = HandOrderWifiMode::Single;
+        if (!parseHandOrderTrack(text.mid(7), stops)) return false;
+        const HandOrderHand hand = stops->constFirst().hand;
+        // Single names one physical hand for the whole Wifi, including Either.
+        return std::all_of(stops->cbegin(), stops->cend(), [hand](const auto& stop) {
+            return stop.hand == hand;
+        });
+    }
+    if (text.startsWith(QStringLiteral("split:"))) {
+        *mode = HandOrderWifiMode::Split;
+        const auto halves = text.mid(6).split(QLatin1Char('&'), Qt::KeepEmptyParts);
+        sectors->resize(2);
+        return halves.size() == 2 && parseHandOrderTrack(halves.at(0), &(*sectors)[0])
+            && parseHandOrderTrack(halves.at(1), &(*sectors)[1]);
+    }
+    return parseHandOrderTrack(text, stops);
 }
 
 void appendHandOrderError(ParseState* state, int line, int col, int endCol, const QString& detail)
@@ -138,6 +165,8 @@ HandOrderAnnotation parseHandOrderAnnotation(
     }
     QVector<HandOrderTrackStop> sharedTrack;
     annotation.branchTracks.resize(branchCount);
+    annotation.wifiModes.fill(HandOrderWifiMode::Legacy, branchCount);
+    annotation.wifiSectors.resize(branchCount);
     QVector<bool> branchSeen(branchCount, false);
     bool headSeen = false;
     bool trackSeen = false;
@@ -157,8 +186,12 @@ HandOrderAnnotation parseHandOrderAnnotation(
             headSeen = true;
         } else if (key == QStringLiteral("track")) {
             if (branchCount != 1 || trackSeen || anyBranchSeen
-                || !parseHandOrderTrack(value, &sharedTrack)) {
-                return fail(QStringLiteral("invalid or duplicate track"));
+                || !parseHandOrderTrackValue(value, &sharedTrack, &annotation.wifiModes[0], &annotation.wifiSectors[0])) {
+                return fail(value.startsWith(QStringLiteral("single:"))
+                    ? QStringLiteral("single mode requires a valid timeline with one unchanged hand for the entire Wifi")
+                    : value.startsWith(QStringLiteral("split:"))
+                    ? QStringLiteral("split mode requires exactly two valid sector timelines")
+                    : QStringLiteral("invalid or duplicate track"));
             }
             trackSeen = true;
         } else if (key.startsWith(QStringLiteral("branch"))) {
@@ -169,8 +202,13 @@ HandOrderAnnotation parseHandOrderAnnotation(
                 || indexText != QString::number(branchIndex)
                 || branchIndex < 0 || branchIndex >= branchCount
                 || branchSeen.at(branchIndex)
-                || !parseHandOrderTrack(value, &annotation.branchTracks[branchIndex])) {
-                return fail(QStringLiteral("invalid or duplicate branch"));
+                || !parseHandOrderTrackValue(value, &annotation.branchTracks[branchIndex],
+                    &annotation.wifiModes[branchIndex], &annotation.wifiSectors[branchIndex])) {
+                return fail(value.startsWith(QStringLiteral("single:"))
+                    ? QStringLiteral("single mode requires a valid branch timeline with one unchanged hand for the entire Wifi")
+                    : value.startsWith(QStringLiteral("split:"))
+                    ? QStringLiteral("split mode requires exactly two valid branch sector timelines")
+                    : QStringLiteral("invalid or duplicate branch"));
             }
             branchSeen[branchIndex] = true;
             anyBranchSeen = true;
@@ -208,28 +246,30 @@ void applyHandOrderAnnotation(
     const int annotationCol = column + annotation.startOffset;
     const int annotationEndCol = column + tokenLength - 1;
     for (int i = firstMarker; i < state->result.noteMarkers.size(); ++i) {
+        const auto& marker = state->result.noteMarkers.at(i);
+        const bool slide = marker.type == QStringLiteral("slide") || marker.type == QStringLiteral("wifi");
+        if ((slide && (marker.slideBranchIndex < 0 || marker.slideBranchIndex >= annotation.branchTracks.size()))
+            || (!slide && !annotation.branchTracks.isEmpty())
+            || (marker.type != QStringLiteral("wifi")
+                && annotation.wifiModes.value(marker.slideBranchIndex, HandOrderWifiMode::Legacy) != HandOrderWifiMode::Legacy)) {
+            appendHandOrderError(state, line, annotationCol, annotationEndCol,
+                QStringLiteral("track mode does not match the native note or branch"));
+            return;
+        }
+    }
+    for (int i = firstMarker; i < state->result.noteMarkers.size(); ++i) {
         TimelineNoteMarker& marker = state->result.noteMarkers[i];
         marker.handOrderAnnotationCol = annotationCol;
         marker.handOrderAnnotationEndCol = annotationEndCol;
         const bool isSlide = marker.type == QStringLiteral("slide")
             || marker.type == QStringLiteral("wifi");
         if (isSlide) {
-            if (marker.slideBranchIndex >= annotation.branchTracks.size()) {
-                appendHandOrderError(state, line, annotationCol, annotationEndCol,
-                    QStringLiteral("branch does not match parsed slide"));
-                marker.handOrderAnnotationCol = 0;
-                marker.handOrderAnnotationEndCol = 0;
-                continue;
-            }
             marker.handOrderHead = annotation.head;
             marker.handOrderTrackStops = annotation.branchTracks.at(marker.slideBranchIndex);
-        } else if (annotation.branchTracks.isEmpty()) {
-            marker.handOrderHead = annotation.head;
+            marker.handOrderWifiMode = annotation.wifiModes.value(marker.slideBranchIndex, HandOrderWifiMode::Legacy);
+            marker.handOrderWifiSectorStops = annotation.wifiSectors.value(marker.slideBranchIndex);
         } else {
-            appendHandOrderError(state, line, annotationCol, annotationEndCol,
-                QStringLiteral("track requires a slide"));
-            marker.handOrderAnnotationCol = 0;
-            marker.handOrderAnnotationEndCol = 0;
+            marker.handOrderHead = annotation.head;
         }
     }
 }

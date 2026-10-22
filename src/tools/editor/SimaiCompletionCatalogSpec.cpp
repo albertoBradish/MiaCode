@@ -133,6 +133,18 @@ int main(int argc, char** argv)
     const QString closedTrack = QStringLiteral("1-5[4:1]~[track=0:m]");
     expect(!handOrderCompletionAt(closedTrack, closedTrack.size()).active(),
            QStringLiteral("closed container does not reopen completion"), out, &failed);
+    const QString wifiMode = QStringLiteral("1w5[4:1]~[track=");
+    const auto wifiModes = handOrderCompletionAt(wifiMode, wifiMode.size());
+    expect(wifiModes.candidates.contains(QStringLiteral("split:0:l&0:r"))
+        && wifiModes.candidates.contains(QStringLiteral("single:0:m")),
+        QStringLiteral("Wifi completion offers explicit split and whole-track single modes"), out, &failed);
+    const QString wifiSecond = QStringLiteral("1w5[4:1]~[track=split:0:l&");
+    expect(handOrderCompletionAt(wifiSecond, wifiSecond.size()).startPosition == wifiSecond.size()
+        && handOrderCompletionAt(wifiSecond, wifiSecond.size()).candidates.contains(QStringLiteral("0:r")),
+        QStringLiteral("second Wifi sector starts a new independent progress sequence"), out, &failed);
+    const QString wifiSingle = QStringLiteral("1w5[4:1]~[track=single:0:l|0.5:");
+    expect(handOrderCompletionAt(wifiSingle, wifiSingle.size()).candidates == QStringList{QStringLiteral("l")},
+        QStringLiteral("explicit single-mode completion cannot suggest a different hand"), out, &failed);
 
     if (failed != 0) {
         out << "SimaiCompletionCatalog spec failed: " << failed << '\n';

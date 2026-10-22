@@ -153,6 +153,10 @@ bool Session::eventFilter(QObject*, QEvent* event)
         }
 
         const PauseDisplayHoldKey hold = pauseDisplayHoldKey();
+        if (event->type() == QEvent::KeyPress && keyEvent->key() != hold.key
+            && keyEvent->modifiers() != hold.pressModifiers) {
+            setPauseDisplayAltHoldActive(false);
+        }
         // A Ctrl pause-display hold key yields to touch authoring, which owns
         // Ctrl whenever it can author.
         if (keyEvent->key() == hold.key && !controlArmsTouchAuthoring) {
