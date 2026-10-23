@@ -167,6 +167,76 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
         }
     };
 
+    // A complete ring is one continuous sweep. Keep the returning start key
+    // on that hand and reserve the other for an opposite key in the final each.
+    for (int first = 0; first + 8 < order.size();) {
+        const auto& start = heads->at(order.at(first));
+        const int startLane = start.marker->lane;
+        const int direction = adjacentLaneStep(startLane, heads->at(order.at(first + 1)).marker->lane);
+        bool circle = direction != 0 && eligible(first, first + 8);
+        for (int offset = 1; circle && offset <= 7; ++offset) {
+            const auto& previous = heads->at(order.at(first + offset - 1));
+            const auto& current = heads->at(order.at(first + offset));
+            const int expectedLane = (startLane - 1 + direction * offset + 80) % 8 + 1;
+            circle = current.patternHand < 0 && current.marker->lane == expectedLane
+                && fastTapGap(previous, current);
+        }
+        if (!circle || start.patternHand >= 0) { ++first; continue; }
+        const auto& eighth = heads->at(order.at(first + 7));
+        int returnIndex = first + 8;
+        int partnerIndex = -1;
+        const auto isReturn = [&](int index) {
+            const auto& candidate = heads->at(order.at(index));
+            return candidate.patternHand < 0 && candidate.marker->lane == startLane
+                && canRewrite.at(candidate.token) && fastTapGap(eighth, candidate);
+        };
+        if (!isReturn(returnIndex)) {
+            if (returnIndex + 1 >= order.size() || !isReturn(returnIndex + 1)
+                || std::abs(heads->at(order.at(returnIndex)).marker->second
+                    - heads->at(order.at(returnIndex + 1)).marker->second) >= 1e-9) {
+                ++first;
+                continue;
+            }
+            partnerIndex = returnIndex;
+            ++returnIndex;
+        } else if (returnIndex + 1 < order.size()
+            && std::abs(heads->at(order.at(returnIndex + 1)).marker->second
+                - heads->at(order.at(returnIndex)).marker->second) < 1e-9) {
+            partnerIndex = returnIndex + 1;
+        }
+        const auto& returning = heads->at(order.at(returnIndex));
+        if (partnerIndex >= 0) {
+            const auto& partner = heads->at(order.at(partnerIndex));
+            const int oppositeLane = (startLane + 3) % 8 + 1;
+            if (partner.marker->type != QStringLiteral("tap") || partner.marker->lane != oppositeLane
+                || partner.marker->eachGroupId < 0 || partner.marker->eachGroupId != returning.marker->eachGroupId
+                || !canRewrite.at(partner.token)) { ++first; continue; }
+        }
+        const int last = qMax(returnIndex, partnerIndex);
+        if (last + 1 < order.size()
+            && std::abs(heads->at(order.at(last + 1)).marker->second - returning.marker->second) < 1e-9) {
+            ++first;
+            continue;
+        }
+        const int sweepHand = handIndex(laneHand(startLane));
+        for (int i = first; i < first + 8; ++i) {
+            auto& head = (*heads)[order.at(i)];
+            allowRecalculation(head.token);
+            head.patternHand = sweepHand;
+            head.patternNeedsBothFree = true;
+        }
+        auto& returnHead = (*heads)[order.at(returnIndex)];
+        allowRecalculation(returnHead.token);
+        returnHead.patternHand = sweepHand;
+        returnHead.patternNeedsBothFree = true;
+        if (partnerIndex >= 0) {
+            auto& partner = (*heads)[order.at(partnerIndex)];
+            allowRecalculation(partner.token);
+            partner.patternHand = 1 - sweepHand;
+        }
+        first = last + 1;
+    }
+
     // Winding rebounds keep each fast pair on one hand even when the jump to
     // the next lane contains an empty subdivision.
     const auto fastPairAt = [&](int first) {
@@ -410,6 +480,8 @@ void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustai
             for (int candidate = 0; candidate < 2; ++candidate) {
                 if (a.fixed && handIndex(a.hand) >= 0 && handIndex(a.hand) != candidate) continue;
                 if (b.fixed && handIndex(b.hand) >= 0 && handIndex(b.hand) == candidate) continue;
+                if ((!a.fixed && a.patternHand >= 0 && a.patternHand != candidate)
+                    || (!b.fixed && b.patternHand >= 0 && b.patternHand != 1 - candidate)) continue;
                 if ((!a.fixed && busy(candidate, a.marker->second, a.token))
                     || (!b.fixed && busy(1 - candidate, b.marker->second, b.token))) continue;
                 double cost = headCost(a, candidate) + headCost(b, 1 - candidate);

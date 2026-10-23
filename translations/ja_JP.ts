@@ -5604,8 +5604,8 @@ Error: %1</source>
         <translation>基本配置：変更 %1、既存注釈の保持 %2、部分選択の除外 %3、未対応 %4、診断 %5。</translation>
     </message>
     <message id="hand_order.basic_layout_notice">
-        <source>Fast sixteenth-note or finer repeats may alternate hands; eighth-note rebounds stay together even at high BPM. Paired winding taps stay on one hand per pair. Adjacent Touchgroup pairs and short Touch sweeps may share a hand; other each pairs use two. Slides and holds reserve hands, and overlapping alternating stars use alternating full tracks. No playability replay is performed.</source>
-        <translation>速い十六分音符以下の同一キー連打は左右交互にできますが、八分音符の二連打は高 BPM でも組内で同じ手を使います。移動する二連打も組内では同じ手です。隣接する Touchgroup のペアと短い Touch スイープは片手で処理でき、他の同時押しは両手を使います。Slide と Hold は手を占有し、重なる左右交互の星は軌道全体を交互に担当します。演奏可能性の再生検証は行いません。</translation>
+        <source>Fast sixteenth-note or finer repeats may alternate hands; eighth-note rebounds stay together even at high BPM. Paired winding taps stay on one hand per pair; complete fast circles favour one sweeping hand, with the opposite final each key on the other. Adjacent Touchgroup pairs and short Touch sweeps may share a hand; other each pairs use two. Slides and holds reserve hands, and overlapping alternating stars use alternating full tracks. No playability replay is performed.</source>
+        <translation>速い十六分音符以下の同一キー連打は左右交互にできますが、八分音符の二連打は高 BPM でも組内で同じ手を使います。移動する二連打は組内で同じ手を使い、高速の一周スイープは片手で完走し、終点の反対側の同時押しはもう一方の手で処理します。隣接する Touchgroup のペアと短い Touch スイープは片手で処理でき、他の同時押しは両手を使います。Slide と Hold は手を占有し、重なる左右交互の星は軌道全体を交互に担当します。演奏可能性の再生検証は行いません。</translation>
     </message>
     <message id="hand_order.basic_layout_next_step">
         <source>Basic layout writes normal annotations. To optimize them, enable “Recompute existing annotations in selection” and analyze again.</source>

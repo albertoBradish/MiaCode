@@ -208,6 +208,21 @@ int main(int argc, char** argv)
     expect(basicHandOrderLayoutInSelection(windingWithJumps, 0, 0).edit.replacement
         == "(120){16}1~r,1~r,,2~l,2~l,,3~r,3~r,,4~l,4~l,",
         "empty subdivisions between winding pairs do not turn each rebound into an alternating tap");
+    const QString fullCircle = "(180){24}1,2,3,4,5,6,7,8,1/5,";
+    const QString fullCircleOld = "(180){24}1~r,2~r,3~r,4~r,5~l,6~l,7~l,8~l,1~r/5~l,";
+    const QString fullCircleExpected = "(180){24}1~r,2~r,3~r,4~r,5~r,6~r,7~r,8~r,1~r/5~l,";
+    expect(basicHandOrderLayoutInSelection(fullCircle, 0, 0).edit.replacement == fullCircleExpected
+        && basicHandOrderLayoutInSelection(fullCircleOld, 0, 0).edit.replacement == fullCircleExpected
+        && sameNative(fullCircle, fullCircleExpected),
+        "a full-circle sweep stays on one hand and leaves the final each partner to the other hand");
+    const QString counterClockwise = "(180){24}1,8,7,6,5,4,3,2,5/1,";
+    expect(basicHandOrderLayoutInSelection(counterClockwise, 0, 0).edit.replacement
+        == "(180){24}1~r,8~r,7~r,6~r,5~r,4~r,3~r,2~r,5~l/1~r,",
+        "the full-circle rule also accepts reverse motion and a reversed final each token order");
+    const QString circleWithoutEach = "(180){24}1,2,3,4,5,6,7,8,1,";
+    expect(basicHandOrderLayoutInSelection(circleWithoutEach, 0, 0).edit.replacement
+        == "(180){24}1~r,2~r,3~r,4~r,5~r,6~r,7~r,8~r,1~r,",
+        "a full circle without an end each still keeps the sweep on one hand");
     const QString relaxed = "(222){8}4,4,5,5,3b/6b,";
     const QString relaxedOld = "(222){8}4~l,4~r,5~l,5~l,3b~r/6b~l,";
     const QString relaxedExpected = "(222){8}4~r,4~r,5~l,5~l,3b~r/6b~l,";
