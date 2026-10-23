@@ -100,6 +100,7 @@ struct LayoutHead {
     int windingPrevious = -1;
     int sweepPrevious = -1;
     int reboundPrevious = -1;
+    int alternateSweepPrevious = -1;
     bool windingEach = false;
 };
 
@@ -113,6 +114,7 @@ struct LayoutSustain {
     int patternHand = -1;
     int oneStrokePrevious = -1, oneStrokeNext = -1;
     bool splitSharedStar = false;
+    bool tapLaneReserved = false;
 };
 struct LayoutWifiOccupancy {
     const TimelineNoteMarker* marker = nullptr;
@@ -356,6 +358,7 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
         const auto& b = heads->at(order.at(first + 1));
         if (a.marker->type != QStringLiteral("tap") || b.marker->type != QStringLiteral("tap")
             || a.windingEach || b.windingEach
+            || adjacentLaneStep(a.marker->lane, b.marker->lane) != 0
             || a.marker->eachGroupId < 0 || a.marker->eachGroupId != b.marker->eachGroupId
             || std::abs(a.marker->second - b.marker->second) > 1e-9
             || (first > 0 && std::abs(heads->at(order.at(first - 1)).marker->second
@@ -722,6 +725,47 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
         } else ++first;
     }
 
+    // Returning immediately to the beginning of the same three-key sweep
+    // uses the other hand instead of making the first hand jump backward.
+    for (int first = 0; first + 5 < order.size();) {
+        bool repeated = eligible(first, first + 6);
+        for (int i = 0; repeated && i < 3; ++i) {
+            const auto& a = heads->at(order.at(first + i));
+            const auto& b = heads->at(order.at(first + i + 3));
+            repeated = a.marker->type == QStringLiteral("tap")
+                && b.marker->type == QStringLiteral("tap")
+                && !a.marker->isEach && !b.marker->isEach
+                && a.marker->lane == b.marker->lane
+                && a.interactionGroup < 0 && b.interactionGroup < 0;
+        }
+        const auto& firstStart = heads->at(order.at(first));
+        const auto& firstMiddle = heads->at(order.at(first + 1));
+        const auto& firstEnd = heads->at(order.at(first + 2));
+        const auto& secondStart = heads->at(order.at(first + 3));
+        const int direction = adjacentLaneStep(firstStart.marker->lane, firstMiddle.marker->lane);
+        const double step = firstMiddle.marker->second - firstStart.marker->second;
+        const double returnGap = secondStart.marker->second - firstEnd.marker->second;
+        repeated = repeated && direction != 0 && step > 0.0
+            && adjacentLaneStep(firstMiddle.marker->lane, firstEnd.marker->lane) == direction
+            && regularTapStep(firstStart, firstMiddle, 1)
+            && step <= maximumSweepGap + 1e-9
+            && returnGap > 1.5 * step && returnGap <= qMin(4.5 * step, 0.18) + 1e-9;
+        for (int i : {2, 4, 5})
+            if (repeated)
+                repeated = regularTapStep(heads->at(order.at(first + i - 1)),
+                    heads->at(order.at(first + i)), 1);
+        if (!repeated) { ++first; continue; }
+        const int firstHand = firstStart.patternHand >= 0 ? firstStart.patternHand
+            : handIndex(laneHand(firstStart.marker->lane));
+        for (int i = 3; i < 6; ++i) {
+            auto& head = (*heads)[order.at(first + i)];
+            allowRecalculation(head.token);
+            head.patternHand = 1 - firstHand;
+        }
+        (*heads)[order.at(first + 3)].alternateSweepPrevious = order.at(first);
+        first += 6;
+    }
+
     // In a rapid paired sweep the hands may cross the screen centre at the
     // final Each. Continue each adjacent path instead of resetting by side.
     for (int moment = 0; moment + 2 < moments.size(); ++moment) {
@@ -839,7 +883,10 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
             || !selectedTokens.at(next.token)) continue;
         const double grid = 240.0 / (a.marker->tempoBpm * a.marker->subdivision);
         const double gap = next.marker->second - a.marker->second;
-        if (gap < grid * 1.9 - 1e-9 || gap > grid * 3.1 + 1e-9) continue;
+        const bool relaxed = gap > kFastRepeatedTapGapSeconds + 1e-9
+            && gap >= grid * 0.9 - 1e-9 && gap <= grid * 1.1 + 1e-9;
+        const bool delayed = gap >= grid * 1.9 - 1e-9 && gap <= grid * 3.1 + 1e-9;
+        if (!relaxed && !delayed) continue;
         const int source = a.marker->lane == next.marker->lane ? order.at(i)
             : b.marker->lane == next.marker->lane ? order.at(i + 1) : -1;
         if (source < 0) continue;
@@ -847,6 +894,34 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
         next.reboundPrevious = source;
         const int known = handIndex(heads->at(source).hand);
         if (known >= 0) next.patternHand = known;
+    }
+    for (int moment = 1; moment < moments.size(); ++moment) {
+        const auto& previous = moments.at(moment - 1);
+        const auto& current = moments.at(moment);
+        if (previous.size() != 1 || current.size() != 2) continue;
+        if (!canRewrite.at(heads->at(current.at(0)).token)
+            || !canRewrite.at(heads->at(current.at(1)).token)
+            || !selectedTokens.at(heads->at(current.at(0)).token)
+            || !selectedTokens.at(heads->at(current.at(1)).token)) continue;
+        const int source = previous.constFirst();
+        const auto& anchor = heads->at(source);
+        if (anchor.marker->type != QStringLiteral("tap") || anchor.marker->isEach
+            || anchor.reboundPrevious < 0) continue;
+        for (int index : current) {
+            auto& head = (*heads)[index];
+            if (head.marker->type != QStringLiteral("tap")
+                || !head.marker->isEach
+                || head.marker->lane != anchor.marker->lane
+                || head.patternHand >= 0 || !canRewrite.at(head.token)
+                || !selectedTokens.at(head.token)) continue;
+            const double grid = 240.0 / (anchor.marker->tempoBpm * anchor.marker->subdivision);
+            const double gap = head.marker->second - anchor.marker->second;
+            if (gap <= kFastRepeatedTapGapSeconds + 1e-9
+                || gap < grid * 0.9 - 1e-9 || gap > grid * 1.1 + 1e-9) continue;
+            allowRecalculation(heads->at(current.at(0)).token);
+            allowRecalculation(heads->at(current.at(1)).token);
+            head.reboundPrevious = source;
+        }
     }
 
     // A-B-A-C-A is a five-note axis with opposite neighbours. The centre
@@ -871,6 +946,54 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
             head.interactionStep = i - first;
         }
         first += 4;
+    }
+
+    // A visible star followed by three relaxed taps on its own key uses the
+    // tapping hand on that key and the other hand on the overlapping trace.
+    for (int sustainIndex = 0; sustainIndex < sustains->size(); ++sustainIndex) {
+        auto& sustain = (*sustains)[sustainIndex];
+        if (sustain.marker->type != QStringLiteral("slide") || sustain.head < 0
+            || !sustain.marker->hasHeadStar || sustain.oneStrokePrevious >= 0
+            || sustain.oneStrokeNext >= 0 || !canRewrite.at(sustain.token)) continue;
+        const auto& star = heads->at(sustain.head);
+        if (star.patternHand >= 0) continue;
+        const auto start = std::find(order.cbegin(), order.cend(), sustain.head);
+        if (start == order.cend()) continue;
+        QVector<int> taps;
+        double previousSecond = star.marker->second;
+        double interval = 0.0;
+        const TimelineNoteMarker* previousMarker = star.marker;
+        for (auto it = start + 1; it != order.cend(); ++it) {
+            const auto& head = heads->at(*it);
+            if (head.marker->type != QStringLiteral("tap")
+                || head.marker->lane != star.marker->lane
+                || head.marker->isEach || head.patternHand >= 0
+                || !canRewrite.at(head.token)) break;
+            const double gap = head.marker->second - previousSecond;
+            const double grid = 240.0 / (previousMarker->tempoBpm * previousMarker->subdivision);
+            const int grids = int(std::round(gap / grid));
+            if (gap <= kFastRepeatedTapGapSeconds + 1e-9 || gap > 0.32
+                || grids < 1 || grids > 4
+                || std::abs(gap - grids * grid) > grids * grid * 0.1 + 1e-9
+                || (interval > 0.0 && std::abs(gap - interval) > interval * 0.1 + 1e-9)
+                || head.marker->second > sustain.end + 1.1 * gap + 1e-9) break;
+            taps.append(*it);
+            interval = gap;
+            previousSecond = head.marker->second;
+            previousMarker = head.marker;
+        }
+        if (taps.size() < 3) continue;
+        const int tappingHand = handIndex(laneHand(star.marker->lane));
+        allowRecalculation(sustain.token);
+        sustain.patternHand = 1 - tappingHand;
+        sustain.splitSharedStar = true;
+        sustain.tapLaneReserved = true;
+        for (int i = 0; i < taps.size(); ++i) {
+            auto& tap = (*heads)[taps.at(i)];
+            allowRecalculation(tap.token);
+            tap.patternHand = tappingHand;
+            if (i > 0) tap.reboundPrevious = taps.at(i - 1);
+        }
     }
 
     // Other fast same-lane runs alternate individual taps when both hands are free.
@@ -1307,6 +1430,12 @@ void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustai
             const auto& previous = sustains->at(head.followSlideTail);
             head.patternHand = handIndex(handAt(previous, previous.end));
         }
+        for (int i = first; i < last; ++i) {
+            auto& head = (*heads)[order.at(i)];
+            if (head.fixed || head.reboundPrevious < 0) continue;
+            const int previousHand = handIndex(heads->at(head.reboundPrevious).hand);
+            if (previousHand >= 0) head.patternHand = previousHand;
+        }
         QVector<SharedHeadUnit> headUnits;
         for (int i = first; i < last; ++i) {
             const auto& head = heads->at(order.at(i));
@@ -1630,12 +1759,19 @@ BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, in
         if (head.reboundPrevious >= 0)
             result.reboundLinks.append({heads.at(head.reboundPrevious).marker->parseOrder,
                 head.marker->parseOrder});
+        if (head.alternateSweepPrevious >= 0)
+            result.alternatingSweepLinks.append({
+                heads.at(head.alternateSweepPrevious).marker->parseOrder,
+                head.marker->parseOrder});
         if (head.windingEach) result.windingEachHeads.insert(head.marker->parseOrder);
     }
     for (const auto& sustain : sustains)
         if (sustain.oneStrokeNext >= 0)
             result.oneStrokeLinks.append({sustain.marker->parseOrder,
                 sustains.at(sustain.oneStrokeNext).marker->parseOrder});
+    for (const auto& sustain : sustains)
+        if (sustain.tapLaneReserved)
+            result.tapLaneReservedTracks.insert(sustain.marker->parseOrder);
     if (!std::isfinite(returnSpeed)) returnSpeed = chart::handOrderDefaultReturnSpeed;
     assignLocalHands(&heads, &sustains, wifiTracks, qBound(chart::handOrderMinReturnSpeed, returnSpeed,
         chart::handOrderMaxReturnSpeed));
@@ -1750,6 +1886,8 @@ BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, in
         result.oneStrokeLinks.clear();
         result.windingLinks.clear(); result.windingEachHeads.clear();
         result.sweepLinks.clear(); result.reboundLinks.clear();
+        result.alternatingSweepLinks.clear();
+        result.tapLaneReservedTracks.clear();
         result.unresolvedColored = 0;
         plan.diagnostics += checked.errors;
         plan.diagnostics += checked.annotationErrors;

@@ -181,6 +181,59 @@ int main(int argc, char** argv) {
     expect(equivalent.error.isEmpty()
         && applyPatches(equivalentGrid, equivalent) == "(240){12}2~r,3~r,4~r,",
         "automatic sweep continuity depends on real spacing, not a 16th-note spelling");
+    for (int bpm : {120, 155, 190}) {
+        const QString prefix = QStringLiteral("(%1){8}").arg(bpm);
+        const QString right = prefix + "3>1[8:1]~[head=r;track=0:r],3~l,3~l,3~l,";
+        const QString left = prefix + "6>4[8:1]~[head=l;track=0:l],6~r,6~r,6~r,";
+        const auto rightResult = solve(right, 0, -1, recompute);
+        const auto leftResult = solve(left, 0, -1, recompute);
+        expect(rightResult.error.isEmpty() && leftResult.error.isEmpty()
+            && applyPatches(right, rightResult)
+                == prefix + "3>1[8:1]~[head=r;track=0:l],3~r,3~r,3~r,"
+            && applyPatches(left, leftResult)
+                == prefix + "6>4[8:1]~[head=l;track=0:r],6~l,6~l,6~l,"
+            && std::all_of(rightResult.rows.cbegin(), rightResult.rows.cend(),
+                [](const BasicRow& row) { return row.fullReplayVerified; }),
+            "automatic replay keeps relaxed head-lane taps opposite their star trace");
+    }
+    const QString finerLaneGrid = "(155){16}3>1[8:1]~[head=r;track=0:r],,3~l,,3~l,,3~l,,";
+    const auto finerLaneResult = solve(finerLaneGrid, 0, -1, recompute);
+    expect(finerLaneResult.error.isEmpty()
+        && applyPatches(finerLaneGrid, finerLaneResult)
+            == "(155){16}3>1[8:1]~[head=r;track=0:l],,3~r,,3~r,,3~r,,",
+        "automatic star-and-tap handoff is independent of a finer written subdivision");
+    const QString adjacentCross = "(155){8}4~l/5~r,";
+    const auto retainedCross = solve(adjacentCross);
+    expect(retainedCross.patches.isEmpty()
+        && std::all_of(retainedCross.rows.cbegin(), retainedCross.rows.cend(),
+            [](const BasicRow& row) { return row.fullReplayVerified; }),
+        "an explicitly crossed adjacent Each can remain a verified play hypothesis");
+    for (int bpm : {120, 155, 190}) {
+        const QString prefix = QStringLiteral("(%1){48}").arg(bpm);
+        const QString right = prefix + "1~r,2~r,3~r,,,,1~r,2~r,3~r,";
+        const QString left = prefix + "8~l,7~l,6~l,,,,8~l,7~l,6~l,";
+        const auto rightResult = solve(right, 0, -1, recompute);
+        const auto leftResult = solve(left, 0, -1, recompute);
+        expect(rightResult.error.isEmpty() && leftResult.error.isEmpty()
+            && applyPatches(right, rightResult)
+                == prefix + "1~r,2~r,3~r,,,,1~l,2~l,3~l,"
+            && applyPatches(left, leftResult)
+                == prefix + "8~l,7~l,6~l,,,,8~r,7~r,6~r,"
+            && std::all_of(rightResult.rows.cbegin(), rightResult.rows.cend(),
+                [](const BasicRow& row) { return row.fullReplayVerified; }),
+            "automatic paired short sweeps alternate without splitting either sweep");
+    }
+    const QString ladder = "(155){8}1~l/3~r,3~r,3~r/4~l,4~r,4~r/5~l,5~l,5~l/6~r,6~r,";
+    const auto ladderResult = solve(ladder, 0, -1, recompute);
+    expect(ladderResult.error.isEmpty()
+        && applyPatches(ladder, ladderResult)
+            == "(155){8}1~l/3~r,3~r,3~r/4~l,4~l,4~l/5~r,5~r,5~r/6~l,6~l,"
+        && std::all_of(ladderResult.rows.cbegin(), ladderResult.rows.cend(),
+            [](const BasicRow& row) { return row.fullReplayVerified; }),
+        "automatic staggered Each ladder carries each relaxed rebound into its next pair");
+    const QString isolatedPair = "(155){8}2b~l/3b~r,,4~r,3~r/4~l,";
+    expect(applyPatches(isolatedPair, solve(isolatedPair, 0, -1, recompute)) == isolatedPair,
+        "automatic carry does not lock an unrelated isolated note into the next Each");
     BasicParameters lowerSweep = recompute;
     lowerSweep.sweepThreshold = 120;
     const QString lowThresholdStar = "(120){16}7x~l,6x~r,5x-8[8:1]~[head=l;track=0:l],";

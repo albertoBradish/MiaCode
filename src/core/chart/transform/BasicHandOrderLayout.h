@@ -26,6 +26,10 @@ struct BasicHandOrderLayoutPlan {
     QVector<QPair<int, int>> sweepLinks;
     // A delayed same-key return after an Each is a new strike by that hand.
     QVector<QPair<int, int>> reboundLinks;
+    // Two adjacent repetitions of the same short sweep alternate hands.
+    QVector<QPair<int, int>> alternatingSweepLinks;
+    // A slide trace uses the opposite hand while its head lane is tapped repeatedly.
+    QSet<int> tapLaneReservedTracks;
     QSet<int> windingEachHeads;
 };
 

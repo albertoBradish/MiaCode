@@ -35,6 +35,25 @@ bool sameNative(const QString& a, const QString& b)
 int main(int argc, char** argv)
 {
     QCoreApplication app(argc, argv);
+    if (argc == 2 && QString::fromLocal8Bit(argv[1]) == QStringLiteral("--probe-times")) {
+        const auto parsed = SimaiParser::parseForTimeline(QTextStream(stdin).readAll());
+        for (const auto& marker : parsed.noteMarkers)
+            QTextStream(stdout) << marker.parseOrder << ' ' << marker.type << ' '
+                << marker.lane << " head=" << marker.second
+                << " trace=" << marker.slideTraceSecond << " end=" << marker.endSecond
+                << " grid=" << marker.subdivision << " star=" << marker.hasHeadStar
+                << " each=" << marker.eachGroupId << '\n';
+        return parsed.ok ? 0 : 1;
+    }
+    if (argc == 2 && QString::fromLocal8Bit(argv[1]) == QStringLiteral("--probe-links")) {
+        const auto plan = miacode::chart_transform::basicHandOrderLayoutInSelection(
+            QTextStream(stdin).readAll(), 0, 0);
+        for (const auto& link : plan.reboundLinks)
+            QTextStream(stdout) << "rebound " << link.first << " -> " << link.second << '\n';
+        for (const auto& link : plan.alternatingSweepLinks)
+            QTextStream(stdout) << "alternating_sweep " << link.first << " -> " << link.second << '\n';
+        return 0;
+    }
     if (argc == 2 && QString::fromLocal8Bit(argv[1]) == QStringLiteral("--probe")) {
         const QString chart = QTextStream(stdin).readAll();
         QTextStream(stdout) << miacode::chart_transform::basicHandOrderLayoutInSelection(chart, 0, 0).edit.replacement;
@@ -586,6 +605,44 @@ int main(int argc, char** argv)
     expect(basicHandOrderLayoutInSelection("(180){16}7h[1:1]~l,4~r,5~l,", 0, 0).edit.replacement
         == "(180){16}7h[1:1]~l,4~r,5~r,",
         "two fast keys may sweep across the hand boundary while the other hand is held");
+    for (int bpm : {120, 155, 190}) {
+        const QString prefix = QStringLiteral("(%1){8}").arg(bpm);
+        const QString right = prefix + "3>1[8:1]~[head=r;track=0:r],3~l,3~l,3~l,";
+        const QString left = prefix + "6>4[8:1]~[head=l;track=0:l],6~r,6~r,6~r,";
+        expect(basicHandOrderLayoutInSelection(right, 0, 0).edit.replacement
+                == prefix + "3>1[8:1]~[head=r;track=0:l],3~r,3~r,3~r,"
+            && basicHandOrderLayoutInSelection(left, 0, 0).edit.replacement
+                == prefix + "6>4[8:1]~[head=l;track=0:r],6~l,6~l,6~l,"
+            && sameNative(right, basicHandOrderLayoutInSelection(right, 0, 0).edit.replacement),
+            "a star trace gives the repeated head-lane taps their own hand across BPMs");
+    }
+    const QString fastLaneJacks = "(240){8}3>1[8:1]~[head=r;track=0:r],3~l,3~l,3~l,";
+    expect(basicHandOrderLayoutInSelection(fastLaneJacks, 0, 0).edit.replacement == fastLaneJacks,
+        "very fast same-lane jacks are not forced into the relaxed tap-lane motif");
+    const QString finerLaneGrid = "(155){16}3>1[8:1]~[head=r;track=0:r],,3~l,,3~l,,3~l,,";
+    expect(basicHandOrderLayoutInSelection(finerLaneGrid, 0, 0).edit.replacement
+        == "(155){16}3>1[8:1]~[head=r;track=0:l],,3~r,,3~r,,3~r,,",
+        "the same star-and-tap phrase survives a finer written subdivision");
+    const QString adjacentCross = "(155){8}4~l/5~r,";
+    expect(basicHandOrderLayoutInSelection(adjacentCross, 0, 0).edit.replacement == adjacentCross,
+        "a near-centre crossed Each is not forcibly corrected as a remote hand crossing");
+    for (int bpm : {120, 155, 190}) {
+        const QString prefix = QStringLiteral("(%1){48}").arg(bpm);
+        const QString right = prefix + "1~r,2~r,3~r,,,,1~r,2~r,3~r,";
+        const QString left = prefix + "8~l,7~l,6~l,,,,8~l,7~l,6~l,";
+        expect(basicHandOrderLayoutInSelection(right, 0, 0).edit.replacement
+                == prefix + "1~r,2~r,3~r,,,,1~l,2~l,3~l,"
+            && basicHandOrderLayoutInSelection(left, 0, 0).edit.replacement
+                == prefix + "8~l,7~l,6~l,,,,8~r,7~r,6~r,",
+            "two close repetitions of the same three-key sweep alternate their moving hands");
+    }
+    const QString ladder = "(155){8}1~l/3~r,3~r,3~r/4~l,4~r,4~r/5~l,5~l,5~l/6~r,6~r,";
+    const QString ladderExpected = "(155){8}1~l/3~r,3~r,3~r/4~l,4~l,4~l/5~r,5~r,5~r/6~l,6~l,";
+    expect(basicHandOrderLayoutInSelection(ladder, 0, 0).edit.replacement == ladderExpected,
+        "relaxed same-key carry follows each step of a staggered two-hand ladder");
+    const QString isolatedPair = "(155){8}2b~l/3b~r,,4~r,3~r/4~l,";
+    expect(basicHandOrderLayoutInSelection(isolatedPair, 0, 0).edit.replacement == isolatedPair,
+        "an isolated note before an Each does not force its hand through the new pair");
     for (const QString& axis : {QStringLiteral("(190){16}3~r,4~l,3~r,2~l,3~r,"),
                                 QStringLiteral("(150){32}3~r,4~l,3~r,2~l,3~r,")})
         expect(basicHandOrderLayoutInSelection(axis, 0, 0).edit.replacement == axis,

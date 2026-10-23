@@ -72,6 +72,8 @@ int main(int argc, char* argv[])
     cli.addOption({"max-tasks", "Maximum tasks per search window.", "count", "512"});
     cli.addOption({"counterfactual-budget", "Counterfactual search budget.", "count", "64"});
     cli.addOption({"return-speed", "Hand return speed in field radii per second.", "speed", "3"});
+    cli.addOption({"sweep-threshold", "Integer 16th-note BPM equivalent for key sweeps.", "bpm16",
+        QString::number(defaults.sweepThreshold)});
     cli.addOption({"input-preference", "0 exterior, 1 screen, 2 mixed.", "mode", "0"});
     cli.addOption({"overwrite-existing", "Permit changing existing annotations in the output copy."});
     cli.addOption({"tap-rate", "Single hand reference strike limit (hits/s).", "rate", "5.5"});
@@ -114,6 +116,8 @@ int main(int argc, char* argv[])
     parameters.maxTasks = int(integer("max-tasks", 1, 2048));
     parameters.counterfactualBudget = int(integer("counterfactual-budget", 0, 128));
     parameters.inputPreference = int(integer("input-preference", 0, 2));
+    parameters.sweepThreshold = int(integer("sweep-threshold",
+        miacode::chart::handOrderMinSweepThreshold, miacode::chart::handOrderMaxSweepThreshold));
     parameters.overwriteExisting = cli.isSet("overwrite-existing");
     const auto number = [&](const QString& name) {
         bool ok = false;
@@ -185,7 +189,8 @@ int main(int argc, char* argv[])
         {"parameters", QJsonObject{{"max_work_units", parameters.maxWorkUnits},
             {"beam_width", parameters.beamWidth}, {"max_tasks", parameters.maxTasks},
             {"counterfactual_budget", parameters.counterfactualBudget},
-            {"return_speed", parameters.returnSpeed}, {"input_preference", parameters.inputPreference},
+            {"return_speed", parameters.returnSpeed}, {"sweep_threshold", parameters.sweepThreshold},
+            {"input_preference", parameters.inputPreference},
             {"overwrite_existing", parameters.overwriteExisting},
             {"player", QJsonObject{{"tap_rate", parameters.player.maxComfortableTapRate},
                 {"move_speed", parameters.player.comfortableMoveSpeed}, {"stamina", parameters.player.staminaCapacity},
