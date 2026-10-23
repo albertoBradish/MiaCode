@@ -17,6 +17,20 @@ constexpr double kPositionMemorySeconds = 0.4;
 constexpr double kFastRepeatedTapGapSeconds = 0.13;
 constexpr double kWindingPairGapSeconds = 0.4;
 constexpr double kTouchSweepGapSeconds = 0.18;
+constexpr double kMinimumOneStrokeJoinSeconds = 1.0 / 180.0;
+constexpr double kMaximumOneStrokeJoinSeconds = 0.15;
+constexpr double kStarHitWindowSeconds = 27.0 / 180.0;
+
+double oneStrokeJoinSeconds(const TimelineNoteMarker& first, const TimelineNoteMarker& second)
+{
+    if (!std::isfinite(first.tempoBpm) || !std::isfinite(second.tempoBpm)
+        || first.tempoBpm <= 0.0 || second.tempoBpm <= 0.0
+        || first.subdivision <= 0 || second.subdivision <= 0) return kMinimumOneStrokeJoinSeconds;
+    const double firstGrid = 240.0 / (first.tempoBpm * first.subdivision);
+    const double secondGrid = 240.0 / (second.tempoBpm * second.subdivision);
+    return qBound(kMinimumOneStrokeJoinSeconds, 0.5 * qMin(firstGrid, secondGrid),
+        kMaximumOneStrokeJoinSeconds);
+}
 
 HandOrderHand laneHand(int lane)
 {
@@ -67,6 +81,7 @@ struct LayoutSustain {
     HandOrderHand hand = HandOrderHand::Unspecified;
     bool fixed = false;
     int patternHand = -1;
+    int oneStrokePrevious = -1, oneStrokeNext = -1;
 };
 
 int handIndex(HandOrderHand hand)
@@ -135,7 +150,7 @@ bool nearbyTouches(const LayoutHead& first, const LayoutHead& second)
 }
 
 void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustains,
-    const QVector<bool>& canRewrite, QVector<bool>* rewriteTokens)
+    const QVector<bool>& canRewrite, const QVector<bool>& selectedTokens, QVector<bool>* rewriteTokens)
 {
     const auto order = orderedHeads(*heads);
     QVector<QVector<int>> headsByToken(canRewrite.size());
@@ -166,6 +181,50 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
             sustain.hand = HandOrderHand::Unspecified;
         }
     };
+
+    // A new slide may show its star while the previous trace is still moving.
+    // Join the moving tracks, but leave each playable star as its own task.
+    QVector<int> strokePrevious(sustains->size(), -1);
+    QVector<int> successorCount(sustains->size(), 0);
+    for (int nextIndex = 0; nextIndex < sustains->size(); ++nextIndex) {
+        const auto& next = sustains->at(nextIndex);
+        if (next.marker->type != QStringLiteral("slide") || !canRewrite.at(next.token)
+            || !selectedTokens.at(next.token) || next.marker->slideSegmentPoints.isEmpty()) continue;
+        int previousIndex = -1;
+        for (int candidateIndex = 0; candidateIndex < sustains->size(); ++candidateIndex) {
+            const auto& previous = sustains->at(candidateIndex);
+            if (candidateIndex == nextIndex || previous.marker->type != QStringLiteral("slide")
+                || previous.token == next.token || !canRewrite.at(previous.token)
+                || !selectedTokens.at(previous.token) || previous.marker->slideSegmentPoints.isEmpty()
+                || previous.marker->second > next.marker->second + 1e-9
+                || previous.marker->slideTraceSecond >= next.marker->slideTraceSecond - 1e-9) continue;
+            const double gap = next.marker->slideTraceSecond - previous.end;
+            if (std::abs(gap) > oneStrokeJoinSeconds(*previous.marker, *next.marker) + 1e-9) continue;
+            const int distance = std::abs(previous.marker->endLane - next.marker->lane);
+            if (qMin(distance, 8 - distance) > 1) continue;
+            if (next.marker->hasHeadStar && previous.marker->endLane == next.marker->lane
+                && std::abs(previous.end - next.marker->second) <= kStarHitWindowSeconds) continue;
+            if (previousIndex >= 0) { previousIndex = -1; break; }
+            previousIndex = candidateIndex;
+        }
+        if (previousIndex >= 0) {
+            strokePrevious[nextIndex] = previousIndex;
+            ++successorCount[previousIndex];
+        }
+    }
+    for (int nextIndex = 0; nextIndex < sustains->size(); ++nextIndex) {
+        const int previousIndex = strokePrevious.at(nextIndex);
+        if (previousIndex < 0 || successorCount.at(previousIndex) != 1) continue;
+        const auto& next = sustains->at(nextIndex);
+        allowRecalculation((*sustains)[previousIndex].token);
+        allowRecalculation(next.token);
+        if ((*sustains)[previousIndex].head < 0
+            && (*sustains)[previousIndex].oneStrokePrevious < 0)
+            (*sustains)[previousIndex].hand = basicLayoutTrackHand(*(*sustains)[previousIndex].marker);
+        (*sustains)[previousIndex].oneStrokeNext = nextIndex;
+        (*sustains)[nextIndex].oneStrokePrevious = previousIndex;
+        (*sustains)[nextIndex].hand = HandOrderHand::Unspecified;
+    }
 
     // A complete ring is one continuous sweep. Keep the returning start key
     // on that hand and reserve the other for an opposite key in the final each.
@@ -365,12 +424,19 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
     // corresponding hand for the whole track, including old simple labels.
     for (int first = 0; first < order.size();) {
         const auto& initial = heads->at(order.at(first));
-        if (initial.marker->type != QStringLiteral("slide") || !initial.marker->hasHeadStar) { ++first; continue; }
+        if (initial.marker->type != QStringLiteral("slide") || !initial.marker->hasHeadStar
+            || std::any_of(sustainsByHead.at(order.at(first)).cbegin(), sustainsByHead.at(order.at(first)).cend(),
+                [&](int index) { return sustains->at(index).oneStrokePrevious >= 0 || sustains->at(index).oneStrokeNext >= 0; })) {
+            ++first;
+            continue;
+        }
         int last = first + 1;
         while (last < order.size()) {
             const auto& previous = heads->at(order.at(last - 1));
             const auto& next = heads->at(order.at(last));
             if (next.marker->type != QStringLiteral("slide") || !next.marker->hasHeadStar
+                || std::any_of(sustainsByHead.at(order.at(last)).cbegin(), sustainsByHead.at(order.at(last)).cend(),
+                    [&](int index) { return sustains->at(index).oneStrokePrevious >= 0 || sustains->at(index).oneStrokeNext >= 0; })
                 || previous.marker->endSecond < next.marker->second - 1e-9
                 || next.marker->second <= previous.marker->second + 1e-9
                 || handIndex(laneHand(previous.marker->lane)) == handIndex(laneHand(next.marker->lane))) break;
@@ -419,6 +485,29 @@ void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustai
         }
         return false;
     };
+    const auto carryOneStrokeHand = [&](int firstIndex) {
+        int previousIndex = firstIndex;
+        while (previousIndex >= 0 && sustains->at(previousIndex).oneStrokeNext >= 0) {
+            const int nextIndex = sustains->at(previousIndex).oneStrokeNext;
+            auto& next = (*sustains)[nextIndex];
+            const int hand = handIndex(sustains->at(previousIndex).hand);
+            if (hand < 0 || next.fixed || handIndex(next.hand) >= 0) break;
+            bool occupied = false;
+            for (int otherIndex = 0; otherIndex < sustains->size(); ++otherIndex) {
+                if (otherIndex == previousIndex || otherIndex == nextIndex) continue;
+                const auto& other = sustains->at(otherIndex);
+                occupied |= other.marker->second <= next.marker->slideTraceSecond + 1e-9
+                    && other.end > next.marker->slideTraceSecond + 1e-9
+                    && handIndex(handAt(other, next.marker->slideTraceSecond)) == hand;
+            }
+            if (occupied) break;
+            next.hand = sustains->at(previousIndex).hand;
+            previousIndex = nextIndex;
+        }
+    };
+    for (int index = 0; index < sustains->size(); ++index)
+        if (sustains->at(index).head < 0 && sustains->at(index).oneStrokePrevious < 0
+            && sustains->at(index).oneStrokeNext >= 0) carryOneStrokeHand(index);
     const auto headCost = [&](const LayoutHead& head, int hand) {
         const auto preferred = basicLayoutHeadHand(*head.marker);
         const double sideCost = handIndex(preferred) >= 0 && handIndex(preferred) != hand ? 0.25 : 0.0;
@@ -553,6 +642,10 @@ void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustai
                 if (cost < best) { best = cost; sustain.hand = candidate == 0 ? HandOrderHand::Left : HandOrderHand::Right; }
             }
         }
+        for (int index = 0; index < sustains->size(); ++index)
+            if (sustains->at(index).oneStrokeNext >= 0
+                && handIndex(sustains->at(sustains->at(index).oneStrokeNext).hand) < 0
+                && handIndex(sustains->at(index).hand) >= 0) carryOneStrokeHand(index);
         first = last;
     }
 }
@@ -628,6 +721,7 @@ BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, in
     QVector<LayoutHead> heads;
     QVector<LayoutSustain> sustains;
     QVector<bool> canRewrite(parsed.sourceTokens.size(), false);
+    QVector<bool> selectedTokens(parsed.sourceTokens.size(), false);
     QVector<bool> rewriteTokens(parsed.sourceTokens.size(), false);
     QHash<int, int> headByOrder;
     QHash<int, int> sustainByOrder;
@@ -638,6 +732,7 @@ BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, in
         const auto parts = hand_order::splitToken(text.mid(start, source.length));
         const bool fixed = !parts.suffix.isEmpty();
         const bool completeTarget = start >= begin && start + source.length <= end;
+        selectedTokens[tokenIndex] = completeTarget;
         const auto* firstMarker = byOrder.value(source.firstParseOrder);
         bool annotationValid = true;
         for (const auto& issue : parsed.annotationErrors)
@@ -674,7 +769,7 @@ BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, in
             }
         }
     }
-    identifyLocalPatterns(&heads, &sustains, canRewrite, &rewriteTokens);
+    identifyLocalPatterns(&heads, &sustains, canRewrite, selectedTokens, &rewriteTokens);
     assignLocalHands(&heads, &sustains);
     int delta = 0;
     for (int tokenIndex = 0; tokenIndex < parsed.sourceTokens.size(); ++tokenIndex) {

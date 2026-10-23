@@ -100,7 +100,7 @@ int main(int argc, char** argv)
         && sameNative(bothOccupied, blocked.edit.replacement),
         "a third head during two holds stays unassigned when neither hand is free");
 
-    const QString slides = "(120){4}1-5[4:1],5-1[4:1],1-3-7[1:1],5?-1[4:1],";
+    const QString slides = "(120){4}1-5[4:1],7-3[4:1],1-3-7[1:1],5?-1[4:1],";
     const auto laidSlides = basicHandOrderLayoutInSelection(slides, 0, 0);
     const auto parsedSlides = SimaiParser::validateSyntax(laidSlides.edit.replacement);
     expect(laidSlides.edit.diagnostics.isEmpty() && parsedSlides.annotationErrors.isEmpty() && parsedSlides.noteMarkers.size() == 4,
@@ -124,6 +124,78 @@ int main(int argc, char** argv)
             == basicLayoutTrackHand(parsedIsolated.noteMarkers.constFirst()),
         "an isolated chained slide retains its motion-start default hand");
     expect(sameNative(slides, laidSlides.edit.replacement), "slide layout changes only hand-order annotation");
+
+    const QString joined = "(120){4}1-5[4:1],5-1[4:1],";
+    const auto joinedLayout = basicHandOrderLayoutInSelection(joined, 0, 0);
+    expect(joinedLayout.edit.replacement == "(120){4}1-5[4:1]~[head=r;track=0:r],"
+        "5-1[4:1]~[head=l;track=0:r]," && sameNative(joined, joinedLayout.edit.replacement),
+        "head-to-tail slides keep one track hand while the next playable star uses the other hand");
+    const QString adjacentStroke = "(120){4}2-4-6[4:1],7-5-3[4:1],";
+    const auto adjacentLayout = basicHandOrderLayoutInSelection(adjacentStroke, 0, 0);
+    expect(adjacentLayout.edit.replacement.contains("7-5-3[4:1]~[head=l;track=0:r]")
+        && sameNative(adjacentStroke, adjacentLayout.edit.replacement),
+        "adjacent tail and next start can continue one stroke through a bend");
+    const QString headlessStroke = "(120){4}1-5[4:1],5?-1[4:1],";
+    const auto headlessLayout = basicHandOrderLayoutInSelection(headlessStroke, 0, 0);
+    expect(headlessLayout.edit.replacement.contains("5?-1[4:1]~[track=0:r]")
+        && sameNative(headlessStroke, headlessLayout.edit.replacement),
+        "a headless continuation inherits the moving hand without inventing a star");
+    const QString headlessStart = "(120){4}1?-5[4:1],5?-1[4:1],";
+    const auto headlessStartLayout = basicHandOrderLayoutInSelection(headlessStart, 0, 0);
+    expect(headlessStartLayout.edit.replacement.contains("1?-5[4:1]~[track=0:r]")
+        && headlessStartLayout.edit.replacement.contains("5?-1[4:1]~[track=0:r]")
+        && sameNative(headlessStart, headlessStartLayout.edit.replacement),
+        "a headless first track still supplies the hand for its continuation");
+    const QString threeSlides = "(120){4}1-5[4:1],5-1[4:1],1-5[4:1],";
+    const auto threeLayout = basicHandOrderLayoutInSelection(threeSlides, 0, 0);
+    expect(threeLayout.edit.replacement.contains("5-1[4:1]~[head=l;track=0:r]")
+        && threeLayout.edit.replacement.endsWith("1-5[4:1]~[head=l;track=0:r],")
+        && sameNative(threeSlides, threeLayout.edit.replacement),
+        "one-stroke hand responsibility propagates across three separate tokens");
+    const QString oldStroke = "(120){4}1-5[4:1]~[head=r;track=0:r],5-1[4:1]~[head=l;track=0:l],";
+    const auto repairedStroke = basicHandOrderLayoutInSelection(oldStroke, 0, 0);
+    expect(repairedStroke.edit.replacement == "(120){4}1-5[4:1]~[head=r;track=0:r],"
+        "5-1[4:1]~[head=l;track=0:r]," && sameNative(oldStroke, repairedStroke.edit.replacement),
+        "a recognized one-stroke group repairs a complete old simple track label");
+    expect(basicHandOrderLayoutInSelection(repairedStroke.edit.replacement, 0, 0).edit.changed == 0,
+        "a repeated one-stroke layout does not create another edit");
+    const int secondStrokeStart = oldStroke.indexOf("5-1[");
+    const auto strokeSelection = basicHandOrderLayoutInSelection(oldStroke, secondStrokeStart,
+        oldStroke.indexOf(',', secondStrokeStart));
+    expect(strokeSelection.edit.changed == 0,
+        "a one-stroke pattern does not rewrite a selected slide without its predecessor");
+    const QString manualStroke = "(120){4}1-5[4:1]~[head=r;track=0:r|0.5:l],5-1[4:1],";
+    const auto manualLayout = basicHandOrderLayoutInSelection(manualStroke, 0, 0);
+    expect(manualLayout.edit.replacement.startsWith("(120){4}1-5[4:1]~[head=r;track=0:r|0.5:l],")
+        && sameNative(manualStroke, manualLayout.edit.replacement),
+        "a complex manual track remains protected when nearby slides connect geometrically");
+    const QString collidingStar = "(120){4}1-5[4:1],,5-1[0##0.5],";
+    const auto collisionLayout = basicHandOrderLayoutInSelection(collidingStar, 0, 0);
+    expect(collisionLayout.edit.replacement.contains("5-1[0##0.5]~[head=l;track=0:l]")
+        && sameNative(collidingStar, collisionLayout.edit.replacement),
+        "a previous tail hitting the next star at its head time blocks one-stroke priority");
+    const QString separated = "(120){4}1-5[4:1],,5-1[4:1],";
+    const auto separatedLayout = basicHandOrderLayoutInSelection(separated, 0, 0);
+    expect(separatedLayout.edit.replacement.contains("5-1[4:1]~[head=l;track=0:l]"),
+        "a long break between moving tracks is not a one-stroke connection");
+    const QString moderateGap = "(120){4}1-5[4:1],5-1[0.6##0.5],";
+    const auto moderateLayout = basicHandOrderLayoutInSelection(moderateGap, 0, 0);
+    expect(moderateLayout.edit.replacement.contains("5-1[0.6##0.5]~[head=l;track=0:r]")
+        && sameNative(moderateGap, moderateLayout.edit.replacement),
+        "half a 120 BPM quarter-note grid accepts a short moving-track gap");
+    const QString fastGrid = "(120){4}1-5[4:1],(240){8}5-1[0.6##0.5],";
+    const auto fastLayout = basicHandOrderLayoutInSelection(fastGrid, 0, 0);
+    expect(fastLayout.edit.replacement.contains("5-1[0.6##0.5]~[head=l;track=0:l]")
+        && sameNative(fastGrid, fastLayout.edit.replacement),
+        "the shorter grid after a BPM and subdivision change narrows the join window");
+    const QString cappedGap = "(120){4}1-5[4:1],5-1[0.66##0.5],";
+    expect(basicHandOrderLayoutInSelection(cappedGap, 0, 0).edit.replacement
+        .contains("5-1[0.66##0.5]~[head=l;track=0:l]"),
+        "the 0.15-second ceiling prevents a slow grid from joining a longer pause");
+    const QString flooredGap = "(120){4}1-5[4:1],(600){64}5-1[0.505##0.5],";
+    expect(basicHandOrderLayoutInSelection(flooredGap, 0, 0).edit.replacement
+        .contains("5-1[0.505##0.5]~[head=l;track=0:r]"),
+        "the 1/180-second floor permits a tiny gap at an extreme BPM and subdivision");
 
     const QString touches = "(120){4}A1,B8,C,D1,D3,D5,D7,E1,";
     const auto laidTouches = basicHandOrderLayoutInSelection(touches, 0, 0);
