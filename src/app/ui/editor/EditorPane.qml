@@ -15,6 +15,7 @@ Item {
     property var shortcuts: null
     property var handOrderService: null
     required property var preferences
+    required property var preferencesModel
     required property var latency
     required property var previewSession
     required property var pages
@@ -379,6 +380,7 @@ Item {
         syncController: root.editorSync
         analysisSession: root.analysisSession
         preferences: root.preferences
+        preferencesModel: root.preferencesModel
         shortcuts: root.shortcuts
         handOrderService: root.handOrderService
         onNormalizeChartRequested: root.pages.openNormalizeWholeChart()

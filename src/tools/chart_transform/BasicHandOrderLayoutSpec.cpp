@@ -235,12 +235,12 @@ int main(int argc, char** argv)
         && basicLayoutHandForPoint({std::numeric_limits<double>::quiet_NaN(), 0.0}) == HandOrderHand::Unspecified,
         "shared geometry distinguishes a genuine centre preference from invalid input");
 
-    const QString wifi = "(120){4}1w5[4:1],1w5[4:1]*-7[4:1],";
+    const QString wifi = "(120){4}1w5[4:1],";
     const auto laidWifi = basicHandOrderLayoutInSelection(wifi, 0, 0);
     const auto parsedWifi = SimaiParser::validateSyntax(laidWifi.edit.replacement);
     expect(laidWifi.edit.diagnostics.isEmpty() && parsedWifi.annotationErrors.isEmpty()
-        && laidWifi.edit.replacement.contains("track=split:") && laidWifi.edit.replacement.contains("branch0=split:")
-        && laidWifi.edit.replacement.contains("branch1=0:r"), "Wifi emits explicit native sectors and preserves source branch numbering");
+        && laidWifi.edit.replacement.contains("track=split:"),
+        "an isolated Wifi emits explicit native sectors");
     for (const auto& marker : parsedWifi.noteMarkers) {
         if (marker.type != QStringLiteral("wifi")) continue;
         expect(marker.handOrderWifiMode == HandOrderWifiMode::Split && marker.handOrderTrackStops.isEmpty()
@@ -249,6 +249,11 @@ int main(int argc, char** argv)
             "unannotated Wifi gets two different hands rather than an incorrect ordinary one-color track");
     }
     expect(sameNative(wifi, laidWifi.edit.replacement), "Wifi native fan geometry, counts and timing remain unchanged");
+    const QString wifiWithThirdTrack = "(120){4}1w5[4:1]*-7[4:1],";
+    const auto thirdWifiTrack = basicHandOrderLayoutInSelection(wifiWithThirdTrack, 0, 0);
+    expect(thirdWifiTrack.edit.replacement == wifiWithThirdTrack
+        && thirdWifiTrack.edit.unsupported == 1,
+        "a two-hand Wifi and independent third branch are left unresolved");
     const QString sharedStarHead = "(120){4}1~l/1-5[4:1]~[head=r;track=0:r],";
     const auto sharedStarLayout = basicHandOrderLayoutInSelection(sharedStarHead, 0, 0);
     expect(sharedStarLayout.edit.replacement == "(120){4}1~r/1-5[4:1]~[head=r;track=0:r],"
@@ -299,10 +304,11 @@ int main(int argc, char** argv)
     const QString locked = "(120){4}1~l,5~m,1w5[4:1]~r,2w6[4:1]~[track=split:0:r&0:l],"
         "3w7[4:1]~[track=single:0:m],8~z,2,";
     const auto protectedLayout = basicHandOrderLayoutInSelection(locked, 0, 0);
-    expect(protectedLayout.preserved == 6 && protectedLayout.edit.changed == 1
-        && protectedLayout.edit.replacement == locked.left(locked.size() - 2) + "2~r,"
+    expect(protectedLayout.preserved == 6 && protectedLayout.edit.changed == 0
+        && protectedLayout.edit.replacement == locked
+        && protectedLayout.edit.unsupported == 1
         && protectedLayout.edit.diagnostics.size() == 1,
-        "existing shorthand, Wifi modes, Either and invalid suffixes retain exact original text");
+        "existing Wifi locks stay intact and an overlapping uncertain Single hand blocks guessed colors");
 
     const QString partial = "(120){4}1-5[4:1]/8,2,";
     const int begin = partial.indexOf("-5");
@@ -535,5 +541,96 @@ int main(int argc, char** argv)
         "7x-4[16:1]~[head=l;track=0:l|0.5:r],,,1x-5[16:1]~[head=r;track=0:r],";
     expect(basicHandOrderLayoutInSelection(customStars, 0, 0).edit.changed == 0,
         "a hand-edited slide transfer prevents automatic rewriting of its star sequence");
+    for (int bpm : {160, 180, 200, 240}) {
+        const QString prefix = QStringLiteral("(%1)").arg(bpm);
+        const QString shortRun = prefix + "{16}2~r,3~l,4~r,";
+        const QString shortExpected = prefix + "{16}2~r,3~r,4~r,";
+        const QString pair = prefix + "{16}2~r,3~l,";
+        const QString pairExpected = prefix + "{16}2~r,3~r,";
+        expect(basicHandOrderLayoutInSelection(shortRun, 0, 0).edit.replacement == shortExpected
+            && basicHandOrderLayoutInSelection(pair, 0, 0).edit.replacement == pairExpected
+            && sameNative(shortRun, shortExpected),
+            "BPM-scaled 16th-note two- and three-key sweeps retain one moving hand");
+        const QString starRun = prefix + "{16}7x~l,6x~r,5x-8[8:1]~[head=l;track=0:l],";
+        const QString starExpected = prefix + "{16}7x~l,6x~l,5x-8[8:1]~[head=l;track=0:r],";
+        expect(basicHandOrderLayoutInSelection(starRun, 0, 0).edit.replacement == starExpected
+            && sameNative(starRun, starExpected),
+            "a star-ending short sweep keeps the head hand and gives its later trace the free hand");
+        const QString rebound = prefix + "{16}1~r/8~l,,8~r,";
+        expect(basicHandOrderLayoutInSelection(rebound, 0, 0).edit.replacement
+            == prefix + "{16}1~r/8~l,,8~l,",
+            "an Each's same-key return preserves the striking hand after an empty subdivision");
+        const QString crossing = prefix + "{32}3b~r/7b~l,4b~r/8b~l,1b~r/5b~l,,,,,,8~r,";
+        const QString crossed = basicHandOrderLayoutInSelection(crossing, 0, 0).edit.replacement;
+        expect(crossed.contains("3b~r/7b~l,4b~r/8b~l,1b~l/5b~r,,,,,,8~l,")
+            && sameNative(crossing, crossed),
+            "a paired 32nd-note sweep crosses at 8/1 and carries its next neighbour");
+    }
+    expect(basicHandOrderLayoutInSelection("(100){16}2~r,3~l,", 0, 0).edit.replacement
+        == "(100){16}2~r,3~l,",
+        "a slower 16th-note pair is not forcibly grouped as a sweep");
+    expect(basicHandOrderLayoutInSelection("(159){16}2~r,3~l,4~r,", 0, 0).edit.replacement
+        == "(159){16}2~r,3~l,4~r,"
+        && basicHandOrderLayoutInSelection("(120){16}2~r,3~l,4~r,", 0, 0, {}, 3.0, 120)
+            .edit.replacement == "(120){16}2~r,3~r,4~r,"
+        && basicHandOrderLayoutInSelection("(150){32}2~r,3~l,4~r,", 0, 0, {}, 3.0, 300)
+            .edit.replacement == "(150){32}2~r,3~r,4~r,"
+        && basicHandOrderLayoutInSelection("(150){32}2~r,3~l,4~r,", 0, 0, {}, 3.0, 301)
+            .edit.replacement == "(150){32}2~r,3~l,4~r,",
+        "integer 16th-BPM sweep threshold includes exact 160/300 boundaries and excludes slower grids");
+    expect(basicHandOrderLayoutInSelection("(240){12}2~r,3~l,4~r,", 0, 0).edit.replacement
+        == "(240){12}2~r,3~r,4~r,"
+        && basicHandOrderLayoutInSelection("(120){24}2~r,3~l,4~r,", 0, 0).edit.replacement
+            == "(120){24}2~r,3~r,4~r,",
+        "equal real sweep spacing behaves alike across BPM and subdivision spellings");
+    expect(basicHandOrderLayoutInSelection("(180){16}7h[1:1]~l,4~r,5~l,", 0, 0).edit.replacement
+        == "(180){16}7h[1:1]~l,4~r,5~r,",
+        "two fast keys may sweep across the hand boundary while the other hand is held");
+    for (const QString& axis : {QStringLiteral("(190){16}3~r,4~l,3~r,2~l,3~r,"),
+                                QStringLiteral("(150){32}3~r,4~l,3~r,2~l,3~r,")})
+        expect(basicHandOrderLayoutInSelection(axis, 0, 0).edit.replacement == axis,
+            "the middle 4-3-2 of a five-note axis is not isolated as a sweep");
+    const QString switchedTrack = "(120){16}2-5[4:1]~[head=r;track=0:r|0.5:l],,,3-7[4:1],";
+    const QString switchedExpected = "(120){16}2-5[4:1]~[head=r;track=0:r|0.5:l],,,"
+        "3-7[4:1]~[head=l;track=0:r],";
+    expect(basicHandOrderLayoutInSelection(switchedTrack, 0, 0).edit.replacement == switchedExpected
+        && sameNative(switchedTrack, switchedExpected),
+        "a later slide trace avoids the prior track's receiving hand after a handoff");
+    const QString narrowHandoff = "(120){16}2-5[4:1]"
+        "~[head=r;track=0:r|0.5:l|0.54:r],,3-7[4:1],";
+    const auto narrowLayout = basicHandOrderLayoutInSelection(narrowHandoff, 0, 0);
+    expect(narrowLayout.edit.replacement == narrowHandoff && narrowLayout.edit.unsupported == 1
+        && narrowLayout.edit.diagnostics.isEmpty(),
+        "a brief handoff occupying both candidates leaves the later trace unresolved");
+    const auto optedNarrow = basicHandOrderLayoutInSelection(narrowHandoff, 0, 0, {}, 3.0,
+        miacode::chart::handOrderDefaultSweepThreshold, true);
+    expect(optedNarrow.unresolvedColored == 1
+        && optedNarrow.edit.replacement.endsWith("3-7[4:1]~[head=l;track=0:r],"),
+        "explicit opt-in colors an otherwise unresolved trace with its default hand");
+    const QString blockedHeadless = "(120){4}2-5[1:1]/7-3[1:1],3?-6[1:1],";
+    const auto headless = basicHandOrderLayoutInSelection(blockedHeadless, 0, 0);
+    expect(headless.edit.replacement.endsWith("3?-6[1:1],") && headless.edit.unsupported == 1,
+        "a headless third trace does not silently reuse either occupied hand");
+    const QString crossedHold = "(120){16}2-5[4:1]"
+        "~[head=r;track=0:r|0.5:l],,,,,7h[#0.5],";
+    const auto heldDuringHandoff = basicHandOrderLayoutInSelection(crossedHold, 0, 0);
+    expect(heldDuringHandoff.edit.replacement == crossedHold
+        && heldDuringHandoff.edit.unsupported == 1,
+        "a Hold head cannot claim a hand that a slide receives during the Hold body");
+    const QString wifiOccupied = "(120){4}1w5[1:1]"
+        "~[head=l;track=split:0:l&0:r],3-7[1:1],";
+    const auto aroundWifi = basicHandOrderLayoutInSelection(wifiOccupied, 0, 0);
+    expect(aroundWifi.edit.replacement == wifiOccupied && aroundWifi.edit.unsupported == 1,
+        "a split Wifi's two moving hands block a later independent slide");
+    const QString wifiSharedHead = "(120){4}1w5[1:1]"
+        "~[head=l;track=split:0:l&0:r],2/2-6[4:1],";
+    const auto sharedDuringWifi = basicHandOrderLayoutInSelection(wifiSharedHead, 0, 0);
+    expect(sharedDuringWifi.edit.replacement == wifiSharedHead
+        && sharedDuringWifi.edit.unsupported >= 1,
+        "a shared tap-and-star unit cannot bypass an active two-hand Wifi");
+    const QString eachLead = "(200){32}1~r/7~l,6~l,5~r,4~r,2~r/8~l,3~r,4~l,5~l,";
+    expect(basicHandOrderLayoutInSelection(eachLead, 0, 0).edit.replacement
+        == "(200){32}1~r/7~l,6~l,5~l,4~l,2~r/8~l,3~r,4~r,5~r,",
+        "an opposite Each at a fast sweep's entrance reserves the other hand");
     return ok ? 0 : 1;
 }

@@ -1,5 +1,6 @@
 #include "app/ui/preferences/PreferencesModel.h"
 #include "app/ui/preferences/HandOrderPlayerPreferences.h"
+#include "app/ui/preferences/HandOrderSweepPreferences.h"
 
 #include "app/ui/layout/WorkbenchSettings.h"
 #include "app/services/PreferencesStore.h"
@@ -7,6 +8,7 @@
 #include "app/ui/preferences/LocaleService.h"
 #include "app/services/PreferenceDocument.h"
 #include "core/chart/model/HandOrderRestPosition.h"
+#include "core/chart/model/HandOrderSweepThreshold.h"
 
 #include <QVariantMap>
 #include <QCoreApplication>
@@ -447,6 +449,32 @@ void PreferencesModel::setHandOrderReturnSpeed(double speed)
     QJsonObject app = root.value(QStringLiteral("app")).toObject();
     app.insert(QStringLiteral("hand_order_return_speed"), speed);
     root.insert(QStringLiteral("app"), app);
+    PreferenceDocument::savePreferencesObject(root);
+    emit editorChanged();
+}
+
+int PreferencesModel::handOrderSweepThreshold() const
+{
+    return hand_order_sweep_preferences::threshold(PreferenceDocument::loadPreferencesObject());
+}
+
+void PreferencesModel::setHandOrderSweepThreshold(int threshold)
+{
+    QJsonObject root = PreferenceDocument::loadPreferencesObject();
+    if (!hand_order_sweep_preferences::setThreshold(&root, threshold)) return;
+    PreferenceDocument::savePreferencesObject(root);
+    emit editorChanged();
+}
+
+bool PreferencesModel::handOrderColorUnresolved() const
+{
+    return hand_order_sweep_preferences::colorUnresolved(PreferenceDocument::loadPreferencesObject());
+}
+
+void PreferencesModel::setHandOrderColorUnresolved(bool enabled)
+{
+    QJsonObject root = PreferenceDocument::loadPreferencesObject();
+    if (!hand_order_sweep_preferences::setColorUnresolved(&root, enabled)) return;
     PreferenceDocument::savePreferencesObject(root);
     emit editorChanged();
 }

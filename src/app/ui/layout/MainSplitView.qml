@@ -528,6 +528,7 @@ Item {
                         documentSession: root.documentSession
                         commands: root.commands
                         preferences: root.preferences
+                        preferencesModel: root.preferencesModel
                         shortcuts: root.shortcuts
                         handOrderService: root.handOrderService
                         latency: root.latency

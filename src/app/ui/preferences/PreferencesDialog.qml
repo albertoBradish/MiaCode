@@ -644,6 +644,40 @@ AppDialog {
                                          + " " + qsTrId("preferences.hand_order_return_speed_unit")
                                 onMoved: function(v) { root.preferencesModel.handOrderReturnSpeed = Math.round(v * 4) / 4 }
                             }
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Layout.minimumHeight: root.settingsRowHeight
+                                spacing: root.sectionSpacing
+                                Label {
+                                    Layout.preferredWidth: root.settingsLabelWidth
+                                    text: qsTrId("preferences.hand_order_sweep_threshold")
+                                    wrapMode: Text.WordWrap
+                                }
+                                SpinBox {
+                                    objectName: "preferencesHandOrderSweepThresholdSpinBox"
+                                    Layout.fillWidth: true
+                                    from: 60
+                                    to: 600
+                                    stepSize: 1
+                                    editable: true
+                                    value: root.preferencesModel.handOrderSweepThreshold
+                                    onValueModified: root.preferencesModel.handOrderSweepThreshold = value
+                                }
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                text: qsTrId("preferences.hand_order_sweep_threshold_help")
+                                font.family: Theme.uiFont
+                                font.pixelSize: Theme.uiFontSize
+                                color: Theme.colors.text.secondary
+                                wrapMode: Text.WordWrap
+                            }
+                            PreferenceSwitch {
+                                objectName: "preferencesHandOrderColorUnresolvedSwitch"
+                                text: qsTrId("hand_order.auto.color_unresolved")
+                                checked: root.preferencesModel.handOrderColorUnresolved
+                                onToggled: root.preferencesModel.handOrderColorUnresolved = checked
+                            }
                         }
 
                         PreferenceGroup {

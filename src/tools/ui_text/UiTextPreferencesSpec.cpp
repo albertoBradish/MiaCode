@@ -1,5 +1,6 @@
 #include "app/services/PreferenceDocument.h"
 #include "app/ui/preferences/HandOrderPlayerPreferences.h"
+#include "app/ui/preferences/HandOrderSweepPreferences.h"
 
 #include <QCoreApplication>
 #include <QJsonObject>
@@ -143,6 +144,7 @@ int main(int argc, char** argv)
     // Exercise the same JSON accessors used by PreferencesModel, with fresh
     // repositories proving that changes survive a new preferences lifetime.
     namespace player = miacode::ui::hand_order_player_preferences;
+    namespace sweep = miacode::ui::hand_order_sweep_preferences;
     QTemporaryDir playerDirectory;
     ok &= expect(playerDirectory.isValid(), QStringLiteral("temporary player preferences directory"), err);
     if (playerDirectory.isValid()) {
@@ -152,6 +154,11 @@ int main(int argc, char** argv)
         playerRoot.insert(QStringLiteral("app"), QJsonObject{
             {QStringLiteral("hand_order_return_speed"), 4.25},
             {QStringLiteral("hand_order_player"), QJsonObject{{QStringLiteral("vendor.custom"), 42}}}});
+        ok &= expect(sweep::threshold(playerRoot) == 160 && !sweep::colorUnresolved(playerRoot),
+            QStringLiteral("sweep threshold and unresolved-color default are stable"), err);
+        ok &= expect(sweep::setThreshold(&playerRoot, 300)
+                && sweep::setColorUnresolved(&playerRoot, true),
+            QStringLiteral("integer sweep threshold and default-color opt-in write together"), err);
         const QVariantMap defaults = player::read(playerRoot);
         const QVariantMap customized{
             {QStringLiteral("maxComfortableTapRate"), 7.25},
@@ -167,6 +174,14 @@ int main(int argc, char** argv)
         ok &= expect(repository.replace(playerRoot), QStringLiteral("custom player profile persists"), err);
         PreferenceDocument::Repository reopened(path);
         const QJsonObject saved = reopened.snapshot();
+        ok &= expect(sweep::threshold(saved) == 300 && sweep::colorUnresolved(saved),
+            QStringLiteral("sweep settings survive a fresh preference repository"), err);
+        QJsonObject invalidSweep = saved;
+        QJsonObject invalidApp = invalidSweep.value(QStringLiteral("app")).toObject();
+        invalidApp.insert(QStringLiteral("hand_order_sweep_threshold"), 300.5);
+        invalidSweep.insert(QStringLiteral("app"), invalidApp);
+        ok &= expect(sweep::threshold(invalidSweep) == 160,
+            QStringLiteral("fractional stored sweep thresholds return to the integer default"), err);
         ok &= expect(player::read(saved) == customized,
                      QStringLiteral("all six custom fields reload from a new repository"), err);
         ok &= expect(saved.value("app").toObject().value("hand_order_return_speed").toDouble() == 4.25

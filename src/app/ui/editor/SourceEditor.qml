@@ -12,6 +12,7 @@ Rectangle {
     required property var syncController
     required property var analysisSession
     property var preferences: null
+    property var preferencesModel: null
     property var shortcuts: null
     property var handOrderService: null
     readonly property bool overviewRulerEnabled: preferences ? preferences.editorOverviewRulerEnabled : false
@@ -660,6 +661,7 @@ Rectangle {
     HandOrderAnalysisDialog {
         id: handOrderAnalysisDialog
         service: root.handOrderService
+        preferencesModel: root.preferencesModel
         applyEdit: () => sourceArea.applyHandOrderAnalysis()
         analyzeSelection: () => sourceArea.requestHandOrderAnalysis(false)
         analyzeDifficulty: () => sourceArea.requestHandOrderAnalysis(true)

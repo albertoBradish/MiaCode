@@ -19,6 +19,8 @@
     <message id="dialog.preferences.group.hand_order"><source>Sticking</source><translation>Sticking</translation></message>
     <message id="preferences.hand_order_return_speed"><source>Hand return speed</source><translation>手部回正速度</translation></message>
     <message id="preferences.hand_order_return_speed_unit"><source>field radii/s</source><translation>场地半径/秒</translation></message>
+    <message id="preferences.hand_order_sweep_threshold"><source>Sweep threshold (16th BPM equivalent)</source><translation>扫键速度阈值（等效16分BPM）</translation></message>
+    <message id="preferences.hand_order_sweep_threshold_help"><source>160 = 16th notes at 160 BPM; 300 = 32nd notes at 150 BPM. Higher values require faster spacing.</source><translation>160 对应 BPM 160 的 16 分；300 对应 BPM 150 的 32 分。数值越高，需更快的相邻间隔才判为扫。</translation></message>
     <message id="setup.completion_hint">
         <source>Customize completion candidates in Preferences.</source>
         <translation>可在首选项中自定义补全候选列表。</translation>
@@ -5032,12 +5034,12 @@ Error: %1</source>
         <translation>建议，待复核</translation>
     </message>
     <message id="hand_order.auto.status.heuristic">
-        <source>Basic layout fallback: unverified</source>
-        <translation>基础排布补全，未经过完整回放验证</translation>
+        <source>Default hand color: unverified</source>
+        <translation>默认手序补色，未经过完整回放验证</translation>
     </message>
     <message id="hand_order.auto.reason.layout_fallback_unverified">
-        <source>Search ran out of work; basic layout supplies a hand, without full replay verification.</source>
-        <translation>搜索用尽工作量；以基础排布补全手别，尚未通过完整回放。</translation>
+        <source>Unresolved note colored with its default hand by request; no full replay verification.</source>
+        <translation>按已勾选设置，用默认手序为未决音符补色；尚未通过完整回放。</translation>
     </message>
     <message id="hand_order.auto.status.preserved">
         <source>Existing annotation preserved</source>
@@ -5371,6 +5373,14 @@ Error: %1</source>
         <source>Apply only high-confidence complete dependency units</source>
         <translation>仅应用高置信且完整闭合的依赖单元</translation>
     </message>
+    <message id="hand_order.auto.color_unresolved">
+        <source>Color unresolved notes with default Sticking</source>
+        <translation>未决音符使用默认手序补色</translation>
+    </message>
+    <message id="hand_order.auto.color_unresolved_help">
+        <source>Off by default. Default colors are unverified and disabled in high-confidence mode. Existing annotations are preserved.</source>
+        <translation>默认关闭。默认补色未经验证；仅高置信模式会禁用补色。已有标注仍保留。</translation>
+    </message>
     <message id="hand_order.auto.high_confidence_closed">
         <source> Only complete high-confidence dependency units are writable.</source>
         <translation> 仅完整闭合的高置信依赖单元可写入。</translation>
@@ -5634,6 +5644,10 @@ Error: %1</source>
     <message id="hand_order.basic_layout_next_step">
         <source>Basic layout writes normal annotations. To optimize them, enable “Recompute existing annotations in selection” and analyze again.</source>
         <translation>基础排布会写入正常标注；继续自动优化时，请勾选“重算选区已有 Sticking”并重新分析。</translation>
+    </message>
+    <message id="hand_order.basic_layout_unverified_defaults">
+        <source>%1 unresolved notes used default hand colors without playability verification.</source>
+        <translation>%1 个未决音符按默认手序补色，未经可玩性验证。</translation>
     </message>
 </context>
 </TS>

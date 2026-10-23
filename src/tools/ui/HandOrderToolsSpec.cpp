@@ -292,6 +292,12 @@ Window {
         property int revision: 1
         function displayText(id) { return "Ctrl+Alt+1" }
     }
+    QtObject {
+        id: fakeStickingPreferences
+        property bool handOrderColorUnresolved: false
+        onHandOrderColorUnresolvedChanged:
+            editHost.automaticService.colorUnresolved = handOrderColorUnresolved
+    }
     MainToolBar {
         anchors.top: parent.top
         width: parent.width
@@ -311,6 +317,7 @@ Window {
     HandOrderAnalysisDialog {
         objectName: "automaticDialog"
         service: editHost.automaticService
+        preferencesModel: fakeStickingPreferences
         applyEdit: () => editHost.applyAutomatic()
         analyzeSelection: () => editHost.requestAutomatic()
         analyzeDifficulty: () => editHost.requestAutomatic()
@@ -430,6 +437,24 @@ Window {
         auto* automaticDialog = window->findChild<QObject*>("automaticDialog");
         QMetaObject::invokeMethod(automaticDialog, "open");
         expect(QTest::qWaitFor([&] { return popupAtRest(automaticDialog, true); }, 2000), "automatic popup finishes opening");
+        auto* unresolvedColor = findVisualItem(window->contentItem(), "handOrderColorUnresolved");
+        expect(unresolvedColor && unresolvedColor->isEnabled()
+            && !unresolvedColor->property("checked").toBool(),
+            "real Sticking dialog shows the unresolved-color opt-in unchecked");
+        if (unresolvedColor) {
+            const QPoint point = unresolvedColor->mapToScene(QPointF(
+                unresolvedColor->width() / 2, unresolvedColor->height() / 2)).toPoint();
+            QTest::mouseClick(window, Qt::LeftButton, {}, point);
+            expect(host.automatic.colorUnresolved() && !host.automatic.canApply(),
+                "checking unresolved colors invalidates the old automatic result");
+            QTest::mouseClick(window, Qt::LeftButton, {}, point);
+            expect(!host.automatic.colorUnresolved()
+                && !unresolvedColor->property("checked").toBool(),
+                "unchecking unresolved colors restores the default policy");
+            host.automatic.request(host.text(), 0, 0);
+            for (int n = 0; host.automatic.pending() && n < 500; ++n) QTest::qWait(10);
+            expect(host.automatic.canApply(), "reanalysis after checkbox changes creates current evidence");
+        }
         auto* location = findVisualItem(window->contentItem(), "handOrderResultLocation_0");
         expect(location != nullptr && location->isEnabled(), "real automatic QML offers current-result source navigation");
         if (location) {

@@ -81,6 +81,20 @@ void HandOrderAnalysisService::setReturnSpeed(double speed)
     if (qFuzzyCompare(parameters_.returnSpeed, speed)) return;
     auto parameters = parameters_; parameters.returnSpeed = speed; setParameters(parameters);
 }
+
+void HandOrderAnalysisService::setSweepThreshold(int threshold)
+{
+    threshold = qBound(chart::handOrderMinSweepThreshold, threshold,
+        chart::handOrderMaxSweepThreshold);
+    if (parameters_.sweepThreshold == threshold) return;
+    auto parameters = parameters_; parameters.sweepThreshold = threshold; setParameters(parameters);
+}
+
+void HandOrderAnalysisService::setColorUnresolved(bool enabled)
+{
+    if (parameters_.colorUnresolved == enabled) return;
+    auto parameters = parameters_; parameters.colorUnresolved = enabled; setParameters(parameters);
+}
 void HandOrderAnalysisService::setPlayerProfile(const hand_order::PlayerProfile& profile)
 {
     if (!hand_order::validPlayerProfile(profile)) return;

@@ -17,6 +17,7 @@ class HandOrderAnalysisService final : public QObject {
     Q_PROPERTY(bool overwriteExisting READ overwriteExisting WRITE setOverwriteExisting NOTIFY changed)
     Q_PROPERTY(bool highConfidenceOnly READ highConfidenceOnly WRITE setHighConfidenceOnly NOTIFY changed)
     Q_PROPERTY(int inputPreference READ inputPreference WRITE setInputPreference NOTIFY changed)
+    Q_PROPERTY(bool colorUnresolved READ colorUnresolved WRITE setColorUnresolved NOTIFY changed)
 public:
     HandOrderAnalysisService(ChartWorkspace& workspace, AnalysisService* analysis = nullptr, QObject* parent = nullptr);
     ~HandOrderAnalysisService() override;
@@ -29,10 +30,13 @@ public:
     bool overwriteExisting() const { return parameters_.overwriteExisting; }
     bool highConfidenceOnly() const { return parameters_.highConfidenceOnly; }
     int inputPreference() const { return parameters_.inputPreference; }
+    bool colorUnresolved() const { return parameters_.colorUnresolved; }
     void setOverwriteExisting(bool value);
     void setHighConfidenceOnly(bool value);
     void setInputPreference(int value);
     void setReturnSpeed(double speed);
+    void setSweepThreshold(int threshold);
+    void setColorUnresolved(bool enabled);
     void setPlayerProfile(const hand_order::PlayerProfile& profile);
     bool request(const QString& text, int begin, int end);
     Q_INVOKABLE void cancel();

@@ -19,6 +19,8 @@
     <message id="dialog.preferences.group.hand_order"><source>Sticking</source><translation>Sticking</translation></message>
     <message id="preferences.hand_order_return_speed"><source>Hand return speed</source><translation>手の復帰速度</translation></message>
     <message id="preferences.hand_order_return_speed_unit"><source>field radii/s</source><translation>フィールド半径/秒</translation></message>
+    <message id="preferences.hand_order_sweep_threshold"><source>Sweep threshold (16th BPM equivalent)</source><translation>スイープ判定しきい値（16分換算BPM）</translation></message>
+    <message id="preferences.hand_order_sweep_threshold_help"><source>160 = 16th notes at 160 BPM; 300 = 32nd notes at 150 BPM. Higher values require faster spacing.</source><translation>160はBPM160の16分、300はBPM150の32分に相当します。数値が高いほど速い間隔のみスイープと判定します。</translation></message>
     <message id="setup.completion_hint">
         <source>Customize completion candidates in Preferences.</source>
         <translation>補完候補リストは環境設定でカスタマイズできます。</translation>
@@ -5032,12 +5034,12 @@ Error: %1</source>
         <translation>候補・要確認</translation>
     </message>
     <message id="hand_order.auto.status.heuristic">
-        <source>Basic layout fallback: unverified</source>
-        <translation>基本配置による補完・未検証</translation>
+        <source>Default hand color: unverified</source>
+        <translation>既定の手順色・未検証</translation>
     </message>
     <message id="hand_order.auto.reason.layout_fallback_unverified">
-        <source>Search ran out of work; basic layout supplies a hand, without full replay verification.</source>
-        <translation>探索の作業量が尽きたため基本配置で補完しました。完全リプレイによる検証はありません。</translation>
+        <source>Unresolved note colored with its default hand by request; no full replay verification.</source>
+        <translation>選択された設定により未決定ノートを既定の手で色付けしました。完全リプレイでは未検証です。</translation>
     </message>
     <message id="hand_order.auto.status.preserved">
         <source>Existing annotation preserved</source>
@@ -5371,6 +5373,14 @@ Error: %1</source>
         <source>Apply only high-confidence complete dependency units</source>
         <translation>高信頼の完全な依存単位のみ適用</translation>
     </message>
+    <message id="hand_order.auto.color_unresolved">
+        <source>Color unresolved notes with default Sticking</source>
+        <translation>未決定ノートを既定の手順で色付け</translation>
+    </message>
+    <message id="hand_order.auto.color_unresolved_help">
+        <source>Off by default. Default colors are unverified and disabled in high-confidence mode. Existing annotations are preserved.</source>
+        <translation>既定ではオフです。既定色は未検証で、高信頼モードでは無効です。既存の注釈は維持されます。</translation>
+    </message>
     <message id="hand_order.auto.high_confidence_closed">
         <source> Only complete high-confidence dependency units are writable.</source>
         <translation> 完全な高信頼の依存単位のみ書き込めます。</translation>
@@ -5634,6 +5644,10 @@ Error: %1</source>
     <message id="hand_order.basic_layout_next_step">
         <source>Basic layout writes normal annotations. To optimize them, enable “Recompute existing annotations in selection” and analyze again.</source>
         <translation>基本配置は通常の注釈を書き込みます。続けて自動最適化する場合は「選択内の既存Stickingを再計算」を有効にして再解析してください。</translation>
+    </message>
+    <message id="hand_order.basic_layout_unverified_defaults">
+        <source>%1 unresolved notes used default hand colors without playability verification.</source>
+        <translation>%1 件の未決定ノートを既定の手で色付けしました。プレイ可能性は未検証です。</translation>
     </message>
 </context>
 </TS>

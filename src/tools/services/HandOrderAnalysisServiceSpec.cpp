@@ -250,7 +250,15 @@ int main(int argc, char** argv) {
     tinyBudget.counterfactualBudget = 0;
     fallbackService.setParameters(tinyBudget);
     expect(fallbackService.request(fallbackSource, 0, 0),
-        "service accepts a bounded search that may require basic-layout fallback");
+        "service accepts a bounded search with unresolved notes");
+    settle(fallbackService);
+    expect(!fallbackService.canApply()
+        && !fallbackService.rows().isEmpty()
+        && fallbackService.rows().first().toMap().value("status") != QStringLiteral("heuristic"),
+        "unresolved colors remain off by default after a work-limited analysis");
+    fallbackService.setColorUnresolved(true);
+    expect(fallbackService.request(fallbackSource, 0, 0),
+        "explicit default-color preference creates a fresh analysis request");
     settle(fallbackService);
     bool shownUnverified = fallbackService.canApply();
     for (const auto& item : fallbackService.rows()) {

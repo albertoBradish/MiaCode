@@ -9,6 +9,7 @@ AppDialog {
     required property var applyEdit
     required property var analyzeSelection
     required property var analyzeDifficulty
+    property var preferencesModel: null
     property var navigateResult: null
     signal editingFinished()
     objectName: "handOrderAnalysisDialog"
@@ -48,7 +49,25 @@ AppDialog {
             objectName: "handOrderHighConfidenceOnly"
             text: qsTrId("hand_order.auto.high_confidence_only")
             checked: root.service && root.service.highConfidenceOnly
-            onClicked: root.service.highConfidenceOnly = checked
+            onClicked: {
+                root.service.highConfidenceOnly = checked
+                if (checked && root.preferencesModel)
+                    root.preferencesModel.handOrderColorUnresolved = false
+            }
+        }
+        AppCheckBox {
+            objectName: "handOrderColorUnresolved"
+            text: qsTrId("hand_order.auto.color_unresolved")
+            enabled: root.service && !root.service.highConfidenceOnly && root.preferencesModel
+            checked: root.preferencesModel && root.preferencesModel.handOrderColorUnresolved
+                && root.service && !root.service.highConfidenceOnly
+            onClicked: root.preferencesModel.handOrderColorUnresolved = checked
+        }
+        Label {
+            width: parent.width
+            text: qsTrId("hand_order.auto.color_unresolved_help")
+            color: Theme.colors.text.secondary
+            wrapMode: Text.Wrap
         }
         Flow {
             width: parent.width

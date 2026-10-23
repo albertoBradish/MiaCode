@@ -57,6 +57,8 @@ public:
     Q_PROPERTY(bool editorSelectionBeatDisplay READ editorSelectionBeatDisplay WRITE setEditorSelectionBeatDisplay NOTIFY editorChanged)
     Q_PROPERTY(bool editorOverviewRulerEnabled READ editorOverviewRulerEnabled WRITE setEditorOverviewRulerEnabled NOTIFY editorChanged)
     Q_PROPERTY(double handOrderReturnSpeed READ handOrderReturnSpeed WRITE setHandOrderReturnSpeed NOTIFY editorChanged)
+    Q_PROPERTY(int handOrderSweepThreshold READ handOrderSweepThreshold WRITE setHandOrderSweepThreshold NOTIFY editorChanged)
+    Q_PROPERTY(bool handOrderColorUnresolved READ handOrderColorUnresolved WRITE setHandOrderColorUnresolved NOTIFY editorChanged)
     Q_PROPERTY(QVariantMap handOrderPlayerProfile READ handOrderPlayerProfile NOTIFY editorChanged)
 
     Q_PROPERTY(QAbstractItemModel* completionDurations READ completionDurations CONSTANT)
@@ -134,6 +136,10 @@ public:
     void setEditorOverviewRulerEnabled(bool enabled);
     double handOrderReturnSpeed() const;
     void setHandOrderReturnSpeed(double speed);
+    int handOrderSweepThreshold() const;
+    void setHandOrderSweepThreshold(int threshold);
+    bool handOrderColorUnresolved() const;
+    void setHandOrderColorUnresolved(bool enabled);
     QVariantMap handOrderPlayerProfile() const;
     Q_INVOKABLE void setHandOrderPlayerParameter(const QString& name, double value);
     Q_INVOKABLE void resetHandOrderPlayerProfile();

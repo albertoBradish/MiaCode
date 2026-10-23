@@ -417,7 +417,8 @@ miacode::editor::SimaiTextEditResult EditorController::handOrderCommand(
     const int end = qBound(begin, qMax(anchor, position), int(text.size()));
     if (command == QStringLiteral("hand_order.basic_layout")) {
         const auto layout = miacode::chart_transform::basicHandOrderLayoutInSelection(
-            text, begin, end, metadata, handOrderReturnSpeed_);
+            text, begin, end, metadata, handOrderReturnSpeed_, handOrderSweepThreshold_,
+            handOrderColorUnresolved_);
         const auto& plan = layout.edit;
         const bool wholeDifficulty = begin == end;
         auto result = selectionTransaction(text, wholeDifficulty ? 0 : anchor,
@@ -441,6 +442,10 @@ miacode::editor::SimaiTextEditResult EditorController::handOrderCommand(
             .arg(plan.changed).arg(layout.preserved).arg(plan.partial).arg(plan.unsupported).arg(plan.diagnostics.size());
         handOrderFeedback_ = handOrderFeedback_ + QStringLiteral("\n") + miacode::localizedText("hand_order.basic_layout_notice");
         handOrderFeedback_ = handOrderFeedback_ + QStringLiteral("\n") + miacode::localizedText("hand_order.basic_layout_next_step");
+        if (layout.unresolvedColored > 0)
+            handOrderFeedback_ = handOrderFeedback_ + QStringLiteral("\n")
+                + miacode::localizedText("hand_order.basic_layout_unverified_defaults")
+                    .arg(layout.unresolvedColored);
         for (const auto& diagnostic : plan.diagnostics)
             handOrderFeedback_ = handOrderFeedback_ + QStringLiteral("\n") + miacode::localizedText("hand_order.diagnostic")
                 .arg(diagnostic.line).arg(diagnostic.col).arg(diagnostic.message);

@@ -98,6 +98,8 @@ struct LayoutHead {
     int followSlideTail = -1;
     int interactionGroup = -1, interactionStep = -1;
     int windingPrevious = -1;
+    int sweepPrevious = -1;
+    int reboundPrevious = -1;
     bool windingEach = false;
 };
 
@@ -111,6 +113,10 @@ struct LayoutSustain {
     int patternHand = -1;
     int oneStrokePrevious = -1, oneStrokeNext = -1;
     bool splitSharedStar = false;
+};
+struct LayoutWifiOccupancy {
+    const TimelineNoteMarker* marker = nullptr;
+    int token = -1;
 };
 struct SharedHeadUnit {
     int key = -1;
@@ -206,8 +212,10 @@ bool regularTapStep(const LayoutHead& first, const LayoutHead& second, int minim
 }
 
 void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustains,
-    const QVector<bool>& canRewrite, const QVector<bool>& selectedTokens, QVector<bool>* rewriteTokens)
+    const QVector<bool>& canRewrite, const QVector<bool>& selectedTokens,
+    int sweepThreshold, QVector<bool>* rewriteTokens)
 {
+    const double maximumSweepGap = chart::handOrderSweepGapSeconds(sweepThreshold);
     const auto order = orderedHeads(*heads);
     QVector<QVector<int>> headsByToken(canRewrite.size());
     QVector<QVector<int>> sustainsByToken(canRewrite.size());
@@ -486,9 +494,6 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
         const auto& next = sustains->at(nextIndex);
         allowRecalculation((*sustains)[previousIndex].token);
         allowRecalculation(next.token);
-        if ((*sustains)[previousIndex].head < 0
-            && (*sustains)[previousIndex].oneStrokePrevious < 0)
-            (*sustains)[previousIndex].hand = basicLayoutTrackHand(*(*sustains)[previousIndex].marker);
         (*sustains)[previousIndex].oneStrokeNext = nextIndex;
         (*sustains)[nextIndex].oneStrokePrevious = previousIndex;
         (*sustains)[nextIndex].hand = HandOrderHand::Unspecified;
@@ -610,38 +615,188 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
             const auto& previous = heads->at(order.at(last - 1));
             const auto& current = heads->at(order.at(last));
             const int step = adjacentLaneStep(previous.marker->lane, current.marker->lane);
+            const bool starEnding = current.marker->type == QStringLiteral("slide")
+                && current.marker->hasHeadStar && last == first + 2;
+            const double grid = 240.0 / (previous.marker->tempoBpm * previous.marker->subdivision);
+            const double gap = current.marker->second - previous.marker->second;
+            const bool regularStar = starEnding && previous.marker->type == QStringLiteral("tap")
+                && previous.marker->subdivision > 0 && current.marker->subdivision > 0
+                && gap >= grid * 0.9 - 1e-9 && gap <= grid * 1.1 + 1e-9;
             if (!step || (direction && step != direction) || previous.patternHand >= 0
-                || current.patternHand >= 0 || !regularTapStep(previous, current, 16)) break;
+                || current.patternHand >= 0
+                || gap > maximumSweepGap + 1e-9
+                || (!regularTapStep(previous, current, 1) && !regularStar)) break;
             direction = step;
             ++last;
         }
-        const bool denseFour = last - first == 4
-            && std::all_of(order.cbegin() + first, order.cbegin() + last, [&](int index) {
-                return heads->at(index).marker->subdivision >= 32;
-            });
         const bool completeRing = last - first >= 8;
-        const bool fastLong = last - first >= 4
-            && std::all_of(order.cbegin() + first, order.cbegin() + last, [&](int index) {
-                return heads->at(index).marker->subdivision >= 24;
-            });
-        if ((completeRing || fastLong || denseFour) && eligible(first, last)) {
-            const int hand = handIndex(laneHand(heads->at(order.at(first)).marker->lane));
+        const bool fastLong = last - first >= 4;
+        bool shortSweep = last - first == 3
+            && heads->at(order.at(first)).marker->subdivision > 0
+            && heads->at(order.at(first + 1)).marker->subdivision > 0
+            && heads->at(order.at(first + 2)).marker->subdivision > 0;
+        if (shortSweep && first > 0 && last < order.size()) {
+            const int middleLane = heads->at(order.at(first + 1)).marker->lane;
+            shortSweep = heads->at(order.at(first - 1)).marker->lane != middleLane
+                || heads->at(order.at(last)).marker->lane != middleLane;
+        }
+        bool shortPair = last - first == 2;
+        int pairHand = -1;
+        if (shortPair) {
+            const auto& a = heads->at(order.at(first));
+            const auto& b = heads->at(order.at(first + 1));
+            const double gap = b.marker->second - a.marker->second;
+            const double pseudoEach = 240.0 / (64.0 * qMax(a.marker->tempoBpm, b.marker->tempoBpm));
+            pairHand = handIndex(laneHand(a.marker->lane));
+            if (pairHand != handIndex(laneHand(b.marker->lane))) {
+                bool occupied[2] = {false, false};
+                for (const auto& sustain : *sustains) {
+                    if (sustain.marker->second > a.marker->second + 1e-9
+                        || sustain.end <= b.marker->second + 1e-9) continue;
+                    const int hand = handIndex(sustain.hand != HandOrderHand::Unspecified
+                        ? sustain.hand : basicLayoutTrackHand(*sustain.marker));
+                    if (hand >= 0) occupied[hand] = true;
+                }
+                if (occupied[0] != occupied[1]) pairHand = occupied[0] ? 1 : 0;
+                else shortPair = false;
+            }
+            shortPair = shortPair && gap >= pseudoEach - 1e-9
+                && (first == 0 || heads->at(order.at(first - 1)).marker->lane != b.marker->lane)
+                && (last == order.size() || heads->at(order.at(last)).marker->lane != a.marker->lane);
+        }
+        if ((completeRing || fastLong || shortSweep || shortPair)
+            && eligible(first, last)) {
+            const int hand = shortPair ? pairHand
+                : handIndex(laneHand(heads->at(order.at(first)).marker->lane));
             const int tailHand = handIndex(laneHand(heads->at(order.at(last - 1)).marker->lane));
             const double firstSecond = heads->at(order.at(first)).marker->second;
-            const bool reservedHand = std::any_of(sustains->cbegin(), sustains->cend(), [&](const auto& sustain) {
+            bool reservedHand = std::any_of(sustains->cbegin(), sustains->cend(), [&](const auto& sustain) {
                 // A pending trace already needs a hand prepared for its entry.
                 // A Hold ending exactly at the first tap no longer reserves it.
                 return sustain.marker->second <= firstSecond + 1e-9 && sustain.end > firstSecond + 1e-9;
             });
+            const auto& starting = heads->at(order.at(first));
+            if (starting.marker->eachGroupId >= 0)
+                reservedHand |= std::any_of(heads->cbegin(), heads->cend(), [&](const auto& other) {
+                    return other.marker->parseOrder != starting.marker->parseOrder
+                        && other.marker->eachGroupId == starting.marker->eachGroupId
+                        && std::abs(other.marker->second - firstSecond) < 1e-9;
+                });
             const bool splitFour = last - first == 4 && hand != tailHand && !reservedHand;
             for (int i = first; i < last; ++i) {
                 auto& head = (*heads)[order.at(i)];
                 allowRecalculation(head.token);
                 head.patternHand = splitFour && i >= first + 2 ? tailHand : hand;
                 head.patternNeedsBothFree = false;
+                if (i > first && !(splitFour && i == first + 2))
+                    head.sweepPrevious = order.at(i - 1);
+            }
+            if (shortSweep) {
+                const int finalIndex = order.at(last - 1);
+                const auto& finalHead = heads->at(finalIndex);
+                if (finalHead.marker->type == QStringLiteral("slide"))
+                    for (int sustainIndex : sustainsByHead.at(finalIndex)) {
+                        auto& sustain = (*sustains)[sustainIndex];
+                        if (sustain.oneStrokePrevious >= 0 || sustain.oneStrokeNext >= 0) continue;
+                        sustain.patternHand = 1 - hand;
+                        sustain.splitSharedStar = true;
+                    }
+                if (last < order.size()) {
+                    const int nextIndex = order.at(last);
+                    auto& next = (*heads)[nextIndex];
+                    const auto& previous = heads->at(finalIndex);
+                    const double grid = 240.0 / (previous.marker->tempoBpm * previous.marker->subdivision);
+                    const double gap = next.marker->second - previous.marker->second;
+                    if (next.marker->type == QStringLiteral("slide") && next.marker->hasHeadStar
+                        && next.patternHand < 0 && next.marker->lane != previous.marker->lane
+                        && gap >= grid * 0.9 - 1e-9 && gap <= grid * 1.1 + 1e-9
+                        && eligible(last, last + 1)) {
+                        allowRecalculation(next.token);
+                        next.patternHand = 1 - hand;
+                        for (int sustainIndex : sustainsByHead.at(nextIndex))
+                            (*sustains)[sustainIndex].patternHand = 1 - hand;
+                    }
+                }
             }
             first = last;
         } else ++first;
+    }
+
+    // In a rapid paired sweep the hands may cross the screen centre at the
+    // final Each. Continue each adjacent path instead of resetting by side.
+    for (int moment = 0; moment + 2 < moments.size(); ++moment) {
+        const auto& firstPair = moments.at(moment);
+        const auto& secondPair = moments.at(moment + 1);
+        const auto& thirdPair = moments.at(moment + 2);
+        if (firstPair.size() != 2 || secondPair.size() != 2 || thirdPair.size() != 2) continue;
+        const auto pairValid = [&](const QVector<int>& pair) {
+            const auto& a = heads->at(pair.at(0));
+            const auto& b = heads->at(pair.at(1));
+            return a.marker->type == QStringLiteral("tap")
+                && b.marker->type == QStringLiteral("tap")
+                && a.marker->eachGroupId >= 0
+                && a.marker->eachGroupId == b.marker->eachGroupId
+                && a.marker->subdivision > 0 && b.marker->subdivision > 0;
+        };
+        if (!pairValid(firstPair) || !pairValid(secondPair) || !pairValid(thirdPair)) continue;
+        const auto bySide = [&](const QVector<int>& pair, int hand) {
+            for (int index : pair)
+                if (handIndex(laneHand(heads->at(index).marker->lane)) == hand) return index;
+            return -1;
+        };
+        const int firstLeft = bySide(firstPair, 0), firstRight = bySide(firstPair, 1);
+        const int secondLeft = bySide(secondPair, 0), secondRight = bySide(secondPair, 1);
+        const int thirdLeft = bySide(thirdPair, 0), thirdRight = bySide(thirdPair, 1);
+        if (firstLeft < 0 || firstRight < 0 || secondLeft < 0 || secondRight < 0
+            || thirdLeft < 0 || thirdRight < 0) continue;
+        const auto& anchor = *heads->at(firstRight).marker;
+        const double grid = 240.0 / (anchor.tempoBpm * anchor.subdivision);
+        const double firstGap = heads->at(secondRight).marker->second - anchor.second;
+        const double secondGap = heads->at(thirdRight).marker->second
+            - heads->at(secondRight).marker->second;
+        if (firstGap < grid * 0.9 - 1e-9 || firstGap > grid * 1.1 + 1e-9
+            || secondGap < grid * 0.9 - 1e-9 || secondGap > grid * 1.1 + 1e-9
+            || firstGap > maximumSweepGap + 1e-9
+            || !adjacentLaneStep(heads->at(firstRight).marker->lane,
+                heads->at(secondRight).marker->lane)
+            || !adjacentLaneStep(heads->at(firstLeft).marker->lane,
+                heads->at(secondLeft).marker->lane)
+            || !adjacentLaneStep(heads->at(secondRight).marker->lane,
+                heads->at(thirdLeft).marker->lane)
+            || !adjacentLaneStep(heads->at(secondLeft).marker->lane,
+                heads->at(thirdRight).marker->lane)
+            || adjacentLaneStep(heads->at(secondRight).marker->lane,
+                heads->at(thirdRight).marker->lane)
+            || adjacentLaneStep(heads->at(secondLeft).marker->lane,
+                heads->at(thirdLeft).marker->lane)
+            || !canRewrite.at(heads->at(thirdLeft).token)
+            || !canRewrite.at(heads->at(thirdRight).token)) continue;
+        auto& leftFinish = (*heads)[thirdRight];
+        auto& rightFinish = (*heads)[thirdLeft];
+        allowRecalculation(leftFinish.token);
+        allowRecalculation(rightFinish.token);
+        leftFinish.patternHand = 0;
+        rightFinish.patternHand = 1;
+        leftFinish.sweepPrevious = secondLeft;
+        rightFinish.sweepPrevious = secondRight;
+        if (moment + 3 < moments.size() && moments.at(moment + 3).size() == 1) {
+            const int followingIndex = moments.at(moment + 3).first();
+            auto& following = (*heads)[followingIndex];
+            const double delay = following.marker->second - leftFinish.marker->second;
+            const bool followsLeft = adjacentLaneStep(leftFinish.marker->lane,
+                following.marker->lane) != 0;
+            const bool followsRight = adjacentLaneStep(rightFinish.marker->lane,
+                following.marker->lane) != 0;
+            if (following.marker->type == QStringLiteral("tap")
+                && delay > 0.0 && delay <= qMin(8.0 * grid, 0.45) + 1e-9
+                && followsLeft != followsRight
+                && canRewrite.at(following.token) && selectedTokens.at(following.token)) {
+                allowRecalculation(following.token);
+                following.patternHand = followsLeft ? 0 : 1;
+                following.reboundPrevious = followsLeft ? thirdRight : thirdLeft;
+            }
+        }
+        moment += 2;
     }
 
     for (int first = 0; first < order.size();) {
@@ -667,6 +822,31 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
             }
             first = last;
         } else ++first;
+    }
+
+    // After an Each, an empty subdivision gives its same-key hand time to
+    // strike again. Revisit stale simple labels without touching rapid jacks.
+    for (int i = 0; i + 2 < order.size(); ++i) {
+        const auto& a = heads->at(order.at(i));
+        const auto& b = heads->at(order.at(i + 1));
+        auto& next = (*heads)[order.at(i + 2)];
+        if (a.marker->type != QStringLiteral("tap") || b.marker->type != QStringLiteral("tap")
+            || next.marker->type != QStringLiteral("tap")
+            || a.marker->eachGroupId < 0 || a.marker->eachGroupId != b.marker->eachGroupId
+            || std::abs(a.marker->second - b.marker->second) > 1e-9
+            || next.marker->second <= a.marker->second + 1e-9
+            || next.patternHand >= 0 || !canRewrite.at(next.token)
+            || !selectedTokens.at(next.token)) continue;
+        const double grid = 240.0 / (a.marker->tempoBpm * a.marker->subdivision);
+        const double gap = next.marker->second - a.marker->second;
+        if (gap < grid * 1.9 - 1e-9 || gap > grid * 3.1 + 1e-9) continue;
+        const int source = a.marker->lane == next.marker->lane ? order.at(i)
+            : b.marker->lane == next.marker->lane ? order.at(i + 1) : -1;
+        if (source < 0) continue;
+        allowRecalculation(next.token);
+        next.reboundPrevious = source;
+        const int known = handIndex(heads->at(source).hand);
+        if (known >= 0) next.patternHand = known;
     }
 
     // A-B-A-C-A is a five-note axis with opposite neighbours. The centre
@@ -861,14 +1041,53 @@ HandOrderHand handAt(const LayoutSustain& sustain, double second)
     return hand;
 }
 
+HandOrderHand trackHandAt(const QVector<HandOrderTrackStop>& stops, double progress,
+                         HandOrderHand fallback)
+{
+    HandOrderHand hand = fallback;
+    for (const auto& stop : stops) {
+        if (stop.progress > progress + 1e-9) break;
+        hand = stop.hand;
+    }
+    return hand;
+}
+
+bool wifiOccupiesHand(const TimelineNoteMarker& marker, int hand, double second)
+{
+    if (second < marker.slideTraceSecond - 1e-9
+        || second > marker.endSecond + 1e-9) return false;
+    const double duration = marker.endSecond - marker.slideTraceSecond;
+    const double progress = duration > 0.0
+        ? qBound(0.0, (second - marker.slideTraceSecond) / duration, 1.0) : 0.0;
+    const auto occupied = [hand](HandOrderHand selected) {
+        return selected == HandOrderHand::Either || handIndex(selected) == hand;
+    };
+    if (marker.handOrderWifiMode == HandOrderWifiMode::Split
+        && marker.handOrderWifiSectorStops.size() == 2) {
+        for (int sector = 0; sector < 2; ++sector)
+            if (occupied(trackHandAt(marker.handOrderWifiSectorStops.at(sector), progress,
+                    basicLayoutWifiSectorHand(marker, sector)))) return true;
+        return false;
+    }
+    if (!marker.handOrderTrackStops.isEmpty())
+        return occupied(trackHandAt(marker.handOrderTrackStops, progress,
+            marker.handOrderHead));
+    // A new Wifi receives two sector hands in the basic layout.
+    return true;
+}
+
 // This is a local scheduling constraint, not a judgement or playability proof.
-void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustains, double returnSpeed)
+void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustains,
+    const QVector<LayoutWifiOccupancy>& wifiTracks, double returnSpeed)
 {
     const auto order = orderedHeads(*heads);
     QPointF position[2] = {chart::handOrderNaturalRestPoint(0), chart::handOrderNaturalRestPoint(1)};
     double positionTime[2] = {-std::numeric_limits<double>::infinity(), -std::numeric_limits<double>::infinity()};
     QVector<bool> ended(sustains->size(), false);
     const auto busy = [&](int hand, double second, int token) {
+        for (const auto& wifi : wifiTracks)
+            if (wifi.token != token && wifiOccupiesHand(*wifi.marker, hand, second))
+                return true;
         for (const auto& sustain : *sustains) {
             if (sustain.token == token || sustain.marker->second > second + 1e-9
                 || sustain.end < second - 1e-9) continue;
@@ -887,6 +1106,79 @@ void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustai
         }
         return false;
     };
+    const auto trackBusyDuring = [&](int hand, int targetIndex) {
+        const auto& target = sustains->at(targetIndex);
+        const double targetStart = target.marker->type == QStringLiteral("slide")
+            ? target.marker->slideTraceSecond : target.marker->second;
+        for (int otherIndex = 0; otherIndex < sustains->size(); ++otherIndex) {
+            if (otherIndex == targetIndex) continue;
+            const auto& other = sustains->at(otherIndex);
+            if (target.oneStrokePrevious == otherIndex
+                || target.oneStrokeNext == otherIndex
+                || other.oneStrokePrevious == targetIndex
+                || other.oneStrokeNext == targetIndex) continue;
+            if (target.marker->type == QStringLiteral("slide")
+                && other.marker->type == QStringLiteral("slide")
+                && std::abs(target.marker->slideTraceSecond
+                    - other.marker->slideTraceSecond) < 1e-9
+                && std::abs(target.end - other.end) < 1e-9
+                && !divergentSlideTracks(*target.marker, *other.marker)) continue;
+            const double otherStart = other.marker->type == QStringLiteral("slide")
+                ? other.marker->slideTraceSecond : other.marker->second;
+            const double first = qMax(targetStart, otherStart);
+            const double last = qMin(target.end, other.end);
+            if (last - first <= 1e-9) continue;
+            QVector<double> boundaries{first, last};
+            if (other.fixed && other.marker->type == QStringLiteral("slide"))
+                for (const auto& stop : other.marker->handOrderTrackStops) {
+                    const double at = otherStart + stop.progress * (other.end - otherStart);
+                    if (at > first + 1e-9 && at < last - 1e-9)
+                        boundaries.append(at);
+                }
+            std::sort(boundaries.begin(), boundaries.end());
+            for (int i = 1; i < boundaries.size(); ++i) {
+                const double middle = (boundaries.at(i - 1) + boundaries.at(i)) / 2.0;
+                if (handIndex(handAt(other, middle)) == hand) return true;
+            }
+        }
+        for (const auto& wifi : wifiTracks) {
+            const auto& marker = *wifi.marker;
+            const double first = qMax(targetStart, marker.slideTraceSecond);
+            const double last = qMin(target.end, marker.endSecond);
+            if (last - first <= 1e-9) continue;
+            QVector<double> boundaries{first, last};
+            const auto addStops = [&](const QVector<HandOrderTrackStop>& stops) {
+                for (const auto& stop : stops) {
+                    const double at = marker.slideTraceSecond
+                        + stop.progress * (marker.endSecond - marker.slideTraceSecond);
+                    if (at > first + 1e-9 && at < last - 1e-9)
+                        boundaries.append(at);
+                }
+            };
+            addStops(marker.handOrderTrackStops);
+            for (const auto& sector : marker.handOrderWifiSectorStops) addStops(sector);
+            std::sort(boundaries.begin(), boundaries.end());
+            for (int i = 1; i < boundaries.size(); ++i)
+                if (wifiOccupiesHand(marker, hand,
+                    (boundaries.at(i - 1) + boundaries.at(i)) / 2.0)) return true;
+        }
+        return false;
+    };
+    const auto headBodyBusy = [&](int index, int hand) {
+        for (int sustainIndex = 0; sustainIndex < sustains->size(); ++sustainIndex) {
+            const auto& sustain = sustains->at(sustainIndex);
+            if (sustain.head != index || sustain.fixed
+                || (sustain.marker->type != QStringLiteral("hold")
+                    && sustain.marker->type != QStringLiteral("touch_hold"))) continue;
+            if (trackBusyDuring(hand, sustainIndex)) return true;
+        }
+        return false;
+    };
+    const auto headUnavailable = [&](int index, int hand) {
+        const auto& head = heads->at(index);
+        return busy(hand, head.marker->second, head.token)
+            || headBodyBusy(index, hand);
+    };
     const auto carryOneStrokeHand = [&](int firstIndex) {
         int previousIndex = firstIndex;
         while (previousIndex >= 0 && sustains->at(previousIndex).oneStrokeNext >= 0) {
@@ -902,21 +1194,46 @@ void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustai
                     && other.end > next.marker->slideTraceSecond + 1e-9
                     && handIndex(handAt(other, next.marker->slideTraceSecond)) == hand;
             }
-            if (occupied) break;
+            if (occupied || trackBusyDuring(hand, nextIndex)) break;
             next.hand = sustains->at(previousIndex).hand;
             previousIndex = nextIndex;
         }
     };
+    QVector<int> headlessOrder;
     for (int index = 0; index < sustains->size(); ++index)
-        if (sustains->at(index).head < 0 && sustains->at(index).oneStrokePrevious < 0
-            && sustains->at(index).oneStrokeNext >= 0) carryOneStrokeHand(index);
-    const auto headCost = [&](const LayoutHead& head, int hand) {
+        if (sustains->at(index).head < 0 && !sustains->at(index).fixed
+            && sustains->at(index).oneStrokePrevious < 0)
+            headlessOrder.append(index);
+    std::stable_sort(headlessOrder.begin(), headlessOrder.end(), [&](int a, int b) {
+        return sustains->at(a).marker->slideTraceSecond
+            < sustains->at(b).marker->slideTraceSecond;
+    });
+    int nextHeadless = 0;
+    const auto assignHeadlessThrough = [&](double second) {
+        while (nextHeadless < headlessOrder.size()) {
+            const int index = headlessOrder.at(nextHeadless);
+            auto& sustain = (*sustains)[index];
+            if (sustain.marker->slideTraceSecond > second + 1e-9) break;
+            ++nextHeadless;
+            const int preferred = handIndex(basicLayoutTrackHand(*sustain.marker));
+            if (preferred < 0) continue;
+            for (int candidate : {preferred, 1 - preferred})
+                if (!trackBusyDuring(candidate, index)) {
+                    sustain.hand = candidate == 0 ? HandOrderHand::Left : HandOrderHand::Right;
+                    break;
+                }
+            if (sustain.oneStrokeNext >= 0 && handIndex(sustain.hand) >= 0)
+                carryOneStrokeHand(index);
+        }
+    };
+    const auto headCost = [&](int index, int hand) {
+        const auto& head = heads->at(index);
         const auto preferred = basicLayoutHeadHand(*head.marker);
         const double sideCost = handIndex(preferred) >= 0 && handIndex(preferred) != hand ? 0.25 : 0.0;
         const QPointF origin = chart::handOrderRestedPoint(position[hand], positionTime[hand],
             head.marker->second, hand, returnSpeed);
         return QLineF(origin, head.point).length() + sideCost
-            + (busy(hand, head.marker->second, head.token) ? 100.0 : 0.0);
+            + (headUnavailable(index, hand) ? 100.0 : 0.0);
     };
     const auto commitHead = [&](int index, int hand) {
         auto& head = (*heads)[index];
@@ -930,6 +1247,7 @@ void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustai
     };
     for (int first = 0; first < order.size();) {
         const auto& anchor = heads->at(order.at(first));
+        assignHeadlessThrough(anchor.marker->second);
         for (int index = 0; index < sustains->size(); ++index) {
             const auto& sustain = sustains->at(index);
             if (ended.at(index) || sustain.end > anchor.marker->second + 1e-9) continue;
@@ -963,7 +1281,7 @@ void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustai
                     const auto& head = heads->at(index);
                     const int hand = phase ^ (head.interactionStep % 2);
                     const double second = head.marker->second;
-                    if (busy(hand, second, head.token)) { valid = false; break; }
+                    if (headUnavailable(index, hand)) { valid = false; break; }
                     const QPointF from = chart::handOrderRestedPoint(projectedPosition[hand], projectedTime[hand],
                         second, hand, returnSpeed);
                     const double distance = QLineF(from, head.point).length();
@@ -1023,7 +1341,13 @@ void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustai
                 for (int index : unit.members) {
                     const auto& head = heads->at(index);
                     if ((head.fixed && handIndex(head.hand) != hand)
-                        || (!head.fixed && head.patternHand >= 0 && head.patternHand != hand)) return false;
+                        || (!head.fixed && head.patternHand >= 0 && head.patternHand != hand)
+                        || (!head.fixed && headBodyBusy(index, hand))) return false;
+                    if (!head.fixed)
+                        for (const auto& wifi : wifiTracks)
+                            if (wifi.token != head.token
+                                && wifiOccupiesHand(*wifi.marker, hand, head.marker->second))
+                                return false;
                 }
                 for (const auto& sustain : *sustains) {
                     bool ownHead = false;
@@ -1067,9 +1391,10 @@ void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustai
                 double best = std::numeric_limits<double>::infinity();
                 int sharedHand = -1;
                 for (int candidate = 0; candidate < 2; ++candidate) {
-                    if (busy(candidate, a.marker->second, a.token)
-                        || busy(candidate, b.marker->second, b.token)) continue;
-                    const double cost = headCost(a, candidate) + headCost(b, candidate);
+                    if (headUnavailable(order.at(first), candidate)
+                        || headUnavailable(order.at(first + 1), candidate)) continue;
+                    const double cost = headCost(order.at(first), candidate)
+                        + headCost(order.at(first + 1), candidate);
                     if (cost < best) { best = cost; sharedHand = candidate; }
                 }
                 if (sharedHand >= 0) {
@@ -1086,9 +1411,10 @@ void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustai
                 if (b.fixed && handIndex(b.hand) >= 0 && handIndex(b.hand) == candidate) continue;
                 if ((!a.fixed && a.patternHand >= 0 && a.patternHand != candidate)
                     || (!b.fixed && b.patternHand >= 0 && b.patternHand != 1 - candidate)) continue;
-                if ((!a.fixed && busy(candidate, a.marker->second, a.token))
-                    || (!b.fixed && busy(1 - candidate, b.marker->second, b.token))) continue;
-                double cost = headCost(a, candidate) + headCost(b, 1 - candidate);
+                if ((!a.fixed && headUnavailable(order.at(first), candidate))
+                    || (!b.fixed && headUnavailable(order.at(first + 1), 1 - candidate))) continue;
+                double cost = headCost(order.at(first), candidate)
+                    + headCost(order.at(first + 1), 1 - candidate);
                 if ((a.point.x() < b.point.x() && candidate != 0)
                     || (a.point.x() > b.point.x() && candidate != 1)) cost += 2.0;
                 if (cost < best) { best = cost; firstHand = candidate; }
@@ -1102,23 +1428,24 @@ void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustai
             const auto& head = heads->at(index);
             const int fixed = handIndex(head.hand);
             const auto preferred = basicLayoutHeadHand(*head.marker);
-            if (!head.fixed && busy(0, head.marker->second, head.token)
-                && busy(1, head.marker->second, head.token)) {
+            if (!head.fixed && headUnavailable(index, 0)
+                && headUnavailable(index, 1)) {
                 // No legal hand is available; the token stays unassigned.
             } else if (!head.fixed && head.patternHand >= 0
-                && !busy(head.patternHand, head.marker->second, head.token)
+                && !headUnavailable(index, head.patternHand)
                 && (!head.patternNeedsBothFree
-                    || !busy(1 - head.patternHand, head.marker->second, head.token)))
+                    || !headUnavailable(index, 1 - head.patternHand)))
                 commitHead(index, head.patternHand);
             else if (!head.fixed && preferred == HandOrderHand::Either
-                && !busy(0, head.marker->second, head.token)
-                && !busy(1, head.marker->second, head.token)) commitHead(index, -1);
+                && !headUnavailable(index, 0)
+                && !headUnavailable(index, 1)) commitHead(index, -1);
             else if (!head.fixed && handIndex(preferred) >= 0
                 && head.marker->second > chart::handOrderFullyReturnedTime(position[0], positionTime[0], 0, returnSpeed)
                 && head.marker->second > chart::handOrderFullyReturnedTime(position[1], positionTime[1], 1, returnSpeed)
-                && !busy(handIndex(preferred), head.marker->second, head.token))
+                && !headUnavailable(index, handIndex(preferred)))
                 commitHead(index, handIndex(preferred));
-            else commitHead(index, fixed >= 0 ? fixed : headCost(head, 0) <= headCost(head, 1) ? 0 : 1);
+            else commitHead(index, fixed >= 0 ? fixed
+                : headCost(index, 0) <= headCost(index, 1) ? 0 : 1);
         } else {
             // More than two independent heads cannot be assigned to two hands.
             for (int i = first; i < last; ++i) {
@@ -1126,7 +1453,8 @@ void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustai
                 if (heads->at(index).fixed) commitHead(index, handIndex(heads->at(index).hand));
             }
         }
-        for (auto& sustain : *sustains) {
+        for (int sustainIndex = 0; sustainIndex < sustains->size(); ++sustainIndex) {
+            auto& sustain = (*sustains)[sustainIndex];
             if (sustain.head < 0) continue;
             const auto& head = heads->at(sustain.head);
             if (head.marker->second < anchor.marker->second - 1e-9
@@ -1139,13 +1467,15 @@ void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustai
             }
             if (sustain.patternHand >= 0 && (sustain.splitSharedStar
                 || handIndex(head.hand) == sustain.patternHand)
-                && !busy(sustain.patternHand, head.marker->second, sustain.token)) {
+                && !busy(sustain.patternHand, head.marker->second, sustain.token)
+                && !trackBusyDuring(sustain.patternHand, sustainIndex)) {
                 sustain.hand = sustain.patternHand == 0 ? HandOrderHand::Left : HandOrderHand::Right;
                 continue;
             }
             const auto preferred = basicLayoutTrackHand(*sustain.marker);
             double best = std::numeric_limits<double>::infinity();
             for (int candidate = 0; candidate < 2; ++candidate) {
+                if (trackBusyDuring(candidate, sustainIndex)) continue;
                 double cost = handIndex(preferred) >= 0 && handIndex(preferred) != candidate ? 1.2 : 0.0;
                 if (handIndex(head.hand) >= 0 && handIndex(head.hand) != candidate) cost += 0.8;
                 if (busy(candidate, head.marker->second, sustain.token)) cost += 100.0;
@@ -1165,6 +1495,7 @@ void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustai
                 && handIndex(sustains->at(index).hand) >= 0) carryOneStrokeHand(index);
         first = last;
     }
+    assignHeadlessThrough(std::numeric_limits<double>::infinity());
 }
 } // namespace
 
@@ -1215,7 +1546,8 @@ HandOrderHand basicLayoutWifiSectorHand(const TimelineNoteMarker& marker, int se
 }
 
 BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, int begin, int end,
-    const miacode::simai::SimaiTimingMetadata& metadata, double returnSpeed)
+    const miacode::simai::SimaiTimingMetadata& metadata, double returnSpeed,
+    int sweepThreshold, bool colorUnresolved)
 {
     BasicHandOrderLayoutPlan result;
     auto& plan = result.edit;
@@ -1237,6 +1569,7 @@ BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, in
         if (text.at(index) == QLatin1Char('\n')) lineStarts.append(index + 1);
     QVector<LayoutHead> heads;
     QVector<LayoutSustain> sustains;
+    QVector<LayoutWifiOccupancy> wifiTracks;
     QVector<bool> canRewrite(parsed.sourceTokens.size(), false);
     QVector<bool> selectedTokens(parsed.sourceTokens.size(), false);
     QVector<bool> rewriteTokens(parsed.sourceTokens.size(), false);
@@ -1277,18 +1610,26 @@ BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, in
                 sustains.append({marker, tokenIndex, headIndex, marker->endSecond,
                     fixed && !marker->handOrderTrackStops.isEmpty()
                         ? marker->handOrderTrackStops.constFirst().hand
-                        : !marker->hasHeadStar ? basicLayoutTrackHand(*marker) : HandOrderHand::Unspecified, fixed});
+                        : HandOrderHand::Unspecified, fixed});
             } else if (marker->type == QStringLiteral("hold") || marker->type == QStringLiteral("touch_hold")) {
                 sustainByOrder.insert(marker->parseOrder, sustains.size());
                 sustains.append({marker, tokenIndex, headIndex, marker->endSecond,
                     fixed ? marker->handOrderHead : HandOrderHand::Unspecified, fixed});
+            } else if (marker->type == QStringLiteral("wifi")) {
+                wifiTracks.append({marker, tokenIndex});
             }
         }
     }
-    identifyLocalPatterns(&heads, &sustains, canRewrite, selectedTokens, &rewriteTokens);
+    identifyLocalPatterns(&heads, &sustains, canRewrite, selectedTokens,
+        sweepThreshold, &rewriteTokens);
     for (const auto& head : heads) {
         if (head.windingPrevious >= 0)
             result.windingLinks.append({heads.at(head.windingPrevious).marker->parseOrder, head.marker->parseOrder});
+        if (head.sweepPrevious >= 0)
+            result.sweepLinks.append({heads.at(head.sweepPrevious).marker->parseOrder, head.marker->parseOrder});
+        if (head.reboundPrevious >= 0)
+            result.reboundLinks.append({heads.at(head.reboundPrevious).marker->parseOrder,
+                head.marker->parseOrder});
         if (head.windingEach) result.windingEachHeads.insert(head.marker->parseOrder);
     }
     for (const auto& sustain : sustains)
@@ -1296,7 +1637,7 @@ BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, in
             result.oneStrokeLinks.append({sustain.marker->parseOrder,
                 sustains.at(sustain.oneStrokeNext).marker->parseOrder});
     if (!std::isfinite(returnSpeed)) returnSpeed = chart::handOrderDefaultReturnSpeed;
-    assignLocalHands(&heads, &sustains, qBound(chart::handOrderMinReturnSpeed, returnSpeed,
+    assignLocalHands(&heads, &sustains, wifiTracks, qBound(chart::handOrderMinReturnSpeed, returnSpeed,
         chart::handOrderMaxReturnSpeed));
     int delta = 0;
     for (int tokenIndex = 0; tokenIndex < parsed.sourceTokens.size(); ++tokenIndex) {
@@ -1317,6 +1658,7 @@ BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, in
         }
         if (!source.nativeValid) { ++plan.unsupported; continue; }
         QString replacement;
+        bool usedDefaultColor = false;
         const auto* firstMarker = byOrder.value(source.firstParseOrder);
         if (!firstMarker) { ++plan.unsupported; continue; }
         const bool slide = firstMarker->type == QStringLiteral("slide") || firstMarker->type == QStringLiteral("wifi");
@@ -1326,8 +1668,10 @@ BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, in
             const int headIndex = headByOrder.value(firstMarker->parseOrder, -1);
             token.head = headIndex >= 0 ? heads.at(headIndex).hand : HandOrderHand::Unspecified;
             if (firstMarker->hasHeadStar && token.head == HandOrderHand::Unspecified) {
-                ++plan.unsupported;
-                continue;
+                if (!colorUnresolved) { ++plan.unsupported; continue; }
+                token.head = basicLayoutHeadHand(*firstMarker);
+                usedDefaultColor = true;
+                if (token.head == HandOrderHand::Unspecified) { ++plan.unsupported; continue; }
             }
             bool supported = true;
             for (int index = 0; index < source.markerCount; ++index) {
@@ -1345,9 +1689,13 @@ BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, in
                         QVector<HandOrderTrackStop>{{0.0, basicLayoutWifiSectorHand(*marker, 1)}}});
                 } else {
                     const int sustainIndex = sustainByOrder.value(marker->parseOrder, -1);
-                    const auto assigned = sustainIndex >= 0 ? sustains.at(sustainIndex).hand : HandOrderHand::Unspecified;
-                    token.tracks.append(QVector<HandOrderTrackStop>{{0.0,
-                        assigned == HandOrderHand::Unspecified ? basicLayoutTrackHand(*marker) : assigned}});
+                    auto assigned = sustainIndex >= 0 ? sustains.at(sustainIndex).hand : HandOrderHand::Unspecified;
+                    if (assigned == HandOrderHand::Unspecified && colorUnresolved) {
+                        assigned = basicLayoutTrackHand(*marker);
+                        usedDefaultColor = true;
+                    }
+                    if (assigned == HandOrderHand::Unspecified) { supported = false; break; }
+                    token.tracks.append(QVector<HandOrderTrackStop>{{0.0, assigned}});
                     token.wifiSectors.append(QVector<QVector<HandOrderTrackStop>>{});
                 }
             }
@@ -1362,14 +1710,24 @@ BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, in
                 for (int index = 0; index < source.markerCount; ++index) {
                     const auto* marker = byOrder.value(source.firstParseOrder + index);
                     const int headIndex = marker ? headByOrder.value(marker->parseOrder, -1) : -1;
-                    if (headIndex < 0 || heads.at(headIndex).hand == HandOrderHand::Unspecified) break;
-                    notes.append(QString(parts.baseToken.at(index)) + QLatin1Char('~') + glyph(heads.at(headIndex).hand));
+                    if (headIndex < 0) break;
+                    auto hand = heads.at(headIndex).hand;
+                    if (hand == HandOrderHand::Unspecified && colorUnresolved && marker) {
+                        hand = basicLayoutHeadHand(*marker);
+                        usedDefaultColor = true;
+                    }
+                    if (hand == HandOrderHand::Unspecified) break;
+                    notes.append(QString(parts.baseToken.at(index)) + QLatin1Char('~') + glyph(hand));
                 }
                 if (notes.size() != source.markerCount) { ++plan.unsupported; continue; }
                 replacement = notes.join(QLatin1Char('/'));
             } else {
                 const int headIndex = headByOrder.value(firstMarker->parseOrder, -1);
-                const auto hand = headIndex >= 0 ? heads.at(headIndex).hand : HandOrderHand::Unspecified;
+                auto hand = headIndex >= 0 ? heads.at(headIndex).hand : HandOrderHand::Unspecified;
+                if (hand == HandOrderHand::Unspecified && colorUnresolved) {
+                    hand = basicLayoutHeadHand(*firstMarker);
+                    usedDefaultColor = true;
+                }
                 if (source.markerCount != 1 || hand == HandOrderHand::Unspecified) { ++plan.unsupported; continue; }
                 replacement = parts.baseToken + QLatin1Char('~') + glyph(hand);
             }
@@ -1379,6 +1737,9 @@ BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, in
             plan.patches.append({start, finish, replacement});
             delta += replacement.size() - source.length;
             ++plan.changed;
+            if (usedDefaultColor) {
+                ++result.unresolvedColored;
+            }
         } else if (!parts.suffix.isEmpty()) ++result.preserved;
     }
     const auto checked = SimaiParser::validateSyntax(text.left(begin) + plan.replacement + text.mid(end), metadata);
@@ -1388,6 +1749,8 @@ BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, in
         plan.changed = 0;
         result.oneStrokeLinks.clear();
         result.windingLinks.clear(); result.windingEachHeads.clear();
+        result.sweepLinks.clear(); result.reboundLinks.clear();
+        result.unresolvedColored = 0;
         plan.diagnostics += checked.errors;
         plan.diagnostics += checked.annotationErrors;
     }

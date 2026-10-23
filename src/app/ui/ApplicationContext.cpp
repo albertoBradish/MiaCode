@@ -70,6 +70,12 @@ ApplicationContext::ApplicationContext(miacode::ApplicationServices& services,
         const double speed = preferencesModel_.handOrderReturnSpeed();
         editor_.setHandOrderReturnSpeed(speed);
         handOrderAnalysis_.setReturnSpeed(speed);
+        const int sweepThreshold = preferencesModel_.handOrderSweepThreshold();
+        editor_.setHandOrderSweepThreshold(sweepThreshold);
+        handOrderAnalysis_.setSweepThreshold(sweepThreshold);
+        const bool colorUnresolved = preferencesModel_.handOrderColorUnresolved();
+        editor_.setHandOrderColorUnresolved(colorUnresolved);
+        handOrderAnalysis_.setColorUnresolved(colorUnresolved);
         const auto values = preferencesModel_.handOrderPlayerProfile();
         hand_order::PlayerProfile profile;
         profile.maxComfortableTapRate = values.value(QStringLiteral("maxComfortableTapRate")).toDouble();

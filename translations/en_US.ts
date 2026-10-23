@@ -19,6 +19,8 @@
     <message id="dialog.preferences.group.hand_order"><source>Sticking</source><translation>Sticking</translation></message>
     <message id="preferences.hand_order_return_speed"><source>Hand return speed</source><translation>Hand return speed</translation></message>
     <message id="preferences.hand_order_return_speed_unit"><source>field radii/s</source><translation>field radii/s</translation></message>
+    <message id="preferences.hand_order_sweep_threshold"><source>Sweep threshold (16th BPM equivalent)</source><translation>Sweep threshold (16th BPM equivalent)</translation></message>
+    <message id="preferences.hand_order_sweep_threshold_help"><source>160 = 16th notes at 160 BPM; 300 = 32nd notes at 150 BPM. Higher values require faster spacing.</source><translation>160 = 16th notes at 160 BPM; 300 = 32nd notes at 150 BPM. Higher values require faster spacing.</translation></message>
     <message id="setup.completion_hint">
         <source>Customize completion candidates in Preferences.</source>
         <translation>Customize completion candidates in Preferences.</translation>
@@ -5032,12 +5034,12 @@ Error: %1</translation>
         <translation>Suggestion: review required</translation>
     </message>
     <message id="hand_order.auto.status.heuristic">
-        <source>Basic layout fallback: unverified</source>
-        <translation>Basic layout fallback: unverified</translation>
+        <source>Default hand color: unverified</source>
+        <translation>Default hand color: unverified</translation>
     </message>
     <message id="hand_order.auto.reason.layout_fallback_unverified">
-        <source>Search ran out of work; basic layout supplies a hand, without full replay verification.</source>
-        <translation>Search ran out of work; basic layout supplies a hand, without full replay verification.</translation>
+        <source>Unresolved note colored with its default hand by request; no full replay verification.</source>
+        <translation>Unresolved note colored with its default hand by request; no full replay verification.</translation>
     </message>
     <message id="hand_order.auto.status.preserved">
         <source>Existing annotation preserved</source>
@@ -5371,6 +5373,14 @@ Error: %1</translation>
         <source>Apply only high-confidence complete dependency units</source>
         <translation>Apply only high-confidence complete dependency units</translation>
     </message>
+    <message id="hand_order.auto.color_unresolved">
+        <source>Color unresolved notes with default Sticking</source>
+        <translation>Color unresolved notes with default Sticking</translation>
+    </message>
+    <message id="hand_order.auto.color_unresolved_help">
+        <source>Off by default. Default colors are unverified and disabled in high-confidence mode. Existing annotations are preserved.</source>
+        <translation>Off by default. Default colors are unverified and disabled in high-confidence mode. Existing annotations are preserved.</translation>
+    </message>
     <message id="hand_order.auto.high_confidence_closed">
         <source> Only complete high-confidence dependency units are writable.</source>
         <translation> Only complete high-confidence dependency units are writable.</translation>
@@ -5634,6 +5644,10 @@ Error: %1</translation>
     <message id="hand_order.basic_layout_next_step">
         <source>Basic layout writes normal annotations. To optimize them, enable “Recompute existing annotations in selection” and analyze again.</source>
         <translation>Basic layout writes normal annotations. To optimize them, enable “Recompute existing annotations in selection” and analyze again.</translation>
+    </message>
+    <message id="hand_order.basic_layout_unverified_defaults">
+        <source>%1 unresolved notes used default hand colors without playability verification.</source>
+        <translation>%1 unresolved notes used default hand colors without playability verification.</translation>
     </message>
 </context>
 </TS>

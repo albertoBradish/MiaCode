@@ -2,9 +2,10 @@
 #include "core/chart/parser/SimaiParser.h"
 #include "core/chart/transform/HandOrderEdit.h"
 #include "core/analysis/hand_order/HandOrderPlayerModel.h"
+#include "core/chart/model/HandOrderSweepThreshold.h"
 
 namespace miacode::hand_order {
-inline constexpr int basicAlgorithmVersion = 10;
+inline constexpr int basicAlgorithmVersion = 11;
 inline constexpr int basicJudgeProfileRevision = 2;
 struct BasicParameters {
     static constexpr double minReturnSpeed = 1.0;
@@ -18,6 +19,8 @@ struct BasicParameters {
     double contextSeconds = 1.0;
     double pressSeconds = 0.025;
     double returnSpeed = 3.0;
+    int sweepThreshold = chart::handOrderDefaultSweepThreshold;
+    bool colorUnresolved = false;
     PlayerProfile player;
     qint64 maxWorkUnits = 200000000;
     bool overwriteExisting = false;

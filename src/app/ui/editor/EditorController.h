@@ -2,6 +2,7 @@
 
 #include "editor/SimaiTextEditPolicy.h"
 #include "core/chart/transform/HandOrderEdit.h"
+#include "core/chart/model/HandOrderSweepThreshold.h"
 #include "core/chart/transform/NativeSlideSplit.h"
 #include "app/services/ChartWorkspace.h"
 #include "common/LocalizedText.h"
@@ -61,6 +62,8 @@ public:
     void setImeInputDisabled(bool disabled);
     void setWholeBpm(const QString& bpm);
     void setHandOrderReturnSpeed(double speed) { handOrderReturnSpeed_ = speed; }
+    void setHandOrderSweepThreshold(int threshold) { handOrderSweepThreshold_ = threshold; }
+    void setHandOrderColorUnresolved(bool enabled) { handOrderColorUnresolved_ = enabled; }
 
     miacode::editor::SimaiTextEditResult processKey(
         const QString& text, int anchor, int position, const QString& input, int key, int modifiers);
@@ -120,6 +123,8 @@ private:
     int activeDifficultyId_ = -1;
     QString handOrderScope_;
     double handOrderReturnSpeed_ = 3.0;
+    int handOrderSweepThreshold_ = chart::handOrderDefaultSweepThreshold;
+    bool handOrderColorUnresolved_ = false;
     QString handOrderText_;
     QString handOrderKey_;
     miacode::LocalizedText handOrderFeedback_;

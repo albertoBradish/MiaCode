@@ -134,6 +134,71 @@ int main(int argc, char** argv) {
         check("{4}1-5[4:1],5-1[4:1],",
             "{4}1-5[4:1]~[head=r;track=0:r],5-1[4:1]~[head=l;track=0:r],", "one-stroke");
     }
+    for (int bpm : {160, 180, 200, 240}) {
+        const QString prefix = QStringLiteral("(%1)").arg(bpm);
+        const auto checkSweep = [&](const QString& source, const QString& expected, const char* label) {
+            const auto result = solve(prefix + source, 0, -1, recompute);
+            expect(result.error.isEmpty() && applyPatches(prefix + source, result) == prefix + expected
+                && std::all_of(result.rows.cbegin(), result.rows.cend(),
+                    [](const BasicRow& row) { return row.fullReplayVerified; }), label);
+        };
+        checkSweep("{16}2~r,3~l,4~r,", "{16}2~r,3~r,4~r,",
+            "automatic 16th-note short sweep stays on one hand across BPMs");
+        checkSweep("{16}7x~l,6x~r,5x-8[8:1]~[head=l;track=0:l],",
+            "{16}7x~l,6x~l,5x-8[8:1]~[head=l;track=0:r],",
+            "automatic short sweep can pass its final star trace to the other hand");
+        checkSweep("{16}1~r/8~l,,8~r,", "{16}1~r/8~l,,8~l,",
+            "automatic same-key return after an Each keeps the previous striker");
+        checkSweep("{32}3b~r/7b~l,4b~r/8b~l,1b~r/5b~l,,,,,,8~r,",
+            "{32}3b~r/7b~l,4b~r/8b~l,1b~l/5b~r,,,,,,8~l,",
+            "automatic paired sweep preserves both adjacent paths through the crossing");
+        checkSweep("{32}1~l/2~r,3~r,4~l,5~l,",
+            "{32}1~l/2~r,3~r,4~r,5~r,",
+            "automatic Each-led sweep uses one hand for its whole moving line");
+    }
+    const QString densePassage = "(200){32}2xh[32:15]~r/6xh[32:15]~l,,,,,,,,,,,,,,,,"
+        "3b~r/7b~l,4b~r/8b~l,1b~r/5b~l,,,,,,8~r,,,,8~l,,,,\n"
+        "{32}1~r/7~l,6~l,5~l,4~l,1~r,,,,1~r,,,,2~r/8~l,3~r,4~l,5~r,8~l,,,,8~l,,,,1~r,,,,1~r,,,,\n"
+        "{32}7~l/8~r,6~l,5~r,4~l,8~r,,,,8~r,,,,1~l/2~r,3~r,4~l,5~l,1~r,,,,1~r,,,,8~l,,,,8~l,,,,";
+    const auto denseResult = solve(densePassage, 0, -1, recompute);
+    const QString denseText = applyPatches(densePassage, denseResult);
+    expect(denseResult.error.isEmpty()
+        && denseText.contains("3b~r/7b~l,4b~r/8b~l,1b~l/5b~r,,,,,,8~l,")
+        && denseText.contains("1~r/7~l,6~l,5~l,4~l,")
+        && denseText.contains("2~r/8~l,3~r,4~r,5~r,")
+        && denseText.contains("7~l/8~r,6~l,5~l,4~l,")
+        && denseText.contains("1~l/2~r,3~r,4~r,5~r,"),
+        "the complete 200 BPM passage keeps crossed and Each-led sweep phrases coherent");
+    const QString correctCircle = "(196){32}2b~r/8b~l,3~r,4~r,5~r,6~r,7~r,8~r,1~r,"
+        "2b~r/6b~l,5~l,4~l,3~l,2~l,1~l/3~r,4~r/8~l,5~r/7~l,"
+        "(190)6b~l,,,,,,,,,,,,,,,,";
+    const auto preservedCircle = solve(correctCircle, 0, -1, recompute);
+    expect(preservedCircle.error.isEmpty()
+        && applyPatches(correctCircle, preservedCircle) == correctCircle,
+        "a correct complete-ring sweep with two-hand Each endings remains intact");
+    const QString equivalentGrid = "(240){12}2~r,3~l,4~r,";
+    const auto equivalent = solve(equivalentGrid, 0, -1, recompute);
+    expect(equivalent.error.isEmpty()
+        && applyPatches(equivalentGrid, equivalent) == "(240){12}2~r,3~r,4~r,",
+        "automatic sweep continuity depends on real spacing, not a 16th-note spelling");
+    BasicParameters lowerSweep = recompute;
+    lowerSweep.sweepThreshold = 120;
+    const QString lowThresholdStar = "(120){16}7x~l,6x~r,5x-8[8:1]~[head=l;track=0:l],";
+    const auto lowered = solve(lowThresholdStar, 0, -1, lowerSweep);
+    expect(lowered.error.isEmpty() && applyPatches(lowThresholdStar, lowered)
+        == "(120){16}7x~l,6x~l,5x-8[8:1]~[head=l;track=0:r],",
+        "automatic sweep threshold applies the chosen integer speed at 120 BPM");
+    for (const QString& axis : {QStringLiteral("(190){16}3~r,4~l,3~r,2~l,3~r,"),
+                                QStringLiteral("(150){32}3~r,4~l,3~r,2~l,3~r,")}) {
+        const auto result = solve(axis, 0, -1, recompute);
+        expect(result.error.isEmpty() && applyPatches(axis, result) == axis,
+            "automatic five-note axis keeps 4-3-2 out of the sweep rule");
+    }
+    const QString pressuredPair = "(180){16}7h[1:1]~l,4~r,5~l,";
+    const auto pressured = solve(pressuredPair, 0, -1, recompute);
+    expect(pressured.error.isEmpty()
+        && applyPatches(pressuredPair, pressured) == "(180){16}7h[1:1]~l,4~r,5~r,",
+        "automatic two-key sweep uses the free hand through a crossed boundary");
     const QString occupied = "(120){4}5h[1:1]~l,6,";
     const int six = occupied.indexOf("6,");
     const auto busy = solve(occupied, six, six + 1);
@@ -242,16 +307,25 @@ int main(int argc, char** argv) {
     expect(std::abs(one - split) < 1e-12, "subdividing the same physical motion cannot lower cost");
     BasicParameters invalid; invalid.contextSeconds = std::numeric_limits<double>::quiet_NaN();
     expect(solve("6,", 0, -1, invalid).error == "invalid_parameters", "non-finite search parameters are rejected");
+    invalid = {}; invalid.sweepThreshold = 0;
+    expect(solve("6,", 0, -1, invalid).error == "invalid_parameters",
+        "the integer sweep threshold rejects values outside its range");
     BasicParameters exhaustedBudget;
     exhaustedBudget.maxWorkUnits = 1000;
     exhaustedBudget.counterfactualBudget = 0;
     const QString fallbackChart = "(120){4}1-5[4:1],5-1[4:1],";
     const auto baselineFallback = solve(fallbackChart, 0, -1, exhaustedBudget);
-    expect(baselineFallback.patches.size() == 2
-        && applyPatches(fallbackChart, baselineFallback).contains("5-1[4:1]~[head=l;track=0:r]")
-        && baselineFallback.rows.first().status == QStringLiteral("heuristic")
+    expect(baselineFallback.patches.isEmpty()
+        && baselineFallback.rows.first().status == QStringLiteral("undecided")
         && !baselineFallback.rows.first().fullReplayVerified,
-        "a search budget limit retains the basic-layout label with explicit unverified status");
+        "a search budget limit leaves undecided notes uncolored by default");
+    exhaustedBudget.colorUnresolved = true;
+    const auto optedFallback = solve(fallbackChart, 0, -1, exhaustedBudget);
+    expect(optedFallback.patches.size() == 2
+        && applyPatches(fallbackChart, optedFallback).contains("5-1[4:1]~[head=l;track=0:r]")
+        && optedFallback.rows.first().status == QStringLiteral("heuristic")
+        && !optedFallback.rows.first().fullReplayVerified,
+        "opted-in default color keeps an explicit unverified result");
     exhaustedBudget.highConfidenceOnly = true;
     expect(solve(fallbackChart, 0, -1, exhaustedBudget).patches.isEmpty(),
         "high-confidence-only application excludes unverified layout fallbacks");
@@ -358,8 +432,15 @@ int main(int argc, char** argv) {
     const auto measuredMain = solve(hundred, 0, -1, measure);
     BasicParameters tiny; tiny.maxWorkUnits = measuredMain.workUsed + 1000;
     const auto limited = solve(hundred, 0, -1, tiny);
-    expect(limited.patches.size() == 100 && limited.evidenceTruncated,
-        "optional reverse-hand evidence exhaustion does not discard an already validated button candidate");
+    int verifiedButtons = 0;
+    for (const auto& row : limited.rows)
+        if (!row.context && row.status == QStringLiteral("review") && row.fullReplayVerified)
+            ++verifiedButtons;
+    expect(limited.patches.size() == verifiedButtons && verifiedButtons >= 90
+        && limited.evidenceTruncated
+        && std::none_of(limited.rows.cbegin(), limited.rows.cend(),
+            [](const BasicRow& row) { return row.status == QStringLiteral("heuristic"); }),
+        "a tight budget keeps verified buttons while leaving the remaining notes uncolored");
     const QString actualCover = "(120){4}1-5[2:1]~r,,C,";
     const auto actualCovered = solve(actualCover, 0, -1, synthetic);
     bool actualRightCover = false;
