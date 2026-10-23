@@ -8,6 +8,7 @@
 #include <tuple>
 
 #include "core/video/PreviewSkinConfig.h"
+#include "core/scene/PreviewHandOrderRendering.h"
 #include "timeline/TimelineThemeConfig.h"
 #include "timeline/TimelineNoteAssets.h"
 
@@ -1145,6 +1146,25 @@ TimelineSceneState TimelineSceneStateBuilder::build(const TimelineSceneBuildRequ
             }
         }
 
+        const HandOrderHand headHand = request.showHandOrderAnnotations
+            ? note.handOrderHead : HandOrderHand::Unspecified;
+        bool hasHandArtwork = false;
+        if (headHand != HandOrderHand::Unspecified) {
+            // The native Touch Hold border stays neutral. Its annotated body
+            // uses the same pre-rendered quarter/point artwork as the stage.
+            QString annotatedNativeType = iconType;
+            if (note.kind == TimelineRenderNoteKind::TouchHold
+                && !timelineRenderFlagSet(note, TimelineRenderFlagIsMine)) {
+                annotatedNativeType = timelineRenderFlagSet(note, TimelineRenderFlagIsBreak)
+                    ? QStringLiteral("touch_hold_break")
+                    : timelineRenderFlagSet(note, TimelineRenderFlagIsEach)
+                    ? QStringLiteral("touch_hold_each") : QStringLiteral("touch_hold");
+            }
+            const QString artworkType = miacode::timeline::handOrderNoteType(sceneNoteAssets(request), annotatedNativeType, headHand);
+            hasHandArtwork = artworkType != annotatedNativeType;
+            if (hasHandArtwork) iconType = artworkType;
+        }
+
         if (trackLayer) {
             if (!request.showSlideTracks || !isSlideTrack) {
                 return;
@@ -1192,13 +1212,31 @@ TimelineSceneState TimelineSceneStateBuilder::build(const TimelineSceneBuildRequ
                 const qreal t = static_cast<qreal>(step) / static_cast<qreal>(steps);
                 const qreal cx = static_cast<qreal>(slideStartX) + dx * t;
                 const qreal cy = static_cast<qreal>(startY) + dy * t;
+                QString trackType = baseTrackType;
+                if (request.showHandOrderAnnotations) {
+                    if (note.kind == TimelineRenderNoteKind::Wifi && note.handOrderWifiMode == HandOrderWifiMode::Split
+                        && note.handOrderWifiSectorStops.size() == 2) {
+                        trackType = miacode::timeline::handOrderSplitNoteType(noteAssets, baseTrackType,
+                            miacode::preview::scene::previewHandOrderAtProgress(note.handOrderWifiSectorStops.at(0), t),
+                            miacode::preview::scene::previewHandOrderAtProgress(note.handOrderWifiSectorStops.at(1), t));
+                    } else {
+                        trackType = miacode::timeline::handOrderNoteType(noteAssets, baseTrackType,
+                            miacode::preview::scene::previewHandOrderAtProgress(note.handOrderTrackStops, t));
+                    }
+                }
                 appendSprite(
                     &state.trackSprites,
                     QPointF(cx, cy),
-                    baseTrackType,
+                    trackType,
                     trackScale,
                     angleDegrees,
                     forward);
+            }
+            if (request.showHandOrderAnnotations && note.kind == TimelineRenderNoteKind::Wifi
+                && note.handOrderWifiMode == HandOrderWifiMode::Single) {
+                appendSprite(&state.trackSprites,
+                    QPointF(slideStartX, startY - state.laneHeight * 0.45),
+                    QStringLiteral("wifi_single_badge"), baseIconScale * 0.8);
             }
             return;
         }
@@ -1218,9 +1256,15 @@ TimelineSceneState TimelineSceneStateBuilder::build(const TimelineSceneBuildRequ
             });
         }
         if (isTouchHold) {
-            const QColor touchHoldColor = timelineRenderFlagSet(note, TimelineRenderFlagIsEach)
+            QColor touchHoldColor = timelineRenderFlagSet(note, TimelineRenderFlagIsEach)
                 ? QColor(255, 214, 64, 120)
                 : QColor(44, 214, 255, 120);
+            // Match the pre-rendered body's hand palette for the timeline span.
+            if (hasHandArtwork) {
+                if (headHand == HandOrderHand::Left) touchHoldColor = QColor(0x38, 0x8c, 0xff, 120);
+                else if (headHand == HandOrderHand::Right) touchHoldColor = QColor(0xff, 0x45, 0x54, 120);
+                else if (headHand == HandOrderHand::Either) touchHoldColor = QColor(0xdb, 0xe0, 0xeb, 120);
+            }
             appendTrackLine(
                 &state.touchHoldLines,
                 QPointF(x, rowCenterY),

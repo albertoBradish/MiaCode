@@ -1248,6 +1248,7 @@ miacode::timeline::TimelineSceneState TimelineQuickItem::currentSceneState() con
         request.cursorSeconds = stateBridge_->cursorSeconds();
         request.playheadUpperLimitSeconds = stateBridge_->playheadUpperLimitSeconds();
         request.showSlideTracks = stateBridge_->showSlideTracks();
+        request.showHandOrderAnnotations = stateBridge_->showHandOrderAnnotations();
         request.playheadIndicatorSuppressed = stateBridge_->playheadIndicatorSuppressed();
         request.dragActive = dragActive_;
         request.appearanceRevision = appearanceRevision_;

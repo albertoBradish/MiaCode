@@ -91,6 +91,7 @@ Wifi 可在原有 `track` 或 `branchN` 的值内声明模式，不增加容器�
 - 手动区间面板支持 Wifi 模式选择、按源分支和扇区编辑，以及 Single 整轨同手选择；批量赋色保留显式模式和节点边界。保存、格式化、镜像、纯 Simai 导出和 snapshot worker 重建已接通，操作及验收契约见[手序手动工具](HAND_ORDER_MANUAL_TOOLS_SPEC_ZH.md#本轮-wifi-模式扩展)。
 - 预览可切换手序显示；Tap、Hold、Touch、Touch Hold、Slide 和 Wifi 的主体按手序染色，Wifi 双扇区独立分色、显式单手显示圈“1”，类型轮廓、原素材与特效仍保留。Touch 重叠边框、Touch Hold 进度边框、引导圈、判定与 Muri 特效层沿用原色。
 - 内置 SD/DX 皮肤现有 `hand_order/l`、`hand_order/r`、`hand_order/m` 三套从原 PNG 生成的透明素材；Break/Each 留有原色顶部提示，EX 图层叠加在染色底图上。自定义皮肤缺少相应素材时回退到原有 shader 染色。
+- 时间轴与圆形预览共用手序显示开关和所选 SD/DX 皮肤，显示对应的头、长条及分段轨迹素材。Wifi 双扇区在扁平箭头内分成互补两半，显式单手显示圈“1”；未标注和关闭手序时恢复原谱。时间轴缺少预制手序素材时按舞台 shader 公式生成内存缓存，不改写皮肤文件。验证见 [时间轴手序皮肤](../../qa/hand_order/TIMELINE_STICKING_SKIN_20261023_ZH.md)。
 - 视频导出可跟随预览、强制原谱或强制手序；当次解析后的开关进入 snapshot，CLI 使用 `--hand-order annotated|original`。封面图框沿用预览显示选择。
 - 保存保留标注；格式化及镜像/旋转保持标注归属，菜单提供带左右手交换的镜像命令；独立“导出纯 Simai”不更改当前文档的路径与保存点。
 - 本轮截至 2026-10-22 的 MiaCode Release 构建成功，19/19 项相关 CTest 全部通过，用时 14.78 秒，覆盖解析、变换、补全、手动区间及真实离屏 QML、预览、snapshot、音效等相关回归。该结论独立于下述历史验收记录。

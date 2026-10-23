@@ -8,6 +8,7 @@
 #include <QVector>
 
 #include "core/video/PreviewGameplayConfig.h"
+#include "core/chart/model/TimelineData.h"
 
 enum class TimelineRenderNoteKind {
     Unknown,
@@ -59,6 +60,11 @@ struct TimelineRenderNote {
     int eachGroupId = -1;
     TimelineRenderNoteKind kind = TimelineRenderNoteKind::Unknown;
     quint32 flags = TimelineRenderFlagHasHeadStar;
+    int slideBranchIndex = 0;
+    HandOrderHand handOrderHead = HandOrderHand::Unspecified;
+    QVector<HandOrderTrackStop> handOrderTrackStops;
+    HandOrderWifiMode handOrderWifiMode = HandOrderWifiMode::Legacy;
+    QVector<QVector<HandOrderTrackStop>> handOrderWifiSectorStops;
 };
 
 struct TimelineCursorAnchor {
