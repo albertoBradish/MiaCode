@@ -185,5 +185,85 @@ int main(int argc, char** argv)
     const auto invalid = basicHandOrderLayoutInSelection(badTiming, 0, 0);
     expect(invalid.edit.changed == 0 && invalid.edit.replacement == badTiming && !invalid.edit.diagnostics.isEmpty(),
         "invalid native timing cannot produce a silently partial layout");
+    const QString fastLongitudinal = "(120){16}4,4,4,4,4,4,";
+    const QString fastLongitudinalExpected = "(120){16}4~r,4~l,4~r,4~l,4~r,4~l,";
+    expect(basicHandOrderLayoutInSelection(fastLongitudinal, 0, 0).edit.replacement == fastLongitudinalExpected
+        && basicHandOrderLayoutInSelection("(120){16}4~r,4~r,4~r,4~r,4~r,4~r,", 0, 0).edit.replacement
+            == fastLongitudinalExpected && sameNative(fastLongitudinal, fastLongitudinalExpected),
+        "fast unlocked longitudinal taps alternate hands and correct old simple labels");
+    const QString lockedLongitudinal = "(120){16}2p6[8:1]~[head=r;track=0:r],,,4,4,4,";
+    const auto laidLockedLongitudinal = basicHandOrderLayoutInSelection(lockedLongitudinal, 0, 0);
+    expect(laidLockedLongitudinal.edit.replacement.contains("4~l,4~l,4~l,")
+        && sameNative(lockedLongitudinal, laidLockedLongitudinal.edit.replacement),
+        "a fast same-lane run does not alternate into a hand reserved by a slide");
+    const QString winding = "(120){16}1,1,2,2,3,3,4,4,5,5,";
+    const QString windingExpected = "(120){16}1~r,1~r,2~l,2~l,3~r,3~r,4~l,4~l,5~r,5~r,";
+    const QString windingOld = "(120){16}1~r,1~r,2~r,2~r,3~r,3~r,4~r,4~r,5~l,5~l,";
+    expect(basicHandOrderLayoutInSelection(winding, 0, 0).edit.replacement == windingExpected
+        && basicHandOrderLayoutInSelection(windingOld, 0, 0).edit.replacement == windingExpected
+        && sameNative(winding, windingExpected),
+        "winding rebounds stay on one hand per lane pair and alternate only between pairs");
+    const QString windingWithJumps = "(120){16}1,1,,2,2,,3,3,,4,4,";
+    expect(basicHandOrderLayoutInSelection(windingWithJumps, 0, 0).edit.replacement
+        == "(120){16}1~r,1~r,,2~l,2~l,,3~r,3~r,,4~l,4~l,",
+        "empty subdivisions between winding pairs do not turn each rebound into an alternating tap");
+    const QString relaxed = "(222){8}4,4,5,5,3b/6b,";
+    const QString relaxedOld = "(222){8}4~l,4~r,5~l,5~l,3b~r/6b~l,";
+    const QString relaxedExpected = "(222){8}4~r,4~r,5~l,5~l,3b~r/6b~l,";
+    expect(basicHandOrderLayoutInSelection(relaxed, 0, 0).edit.replacement == relaxedExpected
+        && basicHandOrderLayoutInSelection(relaxedOld, 0, 0).edit.replacement == relaxedExpected
+        && sameNative(relaxed, relaxedExpected),
+        "222 BPM eighth-note rebounds do not split a low-pressure pair");
+
+    const QString touchGroupOld = "(120){8}B4~l/E4~r,B7~r/E8~l,B2~l/E2~r,B5~r/E6~l,";
+    const QString touchGroupRaw = "(120){8}B4/E4,B7/E8,B2/E2,B5/E6,";
+    const QString touchGroupExpected = "(120){8}B4~r/E4~r,B7~l/E8~l,B2~r/E2~r,B5~l/E6~l,";
+    expect(basicHandOrderLayoutInSelection(touchGroupRaw, 0, 0).edit.replacement == touchGroupExpected
+        && basicHandOrderLayoutInSelection(touchGroupOld, 0, 0).edit.replacement == touchGroupExpected
+        && sameNative(touchGroupOld, touchGroupExpected),
+        "adjacent Touchgroup pairs may share one hand while old simple labels are corrected");
+    const QString touchSweep = "(120){12}B6,E6,,E2,B2,,E8,B7,,B3,E4,,";
+    const QString touchSweepExpected = "(120){12}B6~l,E6~l,,E2~r,B2~r,,E8~l,B7~l,,B3~r,E4~r,,";
+    expect(basicHandOrderLayoutInSelection(touchSweep, 0, 0).edit.replacement == touchSweepExpected
+        && sameNative(touchSweep, touchSweepExpected),
+        "nearby sequential Touches use one hand for each short sweep");
+    const QString touchSweepOld = "(120){12}B6~r,E6~l,,E2~l,B2~r,,E8~r,B7~l,,B3~l,E4~r,,";
+    expect(basicHandOrderLayoutInSelection(touchSweepOld, 0, 0).edit.replacement == touchSweepExpected,
+        "a short Touch sweep also corrects old simple annotations");
+    const QString nonGroupTouches = "(120){8}A4/A5,";
+    expect(basicHandOrderLayoutInSelection(nonGroupTouches, 0, 0).edit.replacement == "(120){8}A4~r/A5~l,",
+        "simultaneous Touches outside the native Touchgroup still use separate hands");
+    const auto pseudoTouch = basicHandOrderLayoutInSelection("(120){128}B4,E4,", 0, 0);
+    const auto parsedPseudoTouch = SimaiParser::validateSyntax(pseudoTouch.edit.replacement);
+    expect(parsedPseudoTouch.noteMarkers.size() == 2
+        && parsedPseudoTouch.noteMarkers.at(0).handOrderHead != parsedPseudoTouch.noteMarkers.at(1).handOrderHead,
+        "near-simultaneous Touches outside one Touchgroup are not treated as a sequential sweep");
+    const QString adjacentHolds = "(120){8}4h[8:1]/5h[8:1],";
+    expect(basicHandOrderLayoutInSelection(adjacentHolds, 0, 0).edit.replacement
+        == "(120){8}4h[8:1]~r/5h[8:1]~l,",
+        "adjacent button Holds remain a two-hand each rather than using the Touch-only exception");
+
+    const QString starsOld = "(120){16}2x-5[16:1]~[head=r;track=0:r],,,7x-4[16:1]~[head=l;track=0:r],,,"
+        "1x-5[16:1]~[head=l;track=0:r],,,8x-4[16:1]~[head=l;track=0:l],,,2x~r,,2x~r,,"
+        "{16}3x-8[16:1]~[head=r;track=0:r],,,6x-1[16:1]~[head=l;track=0:r],,,"
+        "4x-8[16:1]~[head=l;track=0:r],,,5x-1[16:1]~[head=l;track=0:l],";
+    const QString starsExpected = "(120){16}2x-5[16:1]~[head=r;track=0:r],,,7x-4[16:1]~[head=l;track=0:l],,,"
+        "1x-5[16:1]~[head=r;track=0:r],,,8x-4[16:1]~[head=l;track=0:l],,,2x~r,,2x~r,,"
+        "{16}3x-8[16:1]~[head=r;track=0:r],,,6x-1[16:1]~[head=l;track=0:l],,,"
+        "4x-8[16:1]~[head=r;track=0:r],,,5x-1[16:1]~[head=l;track=0:l],";
+    const auto correctedStars = basicHandOrderLayoutInSelection(starsOld, 0, 0);
+    expect(correctedStars.edit.replacement == starsExpected && sameNative(starsOld, starsExpected),
+        "overlapping alternating stars correct old head and track labels instead of looking like one-hand dealing");
+    expect(basicHandOrderLayoutInSelection(starsExpected, 0, 0).edit.changed == 0,
+        "repeating the corrected pattern does not create another edit");
+    const int selectedStar = starsOld.indexOf("7x-4");
+    const int selectedStarEnd = starsOld.indexOf(',', selectedStar);
+    const auto partialStars = basicHandOrderLayoutInSelection(starsOld, selectedStar, selectedStarEnd);
+    expect(partialStars.edit.changed == 0,
+        "a selected star cannot rewrite protected pattern members outside the selection");
+    const QString customStars = "(120){16}2x-5[16:1]~[head=r;track=0:r],,,"
+        "7x-4[16:1]~[head=l;track=0:l|0.5:r],,,1x-5[16:1]~[head=r;track=0:r],";
+    expect(basicHandOrderLayoutInSelection(customStars, 0, 0).edit.changed == 0,
+        "a hand-edited slide transfer prevents automatic rewriting of its star sequence");
     return ok ? 0 : 1;
 }

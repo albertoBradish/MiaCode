@@ -5596,16 +5596,16 @@ Error: %1</source>
         <translation>基础排布</translation>
     </message>
     <message id="hand_order.basic_layout_scope">
-        <source>Use complete selected notes, or the current difficulty when no text is selected. Keep existing annotations; no playability replay.</source>
-        <translation>选区内完整音符；无选区时处理当前难度。保护已有标注，不做可玩性回放。</translation>
+        <source>Use complete selected notes, or the current difficulty when none is selected. Recognized local patterns may revise simple existing labels; complex annotations stay protected.</source>
+        <translation>处理选区内完整音符；无选区时处理当前难度。明确的局部模式可修正简单旧标注，复杂标注仍受保护。</translation>
     </message>
     <message id="hand_order.basic_layout_feedback">
         <source>Basic layout: %1 changed; %2 existing annotations kept; %3 partial tokens skipped; %4 unsupported; %5 diagnostics.</source>
         <translation>基础排布：改写 %1 个；保留已有标注 %2 个；跳过部分 token %3 个；不支持 %4 个；诊断 %5 条。</translation>
     </message>
     <message id="hand_order.basic_layout_notice">
-        <source>Keys 1–4 default right, 5–8 left. Each pairs use opposite hands; active slides and holds reserve a hand. Slide tracks may change their whole-track hand for nearby notes. Wifi uses two hands; centre-axis Touch is Either. No action-feasibility replay is performed.</source>
-        <translation>1–4 默认右手、5–8 默认左手；双押分配两手，运行中的 slide 和 hold 占手。轨迹可根据邻近音符调整整条手别；Wifi 使用双手，中轴 Touch 为任选。此操作不做动作可行性回放。</translation>
+        <source>Fast repeated taps alternate hands; paired winding taps stay on one hand per pair, while slower rebounds stay together. Adjacent Touchgroup pairs and short Touch sweeps may share a hand; other each pairs use two. Slides and holds reserve hands, and overlapping alternating stars use alternating full tracks. No playability replay is performed.</source>
+        <translation>快纵连逐颗交替，成对绕手组内同手，较慢回弹不拆手。临位 Touchgroup 双押与短 Touch 轻扫可同手，其他双押仍用两手。Slide／Hold 占手，重叠的交替星星整轨换手。本操作不做可玩性回放。</translation>
     </message>
     <message id="hand_order.basic_layout_next_step">
         <source>Basic layout writes normal annotations. To optimize them, enable “Recompute existing annotations in selection” and analyze again.</source>

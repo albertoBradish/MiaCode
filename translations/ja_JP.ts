@@ -5596,16 +5596,16 @@ Error: %1</source>
         <translation>基本配置</translation>
     </message>
     <message id="hand_order.basic_layout_scope">
-        <source>Use complete selected notes, or the current difficulty when no text is selected. Keep existing annotations; no playability replay.</source>
-        <translation>選択内の完全な音符、未選択時は現在の難易度を配置します。既存の注釈を保護し、演奏可能性の再生検証は行いません。</translation>
+        <source>Use complete selected notes, or the current difficulty when none is selected. Recognized local patterns may revise simple existing labels; complex annotations stay protected.</source>
+        <translation>選択範囲内の完全な音符を処理し、未選択時は現在の難易度を処理します。明確な局所パターンでは単純な既存注釈を修正し、複雑な注釈は保護します。</translation>
     </message>
     <message id="hand_order.basic_layout_feedback">
         <source>Basic layout: %1 changed; %2 existing annotations kept; %3 partial tokens skipped; %4 unsupported; %5 diagnostics.</source>
         <translation>基本配置：変更 %1、既存注釈の保持 %2、部分選択の除外 %3、未対応 %4、診断 %5。</translation>
     </message>
     <message id="hand_order.basic_layout_notice">
-        <source>Keys 1–4 default right, 5–8 left. Each pairs use opposite hands; active slides and holds reserve a hand. Slide tracks may change their whole-track hand for nearby notes. Wifi uses two hands; centre-axis Touch is Either. No action-feasibility replay is performed.</source>
-        <translation>キー1–4は右手、5–8は左手が基本です。Each は左右の手に分け、動作中の slide と hold は片手を占有します。近くの音符に応じて slide 軌道全体の担当手を変える場合があります。Wifi は両手を使い、中央軸の Touch は左右任意です。動作の実行可能性は再生検証しません。</translation>
+        <source>Fast repeated taps alternate hands; paired winding taps stay on one hand per pair, while slower rebounds stay together. Adjacent Touchgroup pairs and short Touch sweeps may share a hand; other each pairs use two. Slides and holds reserve hands, and overlapping alternating stars use alternating full tracks. No playability replay is performed.</source>
+        <translation>速い同一キー連打は左右交互、移動する二連打は組内で同じ手を使い、遅い連打は分割しません。隣接する Touchgroup のペアと短い Touch スイープは片手で処理でき、他の同時押しは両手を使います。Slide と Hold は手を占有し、重なる左右交互の星は軌道全体を交互に担当します。演奏可能性の再生検証は行いません。</translation>
     </message>
     <message id="hand_order.basic_layout_next_step">
         <source>Basic layout writes normal annotations. To optimize them, enable “Recompute existing annotations in selection” and analyze again.</source>

@@ -1,6 +1,7 @@
 #include "core/chart/transform/BasicHandOrderLayout.h"
 
 #include "core/chart/parser/HandOrderAnnotationSyntax.h"
+#include "core/chart/model/TouchPadAdjacency.h"
 
 #include <cmath>
 #include <limits>
@@ -13,6 +14,9 @@ namespace {
 constexpr double kCentreTolerance = 1e-6;
 constexpr double kTouchCanvasCentre = 270.0;
 constexpr double kPositionMemorySeconds = 0.4;
+constexpr double kFastRepeatedTapGapSeconds = 0.13;
+constexpr double kWindingPairGapSeconds = 0.4;
+constexpr double kTouchSweepGapSeconds = 0.18;
 
 HandOrderHand laneHand(int lane)
 {
@@ -50,6 +54,9 @@ struct LayoutHead {
     QPointF point;
     HandOrderHand hand = HandOrderHand::Unspecified;
     bool fixed = false;
+    int patternHand = -1;
+    bool patternNeedsBothFree = false;
+    int touchPairWith = -1;
 };
 
 struct LayoutSustain {
@@ -59,11 +66,251 @@ struct LayoutSustain {
     double end = 0.0;
     HandOrderHand hand = HandOrderHand::Unspecified;
     bool fixed = false;
+    int patternHand = -1;
 };
 
 int handIndex(HandOrderHand hand)
 {
     return hand == HandOrderHand::Left ? 0 : hand == HandOrderHand::Right ? 1 : -1;
+}
+
+QVector<int> orderedHeads(const QVector<LayoutHead>& heads)
+{
+    QVector<int> order;
+    order.reserve(heads.size());
+    for (int i = 0; i < heads.size(); ++i) order.append(i);
+    std::stable_sort(order.begin(), order.end(), [&](int a, int b) {
+        const auto& left = heads.at(a);
+        const auto& right = heads.at(b);
+        if (left.marker->second != right.marker->second) return left.marker->second < right.marker->second;
+        return left.marker->parseOrder < right.marker->parseOrder;
+    });
+    return order;
+}
+
+bool simpleLayoutSuffix(const QString& suffix, const TimelineNoteMarker& marker, int markerCount)
+{
+    if (suffix.isEmpty()) return true;
+    if (markerCount != 1) return false;
+    if (marker.type == QStringLiteral("slide")) {
+        for (const auto head : {'l', 'r'})
+            for (const auto track : {'l', 'r'})
+                if (suffix == QStringLiteral("~[head=%1;track=0:%2]").arg(QChar(head)).arg(QChar(track))) return true;
+        return false;
+    }
+    return suffix == QStringLiteral("~l") || suffix == QStringLiteral("~r");
+}
+
+bool fastTapGap(const LayoutHead& first, const LayoutHead& second)
+{
+    if (first.marker->type != QStringLiteral("tap") || second.marker->type != QStringLiteral("tap")) return false;
+    const double gap = second.marker->second - first.marker->second;
+    const double pseudoEach = 240.0 / (64.0 * qMax(first.marker->tempoBpm, second.marker->tempoBpm));
+    return gap >= pseudoEach - 1e-9 && gap <= kFastRepeatedTapGapSeconds + 1e-9;
+}
+
+int adjacentLaneStep(int first, int second)
+{
+    if (first < 1 || first > 8 || second < 1 || second > 8) return 0;
+    if (second == first % 8 + 1) return 1;
+    if (second == (first + 6) % 8 + 1) return -1;
+    return 0;
+}
+
+int touchLaneDistance(const QString& first, const QString& second)
+{
+    if (first == QStringLiteral("C") || second == QStringLiteral("C")) return 0;
+    if (first.size() != 2 || second.size() != 2) return 8;
+    const int distance = std::abs(first.at(1).digitValue() - second.at(1).digitValue());
+    return qMin(distance, 8 - distance);
+}
+
+bool nearbyTouches(const LayoutHead& first, const LayoutHead& second)
+{
+    return first.marker->type == QStringLiteral("touch")
+        && second.marker->type == QStringLiteral("touch")
+        && chart::touchPadsAreAdjacent(first.marker->touchPad, second.marker->touchPad)
+        && touchLaneDistance(first.marker->touchPad, second.marker->touchPad) <= 2;
+}
+
+void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustains,
+    const QVector<bool>& canRewrite, QVector<bool>* rewriteTokens)
+{
+    const auto order = orderedHeads(*heads);
+    QVector<QVector<int>> headsByToken(canRewrite.size());
+    QVector<QVector<int>> sustainsByToken(canRewrite.size());
+    QVector<QVector<int>> sustainsByHead(heads->size());
+    for (int i = 0; i < heads->size(); ++i) headsByToken[heads->at(i).token].append(i);
+    for (int i = 0; i < sustains->size(); ++i) {
+        const auto& sustain = sustains->at(i);
+        sustainsByToken[sustain.token].append(i);
+        if (sustain.head >= 0) sustainsByHead[sustain.head].append(i);
+    }
+    const auto eligible = [&](int first, int last) {
+        for (int i = first; i < last; ++i)
+            if (!canRewrite.value(heads->at(order.at(i)).token)) return false;
+        return true;
+    };
+    const auto allowRecalculation = [&](int token) {
+        if (rewriteTokens->at(token)) return;
+        (*rewriteTokens)[token] = true;
+        for (int index : headsByToken.at(token)) {
+            auto& head = (*heads)[index];
+            head.fixed = false;
+            head.hand = HandOrderHand::Unspecified;
+        }
+        for (int index : sustainsByToken.at(token)) {
+            auto& sustain = (*sustains)[index];
+            sustain.fixed = false;
+            sustain.hand = HandOrderHand::Unspecified;
+        }
+    };
+
+    // Winding rebounds keep each fast pair on one hand even when the jump to
+    // the next lane contains an empty subdivision.
+    const auto fastPairAt = [&](int first) {
+        if (first + 1 >= order.size() || !eligible(first, first + 2)) return false;
+        const auto& a = heads->at(order.at(first));
+        const auto& b = heads->at(order.at(first + 1));
+        return a.patternHand < 0 && b.patternHand < 0
+            && a.marker->lane == b.marker->lane && fastTapGap(a, b);
+    };
+    for (int first = 0; first < order.size();) {
+        int last = first;
+        int step = 0;
+        while (fastPairAt(last)) {
+            if (last > first) {
+                const int previousLane = heads->at(order.at(last - 2)).marker->lane;
+                const int lane = heads->at(order.at(last)).marker->lane;
+                const int nextStep = adjacentLaneStep(previousLane, lane);
+                const double jump = heads->at(order.at(last)).marker->second
+                    - heads->at(order.at(last - 1)).marker->second;
+                if (!nextStep || (step && step != nextStep)
+                    || jump <= 1e-9 || jump > kWindingPairGapSeconds + 1e-9) break;
+                step = nextStep;
+            }
+            last += 2;
+        }
+        if (last - first >= 6) {
+            const int initial = handIndex(laneHand(heads->at(order.at(first)).marker->lane));
+            for (int i = first; i < last; ++i) {
+                auto& head = (*heads)[order.at(i)];
+                allowRecalculation(head.token);
+                head.patternHand = initial ^ ((i - first) / 2 % 2);
+                head.patternNeedsBothFree = true;
+            }
+            first = last;
+        } else ++first;
+    }
+
+    // Other fast same-lane runs alternate individual taps when both hands are free.
+    for (int first = 0; first < order.size();) {
+        const auto& initial = heads->at(order.at(first));
+        if (initial.marker->type != QStringLiteral("tap") || initial.patternHand >= 0) { ++first; continue; }
+        int last = first + 1;
+        while (last < order.size() && heads->at(order.at(last)).patternHand < 0
+            && fastTapGap(heads->at(order.at(last - 1)), heads->at(order.at(last)))) ++last;
+        for (int start = first; start < last;) {
+            int finish = start + 1;
+            const int lane = heads->at(order.at(start)).marker->lane;
+            while (finish < last && heads->at(order.at(finish)).marker->lane == lane) ++finish;
+            if (finish - start >= 2 && eligible(start, finish)) {
+                const int initialHand = handIndex(laneHand(lane));
+                for (int i = start; i < finish; ++i) {
+                    auto& head = (*heads)[order.at(i)];
+                    allowRecalculation(head.token);
+                    head.patternHand = initialHand ^ ((i - start) % 2);
+                    head.patternNeedsBothFree = true;
+                }
+            }
+            start = finish;
+        }
+        first = last;
+    }
+
+    // Repeated pairs at a relaxed cadence have no rebound pressure that
+    // justifies swapping hands inside either pair.
+    for (int first = 0; first + 3 < order.size();) {
+        const auto& a = heads->at(order.at(first));
+        const auto& b = heads->at(order.at(first + 1));
+        const auto& c = heads->at(order.at(first + 2));
+        const auto& d = heads->at(order.at(first + 3));
+        const int firstLane = a.marker->lane;
+        const int secondLane = c.marker->lane;
+        const bool pairShape = a.marker->type == QStringLiteral("tap")
+            && b.marker->type == QStringLiteral("tap")
+            && c.marker->type == QStringLiteral("tap")
+            && d.marker->type == QStringLiteral("tap")
+            && firstLane == b.marker->lane && secondLane == d.marker->lane
+            && adjacentLaneStep(firstLane, secondLane) != 0;
+        const auto relaxedGap = [](const LayoutHead& left, const LayoutHead& right) {
+            const double gap = right.marker->second - left.marker->second;
+            return gap > kFastRepeatedTapGapSeconds + 1e-9 && gap <= 0.3 + 1e-9;
+        };
+        if (pairShape && eligible(first, first + 4)
+            && relaxedGap(a, b) && relaxedGap(b, c) && relaxedGap(c, d)) {
+            for (int i = first; i < first + 4; ++i) {
+                auto& head = (*heads)[order.at(i)];
+                allowRecalculation(head.token);
+                head.patternHand = handIndex(laneHand(i < first + 2 ? firstLane : secondLane));
+                head.patternNeedsBothFree = true;
+            }
+            first += 4;
+        } else ++first;
+    }
+
+    for (int i = 0; i + 1 < order.size(); ++i) {
+        auto& first = (*heads)[order.at(i)];
+        auto& second = (*heads)[order.at(i + 1)];
+        if (!nearbyTouches(first, second) || !eligible(i, i + 2)) continue;
+        const double gap = second.marker->second - first.marker->second;
+        const double pseudoEach = 240.0 / (64.0 * qMax(first.marker->tempoBpm, second.marker->tempoBpm));
+        if (gap < -1e-9) continue;
+        if (gap < 1e-9 && first.marker->eachGroupId >= 0
+            && first.marker->eachGroupId == second.marker->eachGroupId) {
+            allowRecalculation(first.token);
+            allowRecalculation(second.token);
+            first.touchPairWith = order.at(i + 1);
+            second.touchPairWith = order.at(i);
+            ++i;
+        } else if (gap >= pseudoEach - 1e-9 && gap <= kTouchSweepGapSeconds + 1e-9) {
+            const auto preferred = basicLayoutHandForPoint((first.point + second.point) / 2.0);
+            const int hand = handIndex(preferred);
+            if (hand < 0) continue;
+            allowRecalculation(first.token);
+            allowRecalculation(second.token);
+            first.patternHand = hand;
+            second.patternHand = hand;
+            ++i;
+        }
+    }
+
+    // Overlapping stars whose heads alternate across the screen reserve the
+    // corresponding hand for the whole track, including old simple labels.
+    for (int first = 0; first < order.size();) {
+        const auto& initial = heads->at(order.at(first));
+        if (initial.marker->type != QStringLiteral("slide") || !initial.marker->hasHeadStar) { ++first; continue; }
+        int last = first + 1;
+        while (last < order.size()) {
+            const auto& previous = heads->at(order.at(last - 1));
+            const auto& next = heads->at(order.at(last));
+            if (next.marker->type != QStringLiteral("slide") || !next.marker->hasHeadStar
+                || previous.marker->endSecond < next.marker->second - 1e-9
+                || next.marker->second <= previous.marker->second + 1e-9
+                || handIndex(laneHand(previous.marker->lane)) == handIndex(laneHand(next.marker->lane))) break;
+            ++last;
+        }
+        if (last - first >= 3 && eligible(first, last)) {
+            for (int i = first; i < last; ++i) {
+                auto& head = (*heads)[order.at(i)];
+                const int hand = handIndex(laneHand(head.marker->lane));
+                allowRecalculation(head.token);
+                head.patternHand = hand;
+                for (int index : sustainsByHead.at(order.at(i))) (*sustains)[index].patternHand = hand;
+            }
+        }
+        first = last;
+    }
 }
 
 HandOrderHand handAt(const LayoutSustain& sustain, double second)
@@ -84,15 +331,7 @@ HandOrderHand handAt(const LayoutSustain& sustain, double second)
 // This is a local scheduling constraint, not a judgement or playability proof.
 void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustains)
 {
-    QVector<int> order;
-    order.reserve(heads->size());
-    for (int i = 0; i < heads->size(); ++i) order.append(i);
-    std::stable_sort(order.begin(), order.end(), [&](int a, int b) {
-        const auto& left = heads->at(a);
-        const auto& right = heads->at(b);
-        if (left.marker->second != right.marker->second) return left.marker->second < right.marker->second;
-        return left.marker->parseOrder < right.marker->parseOrder;
-    });
+    const auto order = orderedHeads(*heads);
     QPointF position[2] = {lanePoint(6), lanePoint(3)};
     double positionTime[2] = {-std::numeric_limits<double>::infinity(), -std::numeric_limits<double>::infinity()};
     QVector<bool> ended(sustains->size(), false);
@@ -144,6 +383,22 @@ void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustai
         if (last - first == 2) {
             auto& a = (*heads)[order.at(first)];
             auto& b = (*heads)[order.at(first + 1)];
+            if (a.touchPairWith == order.at(first + 1) && b.touchPairWith == order.at(first)) {
+                double best = std::numeric_limits<double>::infinity();
+                int sharedHand = -1;
+                for (int candidate = 0; candidate < 2; ++candidate) {
+                    if (busy(candidate, a.marker->second, a.token)
+                        || busy(candidate, b.marker->second, b.token)) continue;
+                    const double cost = headCost(a, candidate) + headCost(b, candidate);
+                    if (cost < best) { best = cost; sharedHand = candidate; }
+                }
+                if (sharedHand >= 0) {
+                    commitHead(order.at(first), sharedHand);
+                    commitHead(order.at(first + 1), sharedHand);
+                }
+                first = last;
+                continue;
+            }
             double best = std::numeric_limits<double>::infinity();
             int firstHand = -1;
             for (int candidate = 0; candidate < 2; ++candidate) {
@@ -168,7 +423,12 @@ void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustai
             if (!head.fixed && busy(0, head.marker->second, head.token)
                 && busy(1, head.marker->second, head.token)) {
                 // No legal hand is available; the token stays unassigned.
-            } else if (!head.fixed && preferred == HandOrderHand::Either
+            } else if (!head.fixed && head.patternHand >= 0
+                && !busy(head.patternHand, head.marker->second, head.token)
+                && (!head.patternNeedsBothFree
+                    || !busy(1 - head.patternHand, head.marker->second, head.token)))
+                commitHead(index, head.patternHand);
+            else if (!head.fixed && preferred == HandOrderHand::Either
                 && !busy(0, head.marker->second, head.token)
                 && !busy(1, head.marker->second, head.token)) commitHead(index, -1);
             else if (!head.fixed && handIndex(preferred) >= 0
@@ -193,6 +453,11 @@ void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustai
             if (sustain.marker->type == QStringLiteral("hold")
                 || sustain.marker->type == QStringLiteral("touch_hold")) {
                 sustain.hand = head.hand;
+                continue;
+            }
+            if (sustain.patternHand >= 0 && handIndex(head.hand) == sustain.patternHand
+                && !busy(sustain.patternHand, head.marker->second, sustain.token)) {
+                sustain.hand = sustain.patternHand == 0 ? HandOrderHand::Left : HandOrderHand::Right;
                 continue;
             }
             const auto preferred = basicLayoutTrackHand(*sustain.marker);
@@ -284,13 +549,25 @@ BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, in
         if (text.at(index) == QLatin1Char('\n')) lineStarts.append(index + 1);
     QVector<LayoutHead> heads;
     QVector<LayoutSustain> sustains;
+    QVector<bool> canRewrite(parsed.sourceTokens.size(), false);
+    QVector<bool> rewriteTokens(parsed.sourceTokens.size(), false);
     QHash<int, int> headByOrder;
     QHash<int, int> sustainByOrder;
     for (int tokenIndex = 0; tokenIndex < parsed.sourceTokens.size(); ++tokenIndex) {
         const auto& source = parsed.sourceTokens.at(tokenIndex);
         if (!source.nativeValid || source.markerCount == 0 || source.line < 1 || source.line > lineStarts.size()) continue;
         const int start = lineStarts.at(source.line - 1) + source.col - 1;
-        const bool fixed = !hand_order::splitToken(text.mid(start, source.length)).suffix.isEmpty();
+        const auto parts = hand_order::splitToken(text.mid(start, source.length));
+        const bool fixed = !parts.suffix.isEmpty();
+        const bool completeTarget = start >= begin && start + source.length <= end;
+        const auto* firstMarker = byOrder.value(source.firstParseOrder);
+        bool annotationValid = true;
+        for (const auto& issue : parsed.annotationErrors)
+            if (issue.line == source.line && issue.col >= source.col && issue.col < source.col + source.length)
+                annotationValid = false;
+        canRewrite[tokenIndex] = firstMarker && annotationValid && (!fixed || completeTarget)
+            && !(firstMarker->type == QStringLiteral("slide") && source.markerCount != 1)
+            && simpleLayoutSuffix(parts.suffix, *firstMarker, source.markerCount);
         int sharedSlideHead = -1;
         for (int index = 0; index < source.markerCount; ++index) {
             const auto* marker = byOrder.value(source.firstParseOrder + index);
@@ -319,9 +596,11 @@ BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, in
             }
         }
     }
+    identifyLocalPatterns(&heads, &sustains, canRewrite, &rewriteTokens);
     assignLocalHands(&heads, &sustains);
     int delta = 0;
-    for (const auto& source : parsed.sourceTokens) {
+    for (int tokenIndex = 0; tokenIndex < parsed.sourceTokens.size(); ++tokenIndex) {
+        const auto& source = parsed.sourceTokens.at(tokenIndex);
         if (source.line < 1 || source.line > lineStarts.size()) continue;
         const int start = lineStarts.at(source.line - 1) + source.col - 1;
         const int finish = start + source.length;
@@ -329,7 +608,7 @@ BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, in
         if (start < begin || finish > end) { ++plan.partial; continue; }
         const QString original = text.mid(start, source.length);
         const auto parts = hand_order::splitToken(original);
-        if (!parts.suffix.isEmpty()) {
+        if (!parts.suffix.isEmpty() && !rewriteTokens.at(tokenIndex)) {
             ++result.preserved;
             for (const auto& issue : parsed.annotationErrors)
                 if (issue.line == source.line && issue.col >= source.col && issue.col < source.col + source.length)
@@ -395,10 +674,12 @@ BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, in
                 replacement = parts.baseToken + QLatin1Char('~') + glyph(hand);
             }
         }
-        plan.replacement.replace(start - begin + delta, source.length, replacement);
-        plan.patches.append({start, finish, replacement});
-        delta += replacement.size() - source.length;
-        ++plan.changed;
+        if (replacement != original) {
+            plan.replacement.replace(start - begin + delta, source.length, replacement);
+            plan.patches.append({start, finish, replacement});
+            delta += replacement.size() - source.length;
+            ++plan.changed;
+        } else if (!parts.suffix.isEmpty()) ++result.preserved;
     }
     const auto checked = SimaiParser::validateSyntax(text.left(begin) + plan.replacement + text.mid(end), metadata);
     if (!checked.errors.isEmpty() || checked.annotationErrors.size() > parsed.annotationErrors.size()) {

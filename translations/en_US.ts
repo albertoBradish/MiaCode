@@ -5596,16 +5596,16 @@ Error: %1</translation>
         <translation>Basic Layout</translation>
     </message>
     <message id="hand_order.basic_layout_scope">
-        <source>Use complete selected notes, or the current difficulty when no text is selected. Keep existing annotations; no playability replay.</source>
-        <translation>Use complete selected notes, or the current difficulty when no text is selected. Keep existing annotations; no playability replay.</translation>
+        <source>Use complete selected notes, or the current difficulty when none is selected. Recognized local patterns may revise simple existing labels; complex annotations stay protected.</source>
+        <translation>Use complete selected notes, or the current difficulty when none is selected. Recognized local patterns may revise simple existing labels; complex annotations stay protected.</translation>
     </message>
     <message id="hand_order.basic_layout_feedback">
         <source>Basic layout: %1 changed; %2 existing annotations kept; %3 partial tokens skipped; %4 unsupported; %5 diagnostics.</source>
         <translation>Basic layout: %1 changed; %2 existing annotations kept; %3 partial tokens skipped; %4 unsupported; %5 diagnostics.</translation>
     </message>
     <message id="hand_order.basic_layout_notice">
-        <source>Keys 1–4 default right, 5–8 left. Each pairs use opposite hands; active slides and holds reserve a hand. Slide tracks may change their whole-track hand for nearby notes. Wifi uses two hands; centre-axis Touch is Either. No action-feasibility replay is performed.</source>
-        <translation>Keys 1–4 default right, 5–8 left. Each pairs use opposite hands; active slides and holds reserve a hand. Slide tracks may change their whole-track hand for nearby notes. Wifi uses two hands; centre-axis Touch is Either. No action-feasibility replay is performed.</translation>
+        <source>Fast repeated taps alternate hands; paired winding taps stay on one hand per pair, while slower rebounds stay together. Adjacent Touchgroup pairs and short Touch sweeps may share a hand; other each pairs use two. Slides and holds reserve hands, and overlapping alternating stars use alternating full tracks. No playability replay is performed.</source>
+        <translation>Fast repeated taps alternate hands; paired winding taps stay on one hand per pair, while slower rebounds stay together. Adjacent Touchgroup pairs and short Touch sweeps may share a hand; other each pairs use two. Slides and holds reserve hands, and overlapping alternating stars use alternating full tracks. No playability replay is performed.</translation>
     </message>
     <message id="hand_order.basic_layout_next_step">
         <source>Basic layout writes normal annotations. To optimize them, enable “Recompute existing annotations in selection” and analyze again.</source>
