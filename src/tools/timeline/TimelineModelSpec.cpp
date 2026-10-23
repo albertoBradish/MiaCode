@@ -1,6 +1,8 @@
 #include "timeline/TimelineQuickModel.h"
 #include "timeline/TimelineQuickModelPrivate.h"
+#include "timeline/TimelineSceneStateBuilder.h"
 #include "core/chart/document/SimaiTimingMetadata.h"
+#include "core/chart/parser/HandOrderAnnotationSyntax.h"
 #include "core/chart/parser/SimaiParser.h"
 
 #include <QApplication>
@@ -29,6 +31,7 @@ struct ComparableNote {
     double second = 0.0;
     double endSecond = -1.0;
     double slideTraceSecond = -1.0;
+    double hsMultiplier = 1.0;
     int lane = 1;
     int endLane = 1;
     TimelineRenderNoteKind kind = TimelineRenderNoteKind::Unknown;
@@ -259,6 +262,7 @@ QVector<ComparableNote> flattenSnapshotNotes(const TimelineRenderSnapshot& snaps
             item.slideTraceSecond = note.slideTraceSecondOffset >= 0.0
                 ? timelineRenderAbsoluteSecond(line, note.slideTraceSecondOffset)
                 : -1.0;
+            item.hsMultiplier = note.hsMultiplier;
             item.lane = note.lane;
             item.endLane = note.endLane;
             item.kind = note.kind;
@@ -284,6 +288,7 @@ QVector<ComparableNote> flattenParserNotes(const SimaiParseResult& parsed)
         item.second = marker.second;
         item.endSecond = marker.endSecond;
         item.slideTraceSecond = marker.slideTraceSecond;
+        item.hsMultiplier = marker.hsMultiplier;
         item.lane = marker.lane;
         item.endLane = marker.endLane;
         item.kind = kind;
@@ -426,6 +431,7 @@ QString comparableNotesDiff(const QVector<ComparableNote>& expected, const QVect
                 && nearlyEqual(a.second, b.second)
                 && nearlyEqual(a.endSecond, b.endSecond)
                 && nearlyEqual(a.slideTraceSecond, b.slideTraceSecond)
+                && nearlyEqual(a.hsMultiplier, b.hsMultiplier)
                 && a.lane == b.lane
                 && a.endLane == b.endLane
                 && a.kind == b.kind
@@ -543,6 +549,7 @@ bool snapshotMatchesParser(
             || !nearlyEqual(a.second, b.second)
             || !nearlyEqual(a.endSecond, b.endSecond)
             || !nearlyEqual(a.slideTraceSecond, b.slideTraceSecond)
+            || !nearlyEqual(a.hsMultiplier, b.hsMultiplier)
             || a.lane != b.lane
             || a.endLane != b.endLane
             || a.kind != b.kind
@@ -734,6 +741,49 @@ bool incrementalMatchesRebuild(
     return sameSnapshot(incremental.snapshot(), rebuilt.snapshot());
 }
 
+bool sameNoteScene(
+    const miacode::timeline::TimelineSceneState& left,
+    const miacode::timeline::TimelineSceneState& right)
+{
+    const auto sameSprites = [](const auto& a, const auto& b) {
+        if (a.size() != b.size()) return false;
+        for (int i = 0; i < a.size(); ++i) {
+            if (a.at(i).center != b.at(i).center || a.at(i).spriteType != b.at(i).spriteType
+                || !nearlyEqual(a.at(i).scale, b.at(i).scale)
+                || !nearlyEqual(a.at(i).rotationDegrees, b.at(i).rotationDegrees)
+                || a.at(i).mirrorX != b.at(i).mirrorX) return false;
+        }
+        return true;
+    };
+    const auto sameLines = [](const auto& a, const auto& b) {
+        if (a.size() != b.size()) return false;
+        for (int i = 0; i < a.size(); ++i) {
+            if (a.at(i).start != b.at(i).start || a.at(i).end != b.at(i).end
+                || a.at(i).color != b.at(i).color || !nearlyEqual(a.at(i).width, b.at(i).width)) return false;
+        }
+        return true;
+    };
+    if (!sameSprites(left.noteSprites, right.noteSprites)
+        || !sameSprites(left.trackSprites, right.trackSprites)
+        || !sameLines(left.trackLines, right.trackLines)
+        || !sameLines(left.touchHoldLines, right.touchHoldLines)
+        || left.holdSpans.size() != right.holdSpans.size()
+        || left.fireworkBands.size() != right.fireworkBands.size()) return false;
+    for (int i = 0; i < left.holdSpans.size(); ++i) {
+        const auto& a = left.holdSpans.at(i);
+        const auto& b = right.holdSpans.at(i);
+        if (a.startX != b.startX || a.endX != b.endX || a.rowTop != b.rowTop
+            || a.laneHeight != b.laneHeight || a.spriteType != b.spriteType
+            || !nearlyEqual(a.baseIconScale, b.baseIconScale)
+            || a.fallbackColor != b.fallbackColor || !nearlyEqual(a.fallbackWidth, b.fallbackWidth)) return false;
+    }
+    for (int i = 0; i < left.fireworkBands.size(); ++i) {
+        if (left.fireworkBands.at(i).rect != right.fireworkBands.at(i).rect
+            || left.fireworkBands.at(i).color != right.fireworkBands.at(i).color) return false;
+    }
+    return true;
+}
+
 QString qmlSource(const QString& relativePath)
 {
     const QDir root(QStringLiteral(MIACODE_SOURCE_ROOT));
@@ -827,11 +877,13 @@ int main(int argc, char** argv)
         expect(!playingFlush.contains(QStringLiteral("|| !timelineTabIsForeground()"))
                    && playingFlush.contains(QStringLiteral("syncEditorCursorToPreviewSecond")),
                QStringLiteral("editor follow tick continues while validation or Muri owns the visible bottom tab"));
-        expect(editorDisplay.contains(QStringLiteral("hasLegacyBottomPanelHeight"))
-                   && editorDisplay.contains(QStringLiteral("legacySettings.remove(QStringLiteral(\"ui/bottomPanelHeight\"))"))
-                   && editorDisplay.lastIndexOf(QStringLiteral("legacySettings.remove"))
-                       > editorDisplay.indexOf(QStringLiteral("if (ui.value(\"bottom_tabs_content_scale\").isDouble())")),
-               QStringLiteral("legacy v2 bottom-panel height is retired even when shell scale already exists"));
+        // The hand-order runtime intentionally removed standard-edition QSettings
+        // migration; the isolated preference document owns the canonical scale.
+        expect(editorDisplay.contains(QStringLiteral("PreferenceDocument::loadPreferencesObject()"))
+                   && editorDisplay.contains(QStringLiteral("ui.value(\"bottom_tabs_content_scale\").toDouble(state_.bottomTabsContentScale_)"))
+                   && !editorDisplay.contains(QStringLiteral("QSettings"))
+                   && !editorDisplay.contains(QStringLiteral("ui/bottomPanelHeight")),
+               QStringLiteral("editor restores canonical shell scale without accessing standard-edition QSettings"));
         expect(editorDisplay.contains(QStringLiteral("state_.previewViewportLockEnabled_ = true"))
                    && editorDisplay.contains(QStringLiteral("state_.previewProgressFollowEnabled_ = true"))
                    && editorDisplay.contains(QStringLiteral("preview.insert(\"viewport_lock\", true)"))
@@ -2343,6 +2395,105 @@ int main(int argc, char** argv)
                    QStringLiteral("2"),
                    0.0),
                QStringLiteral("incremental HS edits match a full rebuild, including downstream note state"));
+    }
+
+    {
+        const QString annotated = QStringLiteral(
+            "(150){8}<HS*1.5>1~l/2bx~r,3m~m,4h[4:3]~l,5h~r,6$$bx~m,\n"
+            "A1~l/B2m~r/Cf~m/A4h[8:3]~l/Ch[4:1]~r/C1h~m,\n"
+            "1@bx-4[0.5##8:1]~[head=l;track=0:l|0.5:r],2!-6[4:1]~m,"
+            "3?-7[4:1]~r,4m-8m[8:1]~l,\n"
+            "1-5[4:1]*-7[4:2]~[head=r;branch0=0:l|0.5:m;branch1=0:r],"
+            "5v5v2[8:1]~[track=0:l|0.75:r],\n"
+            "1w5[8:1]~[head=l;track=0:l|0.5:r],"
+            "3w7[4:1]~[track=split:0:l|0.5:r&0:r],"
+            "4w8[4:1]~[track=single:0:m|0.5:m],\nE");
+        const QString plain = miacode::hand_order::stripAnnotations(annotated);
+        const auto parsed = SimaiParser::parseForTimeline(annotated);
+        expect(parsed.ok && parsed.annotationErrors.isEmpty() && parsed.noteMarkers.size() == 22,
+               QStringLiteral("hand-order timeline fixture covers every native note kind and valid annotation form"));
+        QString diff;
+        const bool plainMatches = snapshotMatchesParser(plain, &diff);
+        expect(plainMatches, QStringLiteral("native fixture agrees with the authoritative parser: %1").arg(diff));
+        const bool annotatedMatches = snapshotMatchesParser(annotated, &diff);
+        expect(annotatedMatches,
+               QStringLiteral("annotated timeline retains native notes, flags, timing, Each groups and source columns: %1").arg(diff));
+
+        TimelineQuickModel plainModel;
+        TimelineQuickModel annotatedModel;
+        plainModel.rebuildFromText(plain, 0.0);
+        annotatedModel.rebuildFromText(annotated, 0.0);
+        miacode::timeline::TimelineSceneBuildRequest request;
+        request.viewportSize = QSize(4096, 300);
+        request.skinDirectory = QDir(QStringLiteral(MIACODE_SOURCE_ROOT)).filePath(QStringLiteral("assets/skin/skinSD"));
+        request.snapshot = plainModel.snapshot();
+        const auto plainScene = miacode::timeline::TimelineSceneStateBuilder::build(request);
+        request.snapshot = annotatedModel.snapshot();
+        const auto annotatedScene = miacode::timeline::TimelineSceneStateBuilder::build(request);
+        expect(!plainScene.noteSprites.isEmpty() && !plainScene.trackSprites.isEmpty()
+                   && !plainScene.holdSpans.isEmpty() && !plainScene.touchHoldLines.isEmpty()
+                   && !plainScene.fireworkBands.isEmpty(),
+               QStringLiteral("timeline scene fixture emits native head, track, hold, touch-hold and firework geometry"));
+        expect(sameNoteScene(plainScene, annotatedScene),
+               QStringLiteral("hand-order annotations preserve timeline sprite materials, positions and long-note geometry"));
+        expect(nearlyEqual(plainModel.snapshot().durationSeconds, annotatedModel.snapshot().durationSeconds),
+               QStringLiteral("hand-order annotations preserve timeline duration including long tails"));
+
+        plainModel.applyTextChange(annotated, 0, plain.size(), annotated.size(), 0.0);
+        expect(sameSnapshot(plainModel.snapshot(), annotatedModel.snapshot()),
+               QStringLiteral("applying hand-order analysis as a full document replacement matches a fresh timeline rebuild"));
+        const int handPosition = annotated.indexOf(QStringLiteral("~l")) + 1;
+        expect(incrementalMatchesRebuild(annotated, handPosition, 1, QStringLiteral("r"), 0.0)
+                   && incrementalMatchesRebuild(annotated, handPosition - 1, 2, QString(), 0.0),
+               QStringLiteral("editing and removing simple hand-order suffixes preserve incremental timeline state"));
+        const int trackPosition = annotated.indexOf(QStringLiteral("~[head=l;track="));
+        const int trackEnd = annotated.indexOf(QLatin1Char(']'), trackPosition) + 1;
+        expect(incrementalMatchesRebuild(annotated, trackPosition, trackEnd - trackPosition, QStringLiteral("~r"), 0.0),
+               QStringLiteral("replacing a complex hand-order container matches a fresh timeline rebuild"));
+    }
+
+    {
+        const QStringList malformed = {
+            QStringLiteral("(120){4}1~z,2~l,\nE"),
+            QStringLiteral("(120){4}1~[head=l; track=0:l],2~r,\nE"),
+            QStringLiteral("(120){4}1~[track=0:l(300){64}<HS*4>],2~r,\nE"),
+            QStringLiteral("(120){4}1~[track=0:l|| comment,7~l,\n2~r,\nE"),
+            QStringLiteral("(120){4}1~[head=l/2~r`3~m,4~l,\nE"),
+        };
+        for (const QString& chart : malformed) {
+            const auto parsed = SimaiParser::parseForTimeline(chart);
+            expect(parsed.ok && !parsed.annotationErrors.isEmpty(),
+                   QStringLiteral("malformed suffix fixture retains a playable native chart"));
+            QString diff;
+            const bool matches = snapshotMatchesParser(chart, &diff);
+            expect(matches, QStringLiteral("bad hand-order suffix recovers at native separators/comments without changing timing: %1").arg(diff));
+        }
+    }
+
+    {
+        const QString chart = QStringLiteral("1~l/2~r,3~m,1-5[4:1]~[head=l;track=0:l|0.5:r],\nE");
+        TimelineQuickModel model;
+        model.rebuildFromText(chart, 0.0);
+        int line = 0;
+        int col = 0;
+        double second = -1.0;
+        expect(model.resolveNearestTimelineNote(0.0, 2, &line, &col, &second)
+                   && line == 1 && col == 5 && nearlyEqual(second, 0.0),
+               QStringLiteral("timeline note navigation keeps original columns after earlier hand-order suffixes"));
+        const int annotationPosition = chart.indexOf(QStringLiteral("~["));
+        expect(nearlyEqual(model.timelineSecondForCursor(1, annotationPosition + 3), 1.0),
+               QStringLiteral("cursor inside a hand-order container resolves to its native note time"));
+        int selectionStart = 0;
+        int selectionEnd = 0;
+        const int notePosition = chart.indexOf(QStringLiteral("1-5"));
+        expect(model.resolvePreviewFollowSelectionRange(1, notePosition + 1, &selectionStart, &selectionEnd)
+                   && selectionStart == notePosition + 1 && selectionEnd == chart.indexOf(QLatin1Char(','), notePosition),
+               QStringLiteral("preview-follow selection retains the complete annotated source token"));
+        const auto range = model.resolveExportRangeForSelection(chart, annotationPosition + 2, annotationPosition + 3);
+        expect(range.resolved && range.startPosition == notePosition
+                   && range.endPositionExclusive == chart.indexOf(QLatin1Char(','), notePosition) + 1
+                   && range.endSecond > 2.0,
+               QStringLiteral("selecting a hand-order suffix exports the native slide with its full visual tail"));
     }
 
     if (failed > 0) {
