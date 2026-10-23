@@ -1,6 +1,7 @@
 #include "app/ui/ApplicationContext.h"
 
 #include "app/services/update/UpdateService.h"
+#include "app/ui/preferences/LocaleService.h"
 
 namespace miacode::ui {
 ApplicationContext::ApplicationContext(miacode::ApplicationServices& services,
@@ -14,6 +15,7 @@ ApplicationContext::ApplicationContext(miacode::ApplicationServices& services,
                 services.uiRequests(), services.documentBridgeSlot(),
                 services.previewSurfaceSlot(), this)
     , analysis_(services.workspace(), services.analysis(), this)
+    , handOrderAnalysis_(services.workspace(), &services.analysis(), this)
     , preview_(services.shellNotifications(), services.previewSurfaceSlot(), services.playbackControlSlot(), this)
     , timeline_(services.shellNotifications(), services.timelineSurfaceSlot(), this)
     , commands_(document_, services.documentBridgeSlot(), this)
@@ -34,6 +36,11 @@ ApplicationContext::ApplicationContext(miacode::ApplicationServices& services,
     , netUpload_(services.netService(), services.uiRequests(), this)
     , lifecycle_(services.editorPageRouterSlot(), this)
 {
+    handOrderAnalysis_.setJobProgress(&services.jobProgress());
+    connect(&miacode::LocaleService::instance(), &miacode::LocaleService::languageChanged,
+            &handOrderAnalysis_, &miacode::HandOrderAnalysisService::retranslate);
+    connect(&miacode::LocaleService::instance(), &miacode::LocaleService::languageChanged,
+            &editor_, &EditorController::retranslate);
     net_.setHost(&document_, &services.uiRequests());
     if (auto* netService = services.netService()) {
         netService->setDocumentSnapshotHandler([this] { return document_.documentIdentity(); });
@@ -59,6 +66,14 @@ ApplicationContext::ApplicationContext(miacode::ApplicationServices& services,
     syncEditorAppearance();
     connect(&preferencesModel_, &miacode::ui::PreferencesModel::editorChanged,
             this, syncEditorAppearance);
+    const auto syncHandOrderRest = [this]() {
+        const double speed = preferencesModel_.handOrderReturnSpeed();
+        editor_.setHandOrderReturnSpeed(speed);
+        handOrderAnalysis_.setReturnSpeed(speed);
+    };
+    syncHandOrderRest();
+    connect(&preferencesModel_, &miacode::ui::PreferencesModel::editorChanged,
+            this, syncHandOrderRest);
 
     const auto applyEditorSettings = [this] {
         const int inputHandlingMode = preferencesModel_.editorInputHandlingMode();

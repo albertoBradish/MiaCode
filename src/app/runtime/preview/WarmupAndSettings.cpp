@@ -43,7 +43,7 @@ bool hasBlockingPreviewWindow()
 }
 
 // Project-preferences key holding the per-chart preview mixer
-// (<chartDir>/.miacode/preferences.json).
+// (<runtime>/data/projects/<chart-folder-hash>/preferences.json).
 constexpr auto kProjectAudioPreferencesKey = "preview_audio";
 
 struct PreviewMediaWarmupResult {
@@ -481,6 +481,7 @@ QVariantMap Session::previewRenderSettings() const
         {QStringLiteral("fireworkBrightness"), percentOf(state_.previewFireworkBrightness_)},
         {QStringLiteral("smoothBrightness"), state_.previewSmoothBrightness_},
         {QStringLiteral("showTimestamp"), state_.previewShowTimestamp_},
+        {QStringLiteral("showHandOrderAnnotations"), state_.previewShowHandOrderAnnotations_},
         {QStringLiteral("touchPadAuthoringShortcut"), state_.previewTouchPadAuthoringShortcutEnabled_},
         {QStringLiteral("showDebugInfo"), state_.previewShowDebugInfo_},
         {QStringLiteral("forceLabeledJudgeLineWhenPaused"), state_.previewForceLabeledJudgeLineWhenPaused_},
@@ -547,6 +548,11 @@ void Session::setPreviewRenderSetting(const QString& key, const QVariant& value)
         state_.previewShowTimestamp_ = value.toBool();
         if (canvas != nullptr) {
             canvas->setShowTimestamp(state_.previewShowTimestamp_);
+        }
+    } else if (key == QLatin1String("showHandOrderAnnotations")) {
+        state_.previewShowHandOrderAnnotations_ = value.toBool();
+        if (canvas != nullptr) {
+            canvas->setShowHandOrderAnnotations(state_.previewShowHandOrderAnnotations_);
         }
     } else if (key == QLatin1String("touchPadAuthoringShortcut")) {
         state_.previewTouchPadAuthoringShortcutEnabled_ = value.toBool();
@@ -820,7 +826,7 @@ void miacode::runtime::StageMediaHost::applyPreviewAudioSettingsToRuntime()
 void miacode::runtime::StageMediaHost::loadProjectAudioPreferences()
 {
     // The mixer is PROJECT-scoped: every chart remembers the volumes and mutes
-    // it was last edited with, in <chartDir>/.miacode/preferences.json. A
+    // it was last edited with, in isolated runtime project preferences. A
     // project that has never stored one — a brand-new chart, or one authored
     // before the mixer became project-scoped — starts from the app-level
     // 本地预设 (softwarePreviewAudioSettings_). Seeding is the preset's only

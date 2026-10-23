@@ -149,6 +149,10 @@ Item {
             if (root.documentSession.hasDocument)
                 root.showSaveFileDialog()
         }
+        onExportPlainSimaiRequested: {
+            if (root.documentSession.hasDocument)
+                root.showPlainSimaiExportDialog()
+        }
         onChartTransformRequested: opId => {
             if (root.chartEditorActive)
                 root.applyChartTransform(opId)
@@ -269,6 +273,13 @@ Item {
         saveFileDialog.open()
     }
 
+    function showPlainSimaiExportDialog() {
+        const location = root.documentSession.plainSimaiExportLocation()
+        plainSimaiExportDialog.currentFolder = location.folder
+        plainSimaiExportDialog.selectedFile = location.file
+        plainSimaiExportDialog.open()
+    }
+
     function saveDocument() {
         if (!root.editorActive)
             return
@@ -373,6 +384,11 @@ Item {
                 windowChrome: root.applicationContext.windowChrome
                 integratedInTitleBar: root.platform.nativeMenuBar
                 titleBarLeadingInset: titleBar.leadingInset
+                shortcuts: root.shortcutModel
+                handOrderRows: root.documentSession.handOrderMenu()
+                handOrderAnalyzeEnabled: root.chartEditorActive && !root.shortcutModel.captureActive
+                handOrderEnabled: menuCommands.canTransform && !root.shortcutModel.captureActive
+                onHandOrderRequested: command => root.applyChartTransform(command)
                 previewSettingsVisible: !splitView.previewDetached
                 sidebarActive: root.compact
                                ? state.compactPanel === "sidebar"
@@ -418,6 +434,8 @@ Item {
                 documentSession: root.documentSession
                 analysisSession: root.analysisSession
                 preferences: root.preferences
+                shortcuts: root.shortcutModel
+                handOrderService: root.applicationContext.handOrderAnalysis
                 previewSession: root.previewSession
                 previewSettings: root.applicationContext.previewSettings
                 commands: root.commands
@@ -492,6 +510,15 @@ Item {
         defaultSuffix: "txt"
         nameFilters: [qsTrId("qml.simai_files_txt_simai"), qsTrId("qml.all_files_2")]
         onAccepted: root.commands.saveDocumentAs(selectedFile)
+    }
+
+    FileDialog {
+        id: plainSimaiExportDialog
+        title: qsTrId("action.export_plain_simai")
+        fileMode: FileDialog.SaveFile
+        defaultSuffix: "txt"
+        nameFilters: [qsTrId("qml.simai_files_txt_simai"), qsTrId("qml.all_files_2")]
+        onAccepted: root.commands.exportPlainSimai(selectedFile)
     }
 
     // These actions remain discoverable while their dedicated QML pages and

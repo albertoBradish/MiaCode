@@ -207,6 +207,7 @@ QJsonObject VideoExportSnapshot::toJson() const
     render.insert(QStringLiteral("hand_radius_px"), muriRenderOptions.handRadiusPx);
     render.insert(QStringLiteral("static_tap_on_slide_threshold_seconds"), staticTapOnSlideThresholdSeconds);
     render.insert(QStringLiteral("show_timestamp"), showTimestamp);
+    render.insert(QStringLiteral("show_hand_order_annotations"), showHandOrderAnnotations);
     render.insert(QStringLiteral("show_object_stats_hud"), showObjectStatsHud);
     render.insert(QStringLiteral("show_chart_info_hud"), showChartInfoHud);
     render.insert(QStringLiteral("clock_count_enabled"), clockCountEnabled);
@@ -369,6 +370,8 @@ bool VideoExportSnapshot::fromJson(
             .toDouble(parsed.staticTapOnSlideThresholdSeconds);
     parsed.showTimestamp =
         render.value(QStringLiteral("show_timestamp")).toBool(parsed.showTimestamp);
+    parsed.showHandOrderAnnotations = render.value(
+        QStringLiteral("show_hand_order_annotations")).toBool(parsed.showHandOrderAnnotations);
     parsed.showObjectStatsHud =
         render.value(QStringLiteral("show_object_stats_hud")).toBool(parsed.showObjectStatsHud);
     parsed.showChartInfoHud =
@@ -481,6 +484,14 @@ bool buildVideoExportTaskFromSnapshot(
     const SimaiParseResult nativeResult = SimaiParser::parseForTimeline(
         difficulty->chart,
         timingMetadata);
+    if (snapshot.showHandOrderAnnotations && !nativeResult.annotationErrors.isEmpty()) {
+        const SimaiMessage& issue = nativeResult.annotationErrors.constFirst();
+        if (errorMessage != nullptr) {
+            *errorMessage = QStringLiteral("Invalid hand-order annotation at %1:%2: %3")
+                .arg(issue.line).arg(issue.col).arg(issue.message);
+        }
+        return false;
+    }
     bool firstOk = false;
     const double firstSeconds = parsedFirstSeconds(document.first, &firstOk);
     if (!firstOk) {
@@ -532,6 +543,9 @@ bool buildVideoExportTaskFromSnapshot(
     built.sizePreset = snapshot.sizePreset;
     built.fullRangeExport = snapshot.fullRangeExport;
     built.showTimestamp = snapshot.showTimestamp;
+    built.showHandOrderAnnotations = snapshot.showHandOrderAnnotations;
+    built.handOrderExportMode = snapshot.showHandOrderAnnotations
+        ? HandOrderExportMode::Annotated : HandOrderExportMode::Original;
     built.showObjectStatsHud = snapshot.showObjectStatsHud;
     built.showChartInfoHud = snapshot.showChartInfoHud;
     // Reconstruct chart metadata from the parsed SimaiDocument so the

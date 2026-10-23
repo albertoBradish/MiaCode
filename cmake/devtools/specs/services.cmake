@@ -21,6 +21,12 @@ miacode_add_dev_tool(job_registry_spec TEST
     INCLUDES src
 )
 
+miacode_add_dev_tool(hand_order_runtime_paths_spec TEST
+    SOURCES src/tools/services/HandOrderRuntimePathsSpec.cpp
+    LIBS miacode_base Qt6::Core
+    INCLUDES src
+)
+
 miacode_add_dev_tool(net_service_spec TEST
     SOURCES
         src/tools/services/NetServiceSpec.cpp
@@ -345,3 +351,21 @@ miacode_add_dev_tool(hud_font_preference_migration_spec TEST
 )
 target_compile_definitions(hud_font_preference_migration_spec PRIVATE
     "MIACODE_SOURCE_ROOT=\"${CMAKE_CURRENT_SOURCE_DIR}\"")
+
+miacode_add_dev_tool(hand_order_analysis_service_spec TEST
+    SOURCES
+        src/app/services/JobProgressService.cpp
+        src/app/services/JobProgressService.h
+        src/tools/services/HandOrderAnalysisServiceSpec.cpp
+        src/app/services/HandOrderAnalysisService.cpp
+        src/app/services/HandOrderAnalysisService.h
+        src/app/services/ChartWorkspace.cpp
+        src/app/services/ChartWorkspace.h
+    LIBS miacode_analysis miacode_editor_core Qt6::Core Qt6::Test
+    INCLUDES src
+)
+qt_add_resources(hand_order_analysis_service_spec "hand_order_analysis_service_spec_i18n"
+    PREFIX "/i18n"
+    BASE "${CMAKE_CURRENT_BINARY_DIR}"
+    FILES ${MIACODE_TRANSLATION_QM_FILES})
+add_dependencies(hand_order_analysis_service_spec miacode_lrelease)

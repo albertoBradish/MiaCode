@@ -271,3 +271,27 @@ miacode_add_dev_tool(latency_model_spec TEST
 set_tests_properties(latency_model_spec PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 target_compile_definitions(latency_model_spec PRIVATE
     "MIACODE_QML_SPEC_IMPORT_ROOT=\"${MIACODE_QML_SPEC_IMPORT_ROOT}\"")
+
+miacode_add_dev_tool(hand_order_tools_spec TEST
+    SOURCES
+        src/app/services/JobProgressService.cpp
+        src/app/services/JobProgressService.h
+        src/tools/ui/HandOrderToolsSpec.cpp
+        src/app/services/HandOrderAnalysisService.cpp
+        src/app/services/HandOrderAnalysisService.h
+        src/app/services/ChartWorkspace.cpp
+        src/app/services/ChartWorkspace.h
+        src/app/ui/editor/EditorController.cpp
+        src/app/ui/editor/EditorController.h
+    LIBS miacode_analysis miacode_editor_core ScintillaQuick::ScintillaQuick
+        Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Test
+    INCLUDES src
+)
+target_compile_definitions(hand_order_tools_spec PRIVATE
+    "MIACODE_QML_SPEC_IMPORT_ROOT=\"${MIACODE_QML_SPEC_IMPORT_ROOT}\"")
+qt_add_resources(hand_order_tools_spec "hand_order_tools_spec_i18n"
+    PREFIX "/i18n"
+    BASE "${CMAKE_CURRENT_BINARY_DIR}"
+    FILES ${MIACODE_TRANSLATION_QM_FILES})
+add_dependencies(hand_order_tools_spec miacode_lrelease)
+set_tests_properties(hand_order_tools_spec PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")

@@ -125,7 +125,7 @@ Rectangle {
                 id: brandText
                 anchors.verticalCenter: parent.verticalCenter
                 visible: root.brandTextVisible
-                text: "MiaCode"
+                text: "MiaCode Sticking"
                 color: brand.hovered || brandMenu.active
                        ? Theme.colors.text.active : Theme.colors.text.chrome
                 font.family: Theme.uiFont
@@ -136,7 +136,7 @@ Rectangle {
 
         Tooltip {
             visible: brand.hovered && !root.brandTextVisible && !brandMenu.active
-            text: "MiaCode"
+            text: "MiaCode Sticking"
         }
 
         onClicked: {

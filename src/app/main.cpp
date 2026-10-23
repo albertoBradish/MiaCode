@@ -7,6 +7,7 @@
 #include "common/DebugLog.h"
 #include "common/OperationLog.h"
 #include "common/ProcessDiagnostics.h"
+#include "common/RuntimePaths.h"
 #include "common/UiHangWatchdog.h"
 #include "common/DebugOptions.h"
 #include "audio/WaveformCache.h"
@@ -43,6 +44,7 @@
 #include <cmath>
 #include <cstdio>
 #include <exception>
+#include <initializer_list>
 #include <new>
 
 #ifdef Q_OS_WIN
@@ -139,15 +141,37 @@ Q_IMPORT_QML_PLUGIN(MiaCode_TimelinePlugin)
 
 int main(int argc, char* argv[])
 {
-    // Phase 6 — startup beacon. Heap-free, pure-Win32. Lands a tiny
-    // miacode_startup_beacon_<pid>.txt next to the eventual op-chain
-    // shadow log (MIACODE_LOG_DIR or %TEMP%). Its presence proves the
-    // process made it to line 1 of main() — its absence means the
-    // process died in static init / DLL load (outside our reach), which
-    // is a fundamentally different debug path than a crash inside our
-    // code. Written before MC_OP, before crash_recovery::install, and
-    // before QGuiApplication construction so a crash in any of those still
-    // leaves the breadcrumb behind.
+    QString runtimePathError;
+    if (!miacode::runtime_paths::initializeFromEnvironment(&runtimePathError)) {
+        std::fprintf(stderr, "Sticking runtime initialization failed: %s\n",
+                     runtimePathError.toUtf8().constData());
+        return 1;
+    }
+    // Ignore inherited official-build log overrides. Every role writes its
+    // startup beacon and channel logs under the dedicated runtime root.
+    for (const char* key : {"MIACODE_OPLOG_SHADOW_PATH", "MIACODE_RUNTIME_LOG_PATH",
+                            "MIACODE_AUDIO_LOG_PATH", "MIACODE_EXPORT_LOG_PATH",
+                            "MIACODE_STARTUP_LOG_PATH", "MIACODE_FATAL_LOG_PATH",
+                            "MIACODE_OPERATION_LOG_PATH", "MIACODE_PV_MEMORY_LOG_PATH"}) {
+        if (!qunsetenv(key)) {
+            std::fprintf(stderr, "Cannot clear inherited log override: %s\n", key);
+            return 1;
+        }
+    }
+    if (!qputenv("MIACODE_LOG_DIR", miacode::runtime_paths::logDirectory().toUtf8())) {
+        std::fputs("Cannot set Sticking log directory\n", stderr);
+        return 1;
+    }
+    const QByteArray runtimeTemp = miacode::runtime_paths::tempDirectory().toUtf8();
+    for (const char* key : {"TEMP", "TMP", "TMPDIR"}) {
+        if (!qputenv(key, runtimeTemp)) {
+            std::fprintf(stderr, "Cannot set Sticking temporary directory: %s\n", key);
+            return 1;
+        }
+    }
+
+    // The beacon is written before MC_OP, crash handlers and Qt application
+    // construction, after validating the isolated runtime directory.
     miacode::oplog::writeStartupBeacon(MIACODE_DISPLAY_VERSION_STRING);
 
 #ifdef Q_OS_WIN
@@ -417,6 +441,15 @@ int main(int argc, char* argv[])
     miacode::oplog::appendStartupBeaconLine("phase=before_qapplication_construct");
 #endif
     QGuiApplication app(argc, argv);
+    // All roles share this entry point. Establish the development identity
+    // before any configuration or cache is read.
+    app.setOrganizationName(QStringLiteral("MiaCodeSticking"));
+    app.setOrganizationDomain(QStringLiteral("handorder.miacode.local"));
+    app.setApplicationName(QStringLiteral("MiaCodeSticking"));
+    app.setApplicationVersion(MIACODE_DISPLAY_VERSION_STRING);
+#ifdef Q_OS_WIN
+    setWindowsAppUserModelId();
+#endif
     miacode::hang_watchdog::installGuiHeartbeat(&app);
     const auto shutdownGuiHeartbeat = qScopeGuard([]() {
         miacode::hang_watchdog::shutdownGuiHeartbeat();
@@ -517,11 +550,6 @@ int main(int argc, char* argv[])
     // (see logProcessStartupDiagnostics) so the collected project log has them.
     logProcessStartupDiagnostics(QStringLiteral("boot"));
 
-#ifdef Q_OS_WIN
-    setWindowsAppUserModelId();
-#endif
-    app.setApplicationName("MiaCode");
-    app.setApplicationVersion(MIACODE_DISPLAY_VERSION_STRING);
     const QIcon appIcon = applicationWindowIcon();
 #ifndef Q_OS_MACOS
     app.setWindowIcon(appIcon);

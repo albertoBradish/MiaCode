@@ -2,13 +2,7 @@
 
 #include "app/ui/Bootstrap.h"
 
-#include "AppVersion.h"
 #include "app/ui/ApplicationContext.h"
-#include "app/services/update/NetworkUpdateFetcher.h"
-#include "app/services/update/PreferenceUpdateStateStore.h"
-#include "app/services/update/UpdateManifest.h"
-#include "app/services/update/UpdateService.h"
-#include "app/services/PreferenceDocument.h"
 #include "app/ui/preview/NoteImageProvider.h"
 #include "app/ui/export/CoverExportWindow.h"
 #include "app/ui/export/ExportSession.h"
@@ -104,22 +98,7 @@ bool Bootstrap::start(const QString& startupOpenTarget)
         applicationServices_->jobProgress().retranslate();
         applicationServices_->setValidationLocale(miacode::uiValidationLocale());
     });
-    // 更新检查在这里组装：ApplicationServices 只链 Core 与 Gui，而偏好存储的
-    // 生产实现会把 PreferenceDocument 拖进链接闭包，所以这两个具体实现由
-    // Bootstrap 持有，装配体那边只拿到抽象端口。
-    updateStateStore_ = std::make_unique<miacode::update::PreferenceUpdateStateStore>();
-    updateFetcher_ = std::make_unique<miacode::update::NetworkUpdateFetcher>(this);
-    miacode::update::UpdateEnvironment updateEnvironment;
-    updateEnvironment.versionText = QStringLiteral(MIACODE_VERSION_STRING);
-    updateEnvironment.major = MIACODE_VERSION_MAJOR;
-    updateEnvironment.platformKey = miacode::update::currentPlatformKey();
-    updateEnvironment.languageToken = PreferenceDocument::resolvedLanguageToken();
-    updateService_ = std::make_unique<miacode::update::UpdateService>(
-        *updateFetcher_, *updateStateStore_, std::move(updateEnvironment));
-    connect(&miacode::LocaleService::instance(), &miacode::LocaleService::languageChanged,
-            updateService_.get(), &miacode::update::UpdateService::setLanguageToken);
-    applicationServices_->setUpdateFetcher(updateFetcher_.get());
-    applicationServices_->setUpdateService(updateService_.get());
+    // This development build never connects to the official update channel.
     jobRegistry_ = std::make_unique<miacode::JobRegistry>();
     netTransport_ = std::make_unique<miacode::net::NetHttpTransport>();
     netProvider_ = std::make_unique<miacode::net::NetProvider>(*netTransport_);
@@ -355,10 +334,6 @@ bool Bootstrap::start(const QString& startupOpenTarget)
         if (document != nullptr) {
             document->openFile(QUrl::fromLocalFile(startupOpenTarget.trimmed()));
         }
-    }
-
-    if (miacode::update::UpdateService* updates = applicationServices_->updateService()) {
-        updates->scheduleStartupCheck();
     }
 
     appendUiRuntimeLog(QStringLiteral("start_ok"));

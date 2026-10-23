@@ -14,6 +14,7 @@
 
 #include "core/chart/parser/SimaiParser.h"
 #include "core/chart/model/TimelineData.h"
+#include "core/chart/model/TouchPadAdjacency.h"
 #include "core/analysis/MuriConfig.h"
 #include "core/analysis/MuriAnalyzerGeometry.h"
 #include "core/analysis/MuriAnalyzerModel.h"
@@ -117,75 +118,9 @@ QString notePad(const TimelineNoteMarker& marker)
     return marker.touchPad;
 }
 
-int padRingGroupIndex(const QString& pad)
-{
-    if (pad == QLatin1String("C")) {
-        return 4;
-    }
-    if (!miacode::muri::padTokenIsValid(pad)) {
-        return -1;
-    }
-    switch (pad.at(0).toUpper().toLatin1()) {
-    case 'A':
-        return 0;
-    case 'B':
-        return 1;
-    case 'D':
-        return 2;
-    case 'E':
-        return 3;
-    default:
-        return -1;
-    }
-}
-
-int padLaneZeroBased(const QString& pad)
-{
-    if (!miacode::muri::padTokenIsValid(pad) || pad == QLatin1String("C")) {
-        return -1;
-    }
-    const int lane = pad.mid(1).toInt();
-    return lane <= 0 ? -1 : ((lane - 1) & 0x7);
-}
-
 bool touchPadsAreAdjacent(const QString& a, const QString& b)
 {
-    if (a == b) {
-        return false;
-    }
-
-    int g1 = padRingGroupIndex(a);
-    int g2 = padRingGroupIndex(b);
-    int i1 = padLaneZeroBased(a);
-    int i2 = padLaneZeroBased(b);
-    if (g1 < 0 || g2 < 0) {
-        return false;
-    }
-    if (g1 > g2) {
-        qSwap(g1, g2);
-        qSwap(i1, i2);
-    }
-
-    if (g2 == 4) {
-        return g1 == 1;
-    }
-
-    if ((g1 == 0 && g2 == 0)
-        || (g1 == 2 && g2 == 2)
-        || (g1 == 3 && g2 == 3)
-        || (g1 == 1 && g2 == 2)) {
-        return false;
-    }
-
-    if (g1 == 1 && g2 == 1) {
-        return i2 == ((i1 + 1) & 0x7) || i2 == ((i1 + 7) & 0x7);
-    }
-
-    if ((g1 == 0 && g2 == 1) || (g1 == 2 && g2 == 3)) {
-        return i1 == i2;
-    }
-
-    return i2 == i1 || i2 == ((i1 + 1) & 0x7);
+    return chart::touchPadsAreAdjacent(a, b);
 }
 
 double notePressEndSecond(const TimelineNoteMarker& marker)

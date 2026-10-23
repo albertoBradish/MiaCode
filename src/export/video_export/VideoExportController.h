@@ -207,6 +207,12 @@ inline QVariantMap introBannerStyleMap(const IntroBannerSpec& intro, bool pvVide
     return style;
 }
 
+enum class HandOrderExportMode {
+    FollowPreview = 0,
+    Original = 1,
+    Annotated = 2,
+};
+
 struct VideoExportTask {
     miacode::preview::scene::PreviewHudFontSettings hudFontSettings;
     QString outputPath;
@@ -258,6 +264,9 @@ struct VideoExportTask {
     VideoExportSizePreset sizePreset = VideoExportSizePreset::Standard;
     bool fullRangeExport = true;
     bool showTimestamp = true;
+    HandOrderExportMode handOrderExportMode = HandOrderExportMode::FollowPreview;
+    // Resolved at export start and frozen into the worker snapshot.
+    bool showHandOrderAnnotations = true;
     bool showObjectStatsHud = false;
     bool showChartInfoHud = false;
     // Pre-roll maimai track-start intro (full-range exports only). intro.enabled

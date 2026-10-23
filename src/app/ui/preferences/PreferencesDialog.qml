@@ -629,6 +629,22 @@ AppDialog {
                                 onToggled: root.preferencesModel.editorOverviewRulerEnabled = checked
                             }
                         }
+
+                        PreferenceGroup {
+                            title: qsTrId("dialog.preferences.group.hand_order")
+
+                            PreferenceSlider {
+                                objectName: "preferencesHandOrderReturnSpeedSlider"
+                                label: qsTrId("preferences.hand_order_return_speed")
+                                from: 1
+                                to: 8
+                                stepSize: 0.25
+                                value: root.preferencesModel.handOrderReturnSpeed
+                                readout: root.preferencesModel.handOrderReturnSpeed.toFixed(2)
+                                         + " " + qsTrId("preferences.hand_order_return_speed_unit")
+                                onMoved: function(v) { root.preferencesModel.handOrderReturnSpeed = Math.round(v * 4) / 4 }
+                            }
+                        }
                     }
                 }
 
@@ -926,7 +942,7 @@ AppDialog {
                         ColumnLayout {
                             spacing: 2
                             Text {
-                                text: "MiaCode"
+                                text: "MiaCode Sticking"
                                 color: Theme.colors.text.active
                                 font.family: Theme.uiFont
                                 font.pixelSize: Theme.uiFontSize + 6
@@ -971,6 +987,7 @@ AppDialog {
 
                     PreferenceGroup {
                         title: qsTrId("dialog.preferences.updates_group")
+                        visible: root.updateService !== null
 
                         PreferenceSwitch {
                             objectName: "preferencesUpdateCheckSwitch"

@@ -88,6 +88,7 @@ QString resolveChartPathFromCliInput(const QString& inputPath)
 
     const QDir dir(info.absoluteFilePath());
     const QStringList preferredNames{
+        QStringLiteral("maidata_sticking.txt"),
         QStringLiteral("majdata.txt"),
         QStringLiteral("maidata.txt"),
         QStringLiteral("majdata.simai"),
@@ -239,6 +240,10 @@ void miacode::runtime::VideoExportHost::applySharedExportTaskSettings(const Vide
     session_.applyPreviewStageMediaRouteVisualSettings();
     if (session_.scene_ != nullptr) {
         session_.scene_->setShowTimestamp(session_.previewShowTimestamp_);
+        session_.scene_->setShowHandOrderAnnotations(
+            session_.exportPreviewActive_
+                ? task.showHandOrderAnnotations
+                : session_.previewShowHandOrderAnnotations_);
         session_.scene_->setShowObjectStatsHud(session_.previewShowObjectStatsHud_);
         // Chart info stays exclusive to the export audition; editor preview
         // state is left untouched.
@@ -354,7 +359,8 @@ VideoExportTask miacode::runtime::VideoExportHost::buildVideoExportSeedTask(int 
     task.outputWidth = 1080;
     task.outputHeight = 1080;
     task.fps = 60;
-        task.showTimestamp = session_.previewShowTimestamp_;
+    task.showTimestamp = session_.previewShowTimestamp_;
+    task.showHandOrderAnnotations = session_.previewShowHandOrderAnnotations_;
     task.showObjectStatsHud = session_.exportShowObjectStatsHud_;
     task.showChartInfoHud = session_.exportShowChartInfoHud_;
     task.centerDisplayMode = session_.previewCenterDisplayMode_;
@@ -437,6 +443,7 @@ void miacode::runtime::VideoExportHost::endExportPreviewSession()
     teardownExportPreviewAuditionScene();
     if (session_.scene_ != nullptr) {
         session_.scene_->setSuppressDebugInfo(false);
+        session_.scene_->setShowHandOrderAnnotations(session_.previewShowHandOrderAnnotations_);
         session_.scene_->setShowChartInfoHud(false);
         session_.scene_->setChartInfo(QString(), QString(), QString(), QString());
     }
@@ -710,6 +717,7 @@ bool miacode::runtime::VideoExportHost::startQmlExportAudition(int difficultyId,
         session_.scene_->setTapFlowSpeed(visualTask.tapFlowSpeed);
         session_.scene_->setTouchFlowSpeed(visualTask.touchFlowSpeed);
         session_.scene_->setShowTimestamp(visualTask.showTimestamp);
+        session_.scene_->setShowHandOrderAnnotations(visualTask.showHandOrderAnnotations);
         session_.scene_->setShowObjectStatsHud(visualTask.showObjectStatsHud);
         session_.scene_->setShowChartInfoHud(visualTask.showChartInfoHud);
     }

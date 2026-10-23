@@ -121,12 +121,18 @@ third_party/**/*.a
 !third_party/bass/lib/linux/aarch64/libbass_fx.so
 !third_party/bass/lib/linux/aarch64/libbassflac.so
 
-# scripts whitelist: ignore all by default, allow only release/infra scripts.
+# scripts whitelist: ignore all by default, allow release/infra and hand-order art generation.
 scripts/*
+!scripts/run-hand-order.ps1
+!scripts/art/
+scripts/art/*
+!scripts/art/generate_hand_order_skin.py
 !scripts/build/
 scripts/build/*
 !scripts/build/build-macos-local.sh
 !scripts/build/build-win.ps1
+!scripts/build/enter-hand-order-build.ps1
+!scripts/build/Start_HandOrder.ps1
 !scripts/build/package.py
 !scripts/build/package-mac.sh
 !scripts/build/package-win.ps1

@@ -55,6 +55,7 @@ public:
     Q_PROPERTY(bool editorScrollPastEnd READ editorScrollPastEnd WRITE setEditorScrollPastEnd NOTIFY editorChanged)
     Q_PROPERTY(bool editorSelectionBeatDisplay READ editorSelectionBeatDisplay WRITE setEditorSelectionBeatDisplay NOTIFY editorChanged)
     Q_PROPERTY(bool editorOverviewRulerEnabled READ editorOverviewRulerEnabled WRITE setEditorOverviewRulerEnabled NOTIFY editorChanged)
+    Q_PROPERTY(double handOrderReturnSpeed READ handOrderReturnSpeed WRITE setHandOrderReturnSpeed NOTIFY editorChanged)
 
     Q_PROPERTY(QAbstractItemModel* completionDurations READ completionDurations CONSTANT)
     Q_PROPERTY(QAbstractItemModel* completionDivisions READ completionDivisions CONSTANT)
@@ -129,6 +130,8 @@ public:
     bool editorOverviewRulerEnabled() const;
     void setEditorSelectionBeatDisplay(bool enabled);
     void setEditorOverviewRulerEnabled(bool enabled);
+    double handOrderReturnSpeed() const;
+    void setHandOrderReturnSpeed(double speed);
 
     bool videoDecodePrefersSoftware() const;
     void setVideoDecodePrefersSoftware(bool preferSoftware);

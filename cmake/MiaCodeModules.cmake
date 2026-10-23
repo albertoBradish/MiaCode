@@ -29,6 +29,8 @@ miacode_add_module(miacode_base
         src/common/PixelGeometry.h
         src/common/ProcessDiagnostics.cpp
         src/common/ProcessDiagnostics.h
+        src/common/RuntimePaths.cpp
+        src/common/RuntimePaths.h
         src/common/TaskCancellation.h
         src/common/UiHangWatchdog.cpp
         src/common/UiHangWatchdog.h
@@ -54,11 +56,15 @@ miacode_add_module(miacode_chart
         src/core/chart/document/SimaiDocument.h
         src/core/chart/document/SimaiTimingMetadata.cpp
         src/core/chart/document/SimaiTimingMetadata.h
+        src/core/chart/model/HandOrderRestPosition.h
         src/core/chart/model/TimelineData.h
         src/core/chart/model/TimelineMarkerOffset.h
+        src/core/chart/parser/HandOrderAnnotationSyntax.cpp
+        src/core/chart/parser/HandOrderAnnotationSyntax.h
         src/core/chart/parser/SimaiCommentScan.cpp
         src/core/chart/parser/SimaiCommentScan.h
         src/core/chart/parser/SimaiParser.Driver.cpp
+        src/core/chart/parser/SimaiParser.HandOrder.cpp
         src/core/chart/parser/SimaiParser.Slide.cpp
         src/core/chart/parser/SimaiParser.StrictChecks.cpp
         src/core/chart/parser/SimaiParser.TouchTap.cpp
@@ -72,18 +78,27 @@ miacode_add_module(miacode_chart
         src/core/chart/transform/ChartBatchTransform.Subdivision.cpp
         src/core/chart/transform/ChartBatchTransform.Transform.cpp
         src/core/chart/transform/ChartBatchTransform.h
+        src/core/chart/transform/HandOrderEdit.cpp
+        src/core/chart/transform/HandOrderEdit.h
+        src/core/chart/transform/BasicHandOrderLayout.cpp
+        src/core/chart/transform/BasicHandOrderLayout.h
+        src/core/chart/transform/NativeSlideSplit.cpp
+        src/core/chart/transform/NativeSlideSplit.h
         src/core/chart/transform/ChartNormalization.cpp
         src/core/chart/transform/ChartNormalization.h
         src/core/chart/transform/ChartNormalizationSegmentPolicy.cpp
         src/core/chart/transform/ChartNormalizationSegmentPolicy.h
         src/core/chart/transform/Non384SnapTable.cpp
         src/core/chart/transform/Non384SnapTable.h
+        src/core/chart/transform/PlainSimaiExport.cpp
+        src/core/chart/transform/PlainSimaiExport.h
     PUBLIC miacode_base
     QRC resources/slide_data.qrc
 )
 # SimaiParser.cpp includes its partial translation units.
 set_source_files_properties(
     src/core/chart/parser/SimaiParser.Driver.cpp
+    src/core/chart/parser/SimaiParser.HandOrder.cpp
     src/core/chart/parser/SimaiParser.Slide.cpp
     src/core/chart/parser/SimaiParser.StrictChecks.cpp
     src/core/chart/parser/SimaiParser.TouchTap.cpp
@@ -92,6 +107,16 @@ set_source_files_properties(
 # ---- analysis: Muri and the analysis pipeline -----------------------------
 miacode_add_module(miacode_analysis
     SOURCES
+        src/core/analysis/hand_order/BasicHandOrder.cpp
+        src/core/analysis/hand_order/BasicHandOrder.h
+        src/core/analysis/hand_order/HandOrderJudge.cpp
+        src/core/analysis/hand_order/HandOrderJudge.h
+        src/core/analysis/hand_order/HandOrderFullReplay.cpp
+        src/core/analysis/hand_order/HandOrderFullReplay.h
+        src/core/analysis/hand_order/BasicHandOrderActions.cpp
+        src/core/analysis/hand_order/BasicHandOrderActions.h
+        src/core/analysis/hand_order/BasicHandOrderWifi.cpp
+        src/core/analysis/hand_order/BasicHandOrderWifi.h
         src/core/analysis/MuriAnalyzer.cpp
         src/core/analysis/MuriAnalyzer.h
         src/core/analysis/MuriAnalyzerGeometry.cpp

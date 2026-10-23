@@ -1,4 +1,5 @@
 #include "app/runtime/document/DocumentSessionHost.h"
+#include "app/services/StickingChartCopy.h"
 #include "app/services/UiRequestService.h"
 #include "app/runtime/Shared.h"
 #include "app/runtime/export/VideoExportHost.h"
@@ -149,9 +150,9 @@ bool Session::openStartupTarget(const QString& path)
 
     const QFileInfo info(normalizedPath);
     if (info.isDir()) {
-        const QString maidataPath = QDir(info.absoluteFilePath()).filePath(QStringLiteral("maidata.txt"));
-        if (QFileInfo::exists(maidataPath) && QFileInfo(maidataPath).isFile()) {
-            return openFileAtPath(maidataPath, true);
+        const QString stickingPath = miacode::sticking::editableChartPath(info.absoluteFilePath());
+        if (QFileInfo(stickingPath).isFile()) {
+            return openFileAtPath(stickingPath, true);
         }
 
         setCurrentFilePath(QString(), true);

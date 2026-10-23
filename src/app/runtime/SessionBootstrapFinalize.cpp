@@ -276,6 +276,7 @@ void Session::finishFrameBootstrap(const std::function<void(const QString&)>& lo
         scene_->setShowDebugInfo(previewShowDebugInfo_);
         scene_->setHudFontSettings(miacode::hud_preferences::load());
         scene_->setShowTimestamp(previewShowTimestamp_);
+        scene_->setShowHandOrderAnnotations(previewShowHandOrderAnnotations_);
         scene_->setShowObjectStatsHud(previewShowObjectStatsHud_);
         // Chart info HUD only ever activates inside the export-preview
         // dialog (gated by setSuppressDebugInfo + setChartInfo there); the

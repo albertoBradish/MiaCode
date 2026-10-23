@@ -1059,6 +1059,15 @@ void PreviewRuntime::setUseMineSkin(bool enabled)
     update();
 }
 
+void PreviewRuntime::setShowHandOrderAnnotations(bool enabled)
+{
+    if (frameState_.render.showHandOrderAnnotations == enabled) {
+        return;
+    }
+    frameState_.render.showHandOrderAnnotations = enabled;
+    update();
+}
+
 bool PreviewRuntime::useMineSkin() const
 {
     return frameState_.render.useMineSkin;

@@ -5,10 +5,12 @@
 #include "app/runtime/Shared.h"
 #include "app/ui/preferences/LocaleService.h"
 #include "app/services/PreferenceDocument.h"
+#include "core/chart/model/HandOrderRestPosition.h"
 
 #include <QVariantMap>
 #include <QCoreApplication>
 #include <algorithm>
+#include <cmath>
 
 namespace miacode::ui {
 
@@ -423,6 +425,28 @@ void PreferencesModel::setEditorOverviewRulerEnabled(bool enabled)
         return;
     }
     settings_->setEditorOverviewRulerEnabled(enabled);
+    emit editorChanged();
+}
+
+double PreferencesModel::handOrderReturnSpeed() const
+{
+    const auto app = PreferenceDocument::loadPreferencesObject().value(QStringLiteral("app")).toObject();
+    const double value = app.value(QStringLiteral("hand_order_return_speed"))
+        .toDouble(chart::handOrderDefaultReturnSpeed);
+    return std::isfinite(value) ? qBound(chart::handOrderMinReturnSpeed, value,
+        chart::handOrderMaxReturnSpeed) : chart::handOrderDefaultReturnSpeed;
+}
+
+void PreferencesModel::setHandOrderReturnSpeed(double speed)
+{
+    if (!std::isfinite(speed)) return;
+    speed = qBound(chart::handOrderMinReturnSpeed, speed, chart::handOrderMaxReturnSpeed);
+    if (qFuzzyCompare(speed, handOrderReturnSpeed())) return;
+    QJsonObject root = PreferenceDocument::loadPreferencesObject();
+    QJsonObject app = root.value(QStringLiteral("app")).toObject();
+    app.insert(QStringLiteral("hand_order_return_speed"), speed);
+    root.insert(QStringLiteral("app"), app);
+    PreferenceDocument::savePreferencesObject(root);
     emit editorChanged();
 }
 

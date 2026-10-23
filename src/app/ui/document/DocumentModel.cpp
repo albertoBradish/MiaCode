@@ -1,9 +1,12 @@
+#include "app/ui/document/HandOrderCommands.h"
+#include "app/services/StickingChartCopy.h"
 #include "app/services/FileDialogPreferences.h"
 #include "common/LocalizedText.h"
 
 #include "app/ui/document/ChartTransformCommands.h"
 #include "core/chart/transform/ChartBatchTransform.h"
 #include "core/chart/transform/ChartNormalization.h"
+#include "core/chart/transform/PlainSimaiExport.h"
 #include "core/chart/selection/ChartSelectionBeatSummary.h"
 #include "app/ui/document/DocumentModel.h"
 #include "app/ui/preferences/LocaleService.h"
@@ -14,6 +17,7 @@
 #include "app/services/ChartBannerData.h"
 #include "core/chart/ChartAssetPaths.h"
 #include "common/DebugLog.h"
+#include "common/RuntimePaths.h"
 #include "app/services/Id3TagReader.h"
 #include "app/services/ProjectPreferences.h"
 #include "core/chart/document/SimaiDocument.h"
@@ -25,7 +29,6 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
-#include <QStandardPaths>
 #include <QImage>
 #include <QImageReader>
 #include <QJsonObject>
@@ -801,6 +804,10 @@ bool DocumentModel::hasDocument() const
 {
     return workspace_ != nullptr && workspace_->snapshot().hasDocument;
 }
+miacode::ChartWorkspaceSnapshot DocumentModel::chartWorkspaceSnapshot() const
+{
+    return workspace_ ? workspace_->snapshot() : miacode::ChartWorkspaceSnapshot{};
+}
 QString DocumentModel::currentFilePath() const
 {
     return workspace_ != nullptr ? workspace_->snapshot().filePath : QString();
@@ -1311,7 +1318,7 @@ void DocumentModel::createEmptyDocumentAt(const QString& targetPath, const QStri
         return;
     }
     if (bridge() != nullptr) {
-        bridge()->noteRecentDocument(targetPath);
+        bridge()->noteRecentDocument(currentFilePath());
     }
 }
 
@@ -1365,8 +1372,7 @@ QVariantMap DocumentModel::fileDialogLocation(bool saveMode) const
     QString directory;
     if (netPreview && miacode::file_dialog_preferences::validDirectory(lastDirectory).isEmpty()) {
         directory = miacode::file_dialog_preferences::validDirectory(
-            QStandardPaths::writableLocation(QStandardPaths::DesktopLocation));
-        if (directory.isEmpty()) directory = QDir::homePath();
+            miacode::runtime_paths::exportsDirectory());
     } else {
         directory = miacode::file_dialog_preferences::documentDirectory(
             lastDirectory, netPreview ? QString() : currentFilePath());
@@ -1375,6 +1381,16 @@ QVariantMap DocumentModel::fileDialogLocation(bool saveMode) const
     const QString path = !netPreview && !currentFilePath().isEmpty() ? currentFilePath()
         : QDir(directory).filePath(netPreview ? QStringLiteral("maidata.txt") : QStringLiteral("chart.txt"));
     return {{QStringLiteral("folder"), QUrl::fromLocalFile(QFileInfo(path).absolutePath())},
+            {QStringLiteral("file"), QUrl::fromLocalFile(path)}};
+}
+
+QVariantMap DocumentModel::plainSimaiExportLocation() const
+{
+    const QString directory = miacode::runtime_paths::exportsDirectory();
+    const QString baseName = currentFilePath().isEmpty()
+        ? QStringLiteral("chart") : QFileInfo(currentFilePath()).completeBaseName();
+    const QString path = QDir(directory).filePath(baseName + QStringLiteral("_plain.txt"));
+    return {{QStringLiteral("folder"), QUrl::fromLocalFile(directory)},
             {QStringLiteral("file"), QUrl::fromLocalFile(path)}};
 }
 
@@ -1426,7 +1442,9 @@ net::NetEnginePort::Cancel DocumentModel::openNetPreview(const QString& path, co
 
 bool DocumentModel::openFileWithOrigin(const QUrl& fileUrl, ChartDocumentOrigin origin)
 {
-    const QString path = fileUrl.isLocalFile() ? fileUrl.toLocalFile() : fileUrl.toString();
+    const QString requestedPath = fileUrl.isLocalFile() ? fileUrl.toLocalFile() : fileUrl.toString();
+    const QString path = origin == ChartDocumentOrigin::Local
+        ? miacode::sticking::editableChartPath(requestedPath) : requestedPath;
     if (fileService_ == nullptr) return false;
     miacode::ChartWorkspaceFileResult result;
     if (!runWorkspaceMutation([&] {
@@ -1694,6 +1712,50 @@ bool DocumentModel::saveAs(const QUrl& fileUrl)
         writeUnifiedDesignerPreference(currentFilePath(), unifiedDesignerEnabled_);
     }
     return saved;
+}
+
+bool DocumentModel::exportPlainSimai(const QUrl& fileUrl)
+{
+    if (!hasDocument() || workspace_ == nullptr || !fileUrl.isLocalFile()) {
+        return false;
+    }
+    if (!finishPendingEdits()) {
+        return false;
+    }
+    const QString path = fileUrl.toLocalFile();
+    const QFileInfo destination(path);
+    if (!destination.isAbsolute()) {
+        return false;
+    }
+    const QFileInfo source(currentFilePath());
+    const QString destinationIdentity = destination.exists()
+        ? destination.canonicalFilePath() : destination.absoluteFilePath();
+    const QString sourceIdentity = source.exists()
+        ? source.canonicalFilePath() : source.absoluteFilePath();
+#ifdef Q_OS_WIN
+    constexpr Qt::CaseSensitivity pathCase = Qt::CaseInsensitive;
+#else
+    constexpr Qt::CaseSensitivity pathCase = Qt::CaseSensitive;
+#endif
+    if (!currentFilePath().isEmpty()
+        && destinationIdentity.compare(sourceIdentity, pathCase) == 0) {
+        uiRequests_->postNotice(miacode::NoticeSeverity::Error,
+            miacode::localizedText("document.save_failed"),
+            miacode::localizedText("document.plain_export_same_path"));
+        return false;
+    }
+
+    const QByteArray text = miacode::chart_transform::plainSimaiDocumentText(
+        workspace_->document()).toUtf8();
+    QSaveFile output(destination.absoluteFilePath());
+    if (!output.open(QIODevice::WriteOnly) || output.write(text) != text.size()
+        || !output.commit()) {
+        uiRequests_->postNotice(miacode::NoticeSeverity::Error,
+            miacode::localizedText("document.save_failed"),
+            miacode::localizedText("document.cannot_write_chart"));
+        return false;
+    }
+    return true;
 }
 bool DocumentModel::discardChanges()
 {
@@ -2059,6 +2121,21 @@ QVariantList DocumentModel::chartTransformMenu() const
             {QStringLiteral("section"), spec.section},
         });
     }
+    return rows;
+}
+
+miacode::simai::SimaiTimingMetadata DocumentModel::chartTimingMetadata() const
+{
+    return workspace_ ? miacode::simai::buildTimingMetadata(workspace_->document())
+        : miacode::simai::SimaiTimingMetadata{};
+}
+
+QVariantList DocumentModel::handOrderMenu() const
+{
+    QVariantList rows;
+    for (const auto& spec : handOrderCommandSpecs())
+        rows.append(QVariantMap{{QStringLiteral("id"), spec.id}, {QStringLiteral("labelKey"), spec.labelKey},
+            {QStringLiteral("requiresSelection"), spec.requiresSelection}});
     return rows;
 }
 

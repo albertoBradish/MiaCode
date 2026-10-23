@@ -591,6 +591,14 @@ Rectangle {
                         SettingsSection {
                             title: ""
 
+                            LabeledCombo {
+                                objectName: "exportHandOrderModeCombo"
+                                Layout.fillWidth: true
+                                label: qsTrId("dialog.video_export.option.hand_order_mode")
+                                options: root.session ? root.session.handOrderModeOptions : []
+                                currentValue: root.session ? root.session.handOrderModeIndex : 0
+                                onPicked: function(value) { if (root.session) root.session.handOrderModeIndex = value }
+                            }
 
                             AppSwitch {
                                 text: qsTrId("dialog.video_export.option.show_object_stats")

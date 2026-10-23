@@ -79,6 +79,38 @@ VideoExportSizePreset videoExportSizePresetFromPreference(
     return fallback;
 }
 
+HandOrderExportMode handOrderExportModeFromPreference(
+    const QJsonValue& value, HandOrderExportMode fallback)
+{
+    if (!value.isString()) {
+        return fallback;
+    }
+    const QString token = value.toString().trimmed();
+    if (token == QLatin1String("original")) {
+        return HandOrderExportMode::Original;
+    }
+    if (token == QLatin1String("annotated")) {
+        return HandOrderExportMode::Annotated;
+    }
+    if (token == QLatin1String("follow_preview")) {
+        return HandOrderExportMode::FollowPreview;
+    }
+    return fallback;
+}
+
+QString handOrderExportModeToken(HandOrderExportMode mode)
+{
+    switch (mode) {
+    case HandOrderExportMode::Original:
+        return QStringLiteral("original");
+    case HandOrderExportMode::Annotated:
+        return QStringLiteral("annotated");
+    case HandOrderExportMode::FollowPreview:
+    default:
+        return QStringLiteral("follow_preview");
+    }
+}
+
 void applyVideoExportPreferences(const QJsonObject& settings, VideoExportTask* task)
 {
     if (task == nullptr) {
@@ -100,6 +132,8 @@ void applyVideoExportPreferences(const QJsonObject& settings, VideoExportTask* t
         settings.value(QStringLiteral("size_preset")), task->sizePreset);
     task->clockCountEnabled = settings.value(QStringLiteral("clock_count_enabled"))
                                   .toBool(task->clockCountEnabled);
+    task->handOrderExportMode = handOrderExportModeFromPreference(
+        settings.value(QStringLiteral("hand_order_mode")), task->handOrderExportMode);
     task->intro.enabled = settings.value(QStringLiteral("add_intro")).toBool(task->intro.enabled);
     task->intro.pvPreview = settings.value(QStringLiteral("intro_style"))
                                 .toString(task->intro.pvPreview ? QStringLiteral("pv_preview")
@@ -140,6 +174,7 @@ void appendVideoExportPreferences(QJsonObject* settings, const VideoExportTask& 
     settings->insert(QStringLiteral("preset"), videoExportPreferencePresetToken(task.preset));
     settings->insert(QStringLiteral("size_preset"), videoExportSizePresetToken(task.sizePreset));
     settings->insert(QStringLiteral("clock_count_enabled"), task.clockCountEnabled);
+    settings->insert(QStringLiteral("hand_order_mode"), handOrderExportModeToken(task.handOrderExportMode));
     settings->insert(QStringLiteral("add_intro"), task.intro.enabled);
     settings->insert(QStringLiteral("intro_style"),
                      task.intro.pvPreview ? QStringLiteral("pv_preview") : QStringLiteral("classic"));
@@ -237,6 +272,8 @@ void copyVideoExportUserSettings(const VideoExportTask& source, VideoExportTask*
     target->tapFlowSpeed = source.tapFlowSpeed;
     target->touchFlowSpeed = source.touchFlowSpeed;
     target->showTimestamp = source.showTimestamp;
+    target->handOrderExportMode = source.handOrderExportMode;
+    target->showHandOrderAnnotations = source.showHandOrderAnnotations;
     target->showObjectStatsHud = source.showObjectStatsHud;
     target->showChartInfoHud = source.showChartInfoHud;
     target->clockCountEnabled = source.clockCountEnabled;
