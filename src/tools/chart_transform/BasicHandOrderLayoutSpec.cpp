@@ -125,6 +125,24 @@ int main(int argc, char** argv)
         "an isolated chained slide retains its motion-start default hand");
     expect(sameNative(slides, laidSlides.edit.replacement), "slide layout changes only hand-order annotation");
 
+    const QString slideTailHold = "(120){4}7-5[4:1]~[head=l;track=0:l],,6h[4:1]~r,";
+    const auto repairedTailHold = basicHandOrderLayoutInSelection(slideTailHold, 0, 0);
+    expect(repairedTailHold.edit.replacement == "(120){4}7-5[4:1]~[head=l;track=0:l],,6h[4:1]~l,"
+        && sameNative(slideTailHold, repairedTailHold.edit.replacement),
+        "the first hold at a slide tail follows the released hand and repairs an old simple label");
+    const QString reportedTail = "(180){4}7V15[4:1]~[head=l;track=0:l],1~r,,,,"
+        "{8}6h[4:1]~r,,5~l,6h[4:1]~r,,4~l,6h[4:1]~r,,";
+    const auto reportedTailLayout = basicHandOrderLayoutInSelection(reportedTail, 0, 0);
+    expect(reportedTailLayout.edit.replacement.contains("{8}6h[4:1]~l,,")
+        && sameNative(reportedTail, reportedTailLayout.edit.replacement),
+        "the first hold after the reported V-chain reuses its left-side basis");
+    expect(basicHandOrderLayoutInSelection(reportedTailLayout.edit.replacement, 0, 0).edit.changed == 0,
+        "the repaired V-chain tail label is stable on a second layout pass");
+    const QString interveningNote = "(120){4}7-5[4:1]~[head=l;track=0:l],1~r,,2~r,,6h[4:1]~r,";
+    expect(basicHandOrderLayoutInSelection(interveningNote, 0, 0).edit.replacement
+        .endsWith("6h[4:1]~r,"),
+        "a later hold is not rewritten after another head has intervened since the slide tail");
+
     const QString joined = "(120){4}1-5[4:1],5-1[4:1],";
     const auto joinedLayout = basicHandOrderLayoutInSelection(joined, 0, 0);
     expect(joinedLayout.edit.replacement == "(120){4}1-5[4:1]~[head=r;track=0:r],"
@@ -225,6 +243,31 @@ int main(int argc, char** argv)
             "unannotated Wifi gets two different hands rather than an incorrect ordinary one-color track");
     }
     expect(sameNative(wifi, laidWifi.edit.replacement), "Wifi native fan geometry, counts and timing remain unchanged");
+    const QString sharedStarHead = "(120){4}1~l/1-5[4:1]~[head=r;track=0:r],";
+    const auto sharedStarLayout = basicHandOrderLayoutInSelection(sharedStarHead, 0, 0);
+    expect(sharedStarLayout.edit.replacement == "(120){4}1~r/1-5[4:1]~[head=r;track=0:r],"
+        && sameNative(sharedStarHead, sharedStarLayout.edit.replacement),
+        "a tap starting a headed slide takes the same hand as that star");
+    const QString sharedOneStroke = "(120){4}1~l/1-5[4:1]~[head=r;track=0:r],"
+        "5-1[4:1]~[head=l;track=0:r],";
+    const auto sharedOneStrokeLayout = basicHandOrderLayoutInSelection(sharedOneStroke, 0, 0);
+    expect(sharedOneStrokeLayout.edit.replacement.startsWith("(120){4}1~r/1-5[4:1]~[head=r;track=0:r],")
+        && sameNative(sharedOneStroke, sharedOneStrokeLayout.edit.replacement),
+        "the startup tap shares the first star hand even when its track continues into one stroke");
+    const QString sharedMultipleStars = "(120){4}1~l/1-5[4:1]~[head=r;track=0:r]/"
+        "1-7[4:1]~[head=r;track=0:l],";
+    const auto sharedMultipleLayout = basicHandOrderLayoutInSelection(sharedMultipleStars, 0, 0);
+    expect(sharedMultipleLayout.edit.replacement.startsWith("(120){4}1~r/1-5[4:1]~[head=r;track=0:r]/")
+        && sameNative(sharedMultipleStars, sharedMultipleLayout.edit.replacement),
+        "one tap shares the head hand with multiple simultaneous stars on its lane");
+    const QString sharedHeadWithEach = "(120){4}1~l/1-5[4:1]~[head=r;track=0:r]/5~l,";
+    const auto mixedHeadLayout = basicHandOrderLayoutInSelection(sharedHeadWithEach, 0, 0);
+    expect(mixedHeadLayout.edit.replacement == "(120){4}1~r/1-5[4:1]~[head=r;track=0:r]/5~l,"
+        && sameNative(sharedHeadWithEach, mixedHeadLayout.edit.replacement),
+        "a shared star and tap use one hand while an independent simultaneous note uses the other");
+    const QString headlessPair = "(120){4}1~l/1?-5[4:1],";
+    expect(basicHandOrderLayoutInSelection(headlessPair, 0, 0).edit.replacement.contains("1~l/1?-5[4:1]"),
+        "a headless slide has no playable star for a same-key tap to inherit");
     TimelineNoteMarker sameHalf;
     sameHalf.type = QStringLiteral("wifi");
     sameHalf.wifiLanePoints = {{QPointF(0, 0), QPointF(100, 10)}, {QPointF(0, 0), QPointF(150, 0)},
@@ -295,6 +338,28 @@ int main(int argc, char** argv)
     expect(basicHandOrderLayoutInSelection(circleWithoutEach, 0, 0).edit.replacement
         == "(180){24}1~r,2~r,3~r,4~r,5~r,6~r,7~r,8~r,1~r,",
         "a full circle without an end each still keeps the sweep on one hand");
+    const QString shortSweep = "(120){32}8~l,7~r,6~l,5~r,4~l,";
+    const auto repairedSweep = basicHandOrderLayoutInSelection(shortSweep, 0, 0);
+    expect(repairedSweep.edit.replacement == "(120){32}8~l,7~l,6~l,5~l,4~l,"
+        && sameNative(shortSweep, repairedSweep.edit.replacement),
+        "a fast five-key directional sweep stays on its starting hand");
+    const QString sweepAfterSlides = "(180){8}8-5[8:1],1,2,3,4-1[8:1],6,7,8,"
+        "{32}8~l,7~r,6~l,5~r,4~l,";
+    const auto contextualSweep = basicHandOrderLayoutInSelection(sweepAfterSlides, 0, 0);
+    expect(contextualSweep.edit.replacement.endsWith("{32}8~l,7~l,6~l,5~l,4~l,")
+        && sameNative(sweepAfterSlides, contextualSweep.edit.replacement),
+        "the directional sweep is still recognized after nearby slides and taps");
+    const QString alternatingLanes = "(120){16}3,4,3,4,3,";
+    const auto laidAlternatingLanes = basicHandOrderLayoutInSelection(alternatingLanes, 0, 0);
+    expect(laidAlternatingLanes.edit.replacement == "(120){16}3~r,4~l,3~r,4~l,3~r,"
+        && sameNative(alternatingLanes, laidAlternatingLanes.edit.replacement),
+        "adjacent-lane back-and-forth interaction alternates hands instead of one-hand sweeping");
+    for (int bpm : {80, 240}) {
+        const QString chart = QStringLiteral("(%1){16}3,4,3,4,3,").arg(bpm);
+        expect(basicHandOrderLayoutInSelection(chart, 0, 0).edit.replacement
+            == QStringLiteral("(%1){16}3~r,4~l,3~r,4~l,3~r,").arg(bpm),
+            "the alternating-lane interaction follows the score grid across normal BPM values");
+    }
     const QString relaxed = "(222){8}4,4,5,5,3b/6b,";
     const QString relaxedOld = "(222){8}4~l,4~r,5~l,5~l,3b~r/6b~l,";
     const QString relaxedExpected = "(222){8}4~r,4~r,5~l,5~l,3b~r/6b~l,";
