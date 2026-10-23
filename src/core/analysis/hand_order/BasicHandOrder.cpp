@@ -31,11 +31,16 @@ struct Primitive {
     ContactAction action;
     int token = -1, lane = 0, lock = -1, basis = -1;
     int interactionPrevious = -1;
+    int longitudinalPrevious = -1;
+    int sweepPrevious = -1;
     bool button = true;
     TimelineNoteMarker marker;
 };
 struct Track {
     int token = -1, branch = 0;
+    int headLane = 0;
+    double headSecond = 0;
+    bool hasHeadStar = false;
     int basis = -1;
     ContactAction action;
     QVector<HandOrderTrackStop> locks;
@@ -87,6 +92,7 @@ struct State {
     QVector<QVector<HandOrderTrackStop>> tracks;
     QVector<BasicHandoffEvidence> transferEvidence;
     double cost = 0, peak = 0, focusPeak = 0, risk = 0;
+    int ergonomicBreaks = 0;
     TouchReplay replay;
 };
 struct Search { bool found = false, truncated = false, exhausted = false, sideEffect = false; State state; };
@@ -104,6 +110,8 @@ bool better(const State& a, const State& b)
 {
     const int riskA = int(std::ceil(a.risk / 0.025 - epsilon)), riskB = int(std::ceil(b.risk / 0.025 - epsilon));
     if (riskA != riskB) return riskA < riskB;
+    if (a.ergonomicBreaks != b.ergonomicBreaks)
+        return a.ergonomicBreaks < b.ergonomicBreaks;
     if (!(a.ordinaryOnly && b.ordinaryOnly) && peakTier(a.peak) != peakTier(b.peak)) return peakTier(a.peak) < peakTier(b.peak);
     if (std::abs(a.risk - b.risk) > epsilon) return a.risk < b.risk;
     if (std::abs(a.cost - b.cost) > epsilon) return a.cost < b.cost;
@@ -133,10 +141,12 @@ QVector<ContactAction> contacts(const State& state)
 }
 // Score and replay one realizable centre path per physical hand.
 bool score(State& state, const QVector<Track>& tracks, const QVector<Primitive>& primitives,
+           const QVector<TouchTarget>& touches,
            qint64& work, bool* sideEffect = nullptr)
 {
     Q_UNUSED(sideEffect);
     state.cost = state.peak = state.focusPeak = 0;
+    state.ergonomicBreaks = 0;
     if (!resolveHandOrderActions(state.actions, &state.physical, work)) return false;
     for (const auto& action : state.actions) {
         if (action.committed) continue;
@@ -146,10 +156,64 @@ bool score(State& state, const QVector<Track>& tracks, const QVector<Primitive>&
             ? action.action.points.first().x() : -action.action.points.first().x());
     }
     for (int id = 0; id < primitives.size(); ++id) {
-        const int previous = primitives.at(id).interactionPrevious;
-        if (previous >= 0 && state.primitiveHands.value(id, -1) >= 0
-            && state.primitiveHands.value(id) == state.primitiveHands.value(previous))
-            state.cost += 3.0;
+        const auto& primitive = primitives.at(id);
+        const int assigned = state.primitiveHands.value(id, -1);
+        if (assigned < 0) continue;
+        for (int previous : {primitive.interactionPrevious, primitive.longitudinalPrevious})
+            if (previous >= 0 && assigned == state.primitiveHands.value(previous, -1))
+                state.cost += 3.0;
+        if (primitive.sweepPrevious >= 0
+            && state.primitiveHands.value(primitive.sweepPrevious, -1) >= 0
+            && assigned != state.primitiveHands.value(primitive.sweepPrevious)) {
+            state.cost += 12.0;
+            ++state.ergonomicBreaks;
+        }
+    }
+    QHash<int, int> directTouchHands;
+    for (const auto& action : state.actions)
+        if (action.action.kind == QStringLiteral("touch"))
+            directTouchHands.insert(action.action.tokenStart, action.action.hand);
+    for (const auto& touch : touches) {
+        if (touch.sweepPrevious < 0) continue;
+        const int currentHand = directTouchHands.value(touch.tokenStart, -1);
+        const int previousHand = directTouchHands.value(touches.at(touch.sweepPrevious).tokenStart, -1);
+        if (currentHand >= 0 && previousHand >= 0 && currentHand != previousHand) {
+            state.cost += 12.0;
+            ++state.ergonomicBreaks;
+        }
+    }
+    for (int first = 0; first < tracks.size(); ++first) {
+        const auto& a = tracks.at(first);
+        if (a.wifi) {
+            if (a.sector == 0 && a.hasHeadStar && !a.legacyAnnotated
+                && a.wifiMode != HandOrderWifiMode::Single
+                && state.wifiSingle.value(first, false)) {
+                state.cost += 12.0;
+                ++state.ergonomicBreaks;
+            }
+            continue;
+        }
+        if (!a.hasHeadStar || state.tracks.value(first).isEmpty()) continue;
+        for (int second = first + 1; second < tracks.size(); ++second) {
+            const auto& b = tracks.at(second);
+            if (b.wifi || !b.hasHeadStar || state.tracks.value(second).isEmpty()
+                || a.headLane != b.headLane
+                || std::abs(a.headSecond - b.headSecond) > epsilon
+                || std::abs(a.action.start - b.action.start) > epsilon) continue;
+            const double end = qMin(a.action.end, b.action.end);
+            if (end - a.action.start < 0.05) continue;
+            bool divergent = false;
+            for (double fraction : {0.25, 0.5, 0.75}) {
+                const double at = a.action.start + (end - a.action.start) * fraction;
+                divergent |= QLineF(contactPosition(a.action, at),
+                    contactPosition(b.action, at)).length() > 0.32;
+            }
+            if (divergent && state.tracks.at(first).constFirst().hand
+                == state.tracks.at(second).constFirst().hand) {
+                state.cost += 12.0;
+                ++state.ergonomicBreaks;
+            }
+        }
     }
     for (int hand = 0; hand < 2; ++hand) {
         QVector<const Scheduled*> active;
@@ -338,8 +402,11 @@ Search search(const QVector<Decision>& decisions, const QVector<Primitive>& prim
     if (!seed) {
         initial.primitiveHands.fill(-1, primitives.size()); initial.tracks.resize(tracks.size()); initial.wifiSingle.fill(false, tracks.size());
     }
-    if (buttonOnly) initial.cost = initial.peak = initial.focusPeak = 0;
-    else if (!score(initial, tracks, primitives, work)) { result.exhausted = work < 0; return result; }
+    if (buttonOnly) {
+        initial.cost = initial.peak = initial.focusPeak = 0;
+        initial.ergonomicBreaks = 0;
+    }
+    else if (!score(initial, tracks, primitives, touches, work)) { result.exhausted = work < 0; return result; }
     QVector<State> beam{initial};
     // Locked sustained actions are known constraints on the whole dependency
     // unit. Rank partial paths against their real button/screen templates
@@ -365,14 +432,18 @@ Search search(const QVector<Decision>& decisions, const QVector<Primitive>& prim
             QVector<State> next;
             for (const auto& forecast : forecasts) for (const auto& physical : templates) {
                 State candidate = forecast; candidate.actions.append(physical);
-                if (score(candidate, tracks, primitives, work)) next.append(std::move(candidate));
+                if (score(candidate, tracks, primitives, touches, work)) next.append(std::move(candidate));
             }
             if (next.isEmpty()) return false;
             std::stable_sort(next.begin(), next.end(), better);
             if (next.size() > 4) { next.resize(4); result.truncated = true; }
             forecasts = std::move(next);
         }
-        if (!forecasts.isEmpty()) { state.cost = forecasts.first().cost; state.peak = forecasts.first().peak; }
+        if (!forecasts.isEmpty()) {
+            state.cost = forecasts.first().cost;
+            state.peak = forecasts.first().peak;
+            state.ergonomicBreaks = forecasts.first().ergonomicBreaks;
+        }
         return work >= 0;
     };
     for (int event = 0; event < decisions.size(); ++event) {
@@ -462,15 +533,22 @@ Search search(const QVector<Decision>& decisions, const QVector<Primitive>& prim
                                     qMax(0, primitive.token - previous.ordinal - 1)) : 1.0;
                                 branch.cost += scheduled.softWeight * (weight * (distance + 0.01 * distance * distance / prep)
                                     + 2.0 * qMax(0.0, hand == 0 ? action.points.first().x() : -action.points.first().x()));
-                                if (primitive.interactionPrevious >= 0
-                                    && branch.primitiveHands.at(primitive.interactionPrevious) == hand)
-                                    branch.cost += 3.0;
+                                for (int previousId : {primitive.interactionPrevious,
+                                                       primitive.longitudinalPrevious})
+                                    if (previousId >= 0 && branch.primitiveHands.at(previousId) == hand)
+                                        branch.cost += 3.0;
+                                if (primitive.sweepPrevious >= 0
+                                    && branch.primitiveHands.at(primitive.sweepPrevious) >= 0
+                                    && branch.primitiveHands.at(primitive.sweepPrevious) != hand) {
+                                    branch.cost += 12.0;
+                                    ++branch.ergonomicBreaks;
+                                }
                                 branch.peak = qMax(branch.peak, distance / prep);
                                 if (branch.focusSources.contains(action.tokenStart)) branch.focusPeak = qMax(branch.focusPeak, distance / prep);
                                 branch.buttonHands[hand] = {action.end, action.points.first(), primitive.lane, true, primitive.token, action.start};
                                 branch.physical = branch.actions;
                             }
-                        } else valid = score(branch, tracks, primitives, work, &result.sideEffect);
+                        } else valid = score(branch, tracks, primitives, touches, work, &result.sideEffect);
                         if (valid) {
                             if (primitive.button) {
                                 const double margin = FullReplayProfile::tapCriticalSeconds - std::abs(action.start - primitive.marker.second);
@@ -488,7 +566,7 @@ Search search(const QVector<Decision>& decisions, const QVector<Primitive>& prim
                     for (const auto& option : options) {
                         if (!trackMatches(option, decision.index)) continue;
                         State candidate = state; candidate.tracks[decision.index] = option; addTrack(candidate, track, option);
-                        if (score(candidate, tracks, primitives, work, &result.sideEffect) && rankWithFutureHolds(candidate)) next.append(std::move(candidate));
+                        if (score(candidate, tracks, primitives, touches, work, &result.sideEffect) && rankWithFutureHolds(candidate)) next.append(std::move(candidate));
                     }
                 } else {
                     const auto& peer = tracks.at(track.peer);
@@ -512,7 +590,7 @@ Search search(const QVector<Decision>& decisions, const QVector<Primitive>& prim
                             if (!opposite) continue;
                             State candidate = state; candidate.tracks[decision.index] = option; candidate.tracks[track.peer] = other;
                             addTrack(candidate, track, option); addTrack(candidate, peer, other);
-                            if (score(candidate, tracks, primitives, work, &result.sideEffect) && rankWithFutureHolds(candidate)) next.append(std::move(candidate));
+                            if (score(candidate, tracks, primitives, touches, work, &result.sideEffect) && rankWithFutureHolds(candidate)) next.append(std::move(candidate));
                         }
                     }
                     if (track.wifiMode != HandOrderWifiMode::Split) {
@@ -533,7 +611,7 @@ Search search(const QVector<Decision>& decisions, const QVector<Primitive>& prim
                                 candidate.tracks[decision.index] = stops;
                                 auto path = track; path.action = action;
                                 addTrack(candidate, path, stops);
-                                if (score(candidate, tracks, primitives, work, &result.sideEffect) && rankWithFutureHolds(candidate)) next.append(std::move(candidate));
+                                if (score(candidate, tracks, primitives, touches, work, &result.sideEffect) && rankWithFutureHolds(candidate)) next.append(std::move(candidate));
                             }
                         }
                     }
@@ -566,7 +644,7 @@ Search search(const QVector<Decision>& decisions, const QVector<Primitive>& prim
                             press.start = std::ceil(moment * TouchJudgeProfile::ticksPerSecond - epsilon) / TouchJudgeProfile::ticksPerSecond;
                             press.end = press.start + p.pressSeconds; press.points = {touchPadPoint(target.pad)}; press.times = {press.start};
                             branch.actions.append({press, false, false, 0});
-                            if (!score(branch, tracks, primitives, work, &result.sideEffect)) continue;
+                            if (!score(branch, tracks, primitives, touches, work, &result.sideEffect)) continue;
                             branch.replay = replayHandOrderTouches(touches, contacts(branch), decision.second, &work);
                             if (!branch.replay.exhausted) layer.append(std::move(branch));
                         }
@@ -600,7 +678,7 @@ Search search(const QVector<Decision>& decisions, const QVector<Primitive>& prim
     }
     QVector<State> finished;
     for (auto& candidate : beam) {
-        if (!buttonOnly && !score(candidate, tracks, primitives, work)) continue;
+        if (!buttonOnly && !score(candidate, tracks, primitives, touches, work)) continue;
         candidate.replay = replayHandOrderTouches(touches, contacts(candidate), std::numeric_limits<double>::infinity(), &work);
         if (!locksSatisfied(touches, candidate.replay, std::numeric_limits<double>::infinity(), true)) continue;
         QVector<ChartInputAction> inputs;
@@ -740,7 +818,9 @@ BasicResult inferBasicHandOrder(const QString& text, const SimaiParseResult& par
             if (touch || touchHold) {
                 if (!muri::padTokenIsValid(marker.touchPad)) token.issue = "geometry_unsupported";
                 token.touches.append(touches.size());
-                touches.append({token.start, marker.parseOrder, marker.eachGroupId, marker.touchPad, marker.second, touchHold, fixedHand(marker.handOrderHead)});
+                touches.append({token.start, marker.parseOrder, marker.eachGroupId, marker.touchPad,
+                    marker.second, touchHold, fixedHand(marker.handOrderHead), -1,
+                    marker.tempoBpm, marker.subdivision});
             }
             if (!touch && (!slide || (marker.hasHeadStar && !headCreated))) {
                 Primitive primitive; primitive.token = tokenIndex; primitive.lane = marker.lane; primitive.marker = marker;
@@ -754,7 +834,9 @@ BasicResult inferBasicHandOrder(const QString& text, const SimaiParseResult& par
                 token.primitives.append(primitives.size()); primitives.append(primitive); headCreated |= slide;
             }
             if (slide) {
-                Track track; track.token = tokenIndex; track.branch = marker.slideBranchIndex; track.locks = marker.handOrderTrackStops;
+                Track track; track.token = tokenIndex; track.branch = marker.slideBranchIndex;
+                track.headLane = marker.lane; track.headSecond = marker.second;
+                track.hasHeadStar = marker.hasHeadStar; track.locks = marker.handOrderTrackStops;
                 track.basis = fixedHand(chart_transform::basicLayoutTrackHand(marker));
                 track.action.tokenStart = token.start; track.action.branch = track.branch; track.action.kind = "slide";
                 track.action.start = marker.slideTraceSecond; track.action.end = marker.endSecond;
@@ -802,6 +884,7 @@ BasicResult inferBasicHandOrder(const QString& text, const SimaiParseResult& par
                 } else { token.tracks.append(tracks.size()); tracks.append(track); }
             }
         }
+        if (headCreated) for (int trackId : token.tracks) tracks[trackId].hasHeadStar = true;
         if (!token.issue.isEmpty() && std::isfinite(token.beginTime)) risks.append({token.beginTime - p.contextSeconds, token.endTime + p.contextSeconds});
         tokens.append(token);
     }
@@ -821,6 +904,12 @@ BasicResult inferBasicHandOrder(const QString& text, const SimaiParseResult& par
         const double gap = second.second - first.second;
         return gap >= grid * 0.9 - epsilon && gap <= grid * 1.1 + epsilon;
     };
+    const auto adjacentStep = [&](int a, int b) {
+        const int first = primitives.at(a).lane, second = primitives.at(b).lane;
+        if (second == first % 8 + 1) return 1;
+        if (second == (first + 6) % 8 + 1) return -1;
+        return 0;
+    };
     for (int first = 0; first + 3 < tapOrder.size();) {
         const int a = tapOrder.at(first), b = tapOrder.at(first + 1);
         const int delta = std::abs(primitives.at(a).lane - primitives.at(b).lane);
@@ -835,6 +924,82 @@ BasicResult inferBasicHandOrder(const QString& text, const SimaiParseResult& par
         if (last - first >= 4 && regular(a, b)) {
             for (int i = first + 1; i < last; ++i)
                 primitives[tapOrder.at(i)].interactionPrevious = tapOrder.at(i - 1);
+            first = last;
+        } else ++first;
+    }
+    // A-B-A-C-A uses the centre hand on beats 1/3/5 and the other hand
+    // on the two opposite neighbours. This remains a soft preference.
+    for (int first = 0; first + 4 < tapOrder.size(); ++first) {
+        const int centre = tapOrder.at(first);
+        if (primitives.at(tapOrder.at(first + 2)).lane != primitives.at(centre).lane
+            || primitives.at(tapOrder.at(first + 4)).lane != primitives.at(centre).lane
+            || adjacentStep(centre, tapOrder.at(first + 1)) == 0
+            || adjacentStep(centre, tapOrder.at(first + 1))
+                != -adjacentStep(centre, tapOrder.at(first + 3))) continue;
+        bool regularRun = true;
+        for (int i = first + 1; i <= first + 4; ++i)
+            regularRun &= regular(tapOrder.at(i - 1), tapOrder.at(i));
+        if (!regularRun) continue;
+        for (int i = first + 1; i <= first + 4; ++i)
+            primitives[tapOrder.at(i)].interactionPrevious = tapOrder.at(i - 1);
+    }
+    // Three or more rapid identical keys need alternating DOWN actions.
+    // Two-key pairs remain available to the winding and rebound patterns.
+    for (int first = 0; first < tapOrder.size();) {
+        int last = first + 1;
+        while (last < tapOrder.size()
+            && primitives.at(tapOrder.at(last)).lane == primitives.at(tapOrder.at(first)).lane
+            && regular(tapOrder.at(last - 1), tapOrder.at(last))) ++last;
+        if (last - first >= 3)
+            for (int i = first + 1; i < last; ++i)
+                primitives[tapOrder.at(i)].longitudinalPrevious = tapOrder.at(i - 1);
+        first = last;
+    }
+    // A rapid monotonic key sweep keeps one hand through the centre and the
+    // 8/1 seam; charging each handoff avoids a last-moment return jump.
+    for (int first = 0; first + 4 < tapOrder.size();) {
+        const int direction = adjacentStep(tapOrder.at(first), tapOrder.at(first + 1));
+        int last = first + 1;
+        while (direction && last < tapOrder.size()) {
+            const auto& previous = primitives.at(tapOrder.at(last - 1)).marker;
+            const auto& current = primitives.at(tapOrder.at(last)).marker;
+            if (previous.subdivision < 24 || current.subdivision < 24
+                || adjacentStep(tapOrder.at(last - 1), tapOrder.at(last)) != direction
+                || !regular(tapOrder.at(last - 1), tapOrder.at(last))) break;
+            ++last;
+        }
+        if (last - first >= 5) {
+            for (int i = first + 1; i < last; ++i)
+                primitives[tapOrder.at(i)].sweepPrevious = tapOrder.at(i - 1);
+            first = last;
+        } else ++first;
+    }
+    QVector<int> touchOrder;
+    for (int id = 0; id < touches.size(); ++id)
+        if (!touches.at(id).hold) touchOrder.append(id);
+    std::stable_sort(touchOrder.begin(), touchOrder.end(), [&](int a, int b) {
+        return touches.at(a).second < touches.at(b).second;
+    });
+    const auto adjacentE = [&](int a, int b) {
+        const auto& first = touches.at(a);
+        const auto& second = touches.at(b);
+        if (first.pad.size() != 2 || second.pad.size() != 2
+            || first.pad.at(0) != QLatin1Char('E') || second.pad.at(0) != QLatin1Char('E')
+            || first.tempoBpm <= 0 || first.subdivision <= 0) return false;
+        const int laneA = first.pad.at(1).digitValue(), laneB = second.pad.at(1).digitValue();
+        const int distance = std::abs(laneA - laneB);
+        if (qMin(distance, 8 - distance) != 1) return false;
+        const double grid = 240.0 / (first.tempoBpm * first.subdivision);
+        const double gap = second.second - first.second;
+        return gap >= grid * 0.9 - epsilon && gap <= qMin(grid * 1.1, 0.18) + epsilon;
+    };
+    for (int first = 0; first + 2 < touchOrder.size();) {
+        int last = first + 1;
+        while (last < touchOrder.size()
+            && adjacentE(touchOrder.at(last - 1), touchOrder.at(last))) ++last;
+        if (last - first >= 3) {
+            for (int i = first + 1; i < last; ++i)
+                touches[touchOrder.at(i)].sweepPrevious = touchOrder.at(i - 1);
             first = last;
         } else ++first;
     }
@@ -933,6 +1098,16 @@ BasicResult inferBasicHandOrder(const QString& text, const SimaiParseResult& par
             if (member) for (int touch : group) for (int other = 0; other < tokens.size(); ++other)
                 if (tokens.at(other).touches.contains(touch)) includeConsumer(other);
         }
+        for (int touch : tokens.at(id).touches) {
+            if (touches.at(touch).sweepPrevious >= 0)
+                for (int other = 0; other < tokens.size(); ++other)
+                    if (tokens.at(other).touches.contains(touches.at(touch).sweepPrevious))
+                        includeConsumer(other);
+            for (int next = 0; next < touches.size(); ++next)
+                if (touches.at(next).sweepPrevious == touch)
+                    for (int other = 0; other < tokens.size(); ++other)
+                        if (tokens.at(other).touches.contains(next)) includeConsumer(other);
+        }
         const double early = tokens.at(id).touches.isEmpty() ? FullReplayProfile::tapCriticalSeconds : TouchJudgeProfile::criticalSeconds;
         for (const auto& channel : emitted.at(id)) for (int other : consumers.value(channel))
             if (tokens.at(other).nominal < tokens.at(id).nominal - epsilon
@@ -976,6 +1151,13 @@ BasicResult inferBasicHandOrder(const QString& text, const SimaiParseResult& par
             if (included.at(id) && tokens.at(id).touches.contains(touch)) {
                 if (first >= 0) join(first, id); else first = id;
             }
+    }
+    for (int touch = 0; touch < touches.size(); ++touch) {
+        const int previous = touches.at(touch).sweepPrevious;
+        if (previous < 0) continue;
+        for (int a = 0; a < tokens.size(); ++a) if (included.at(a) && tokens.at(a).touches.contains(previous))
+            for (int b = 0; b < tokens.size(); ++b) if (included.at(b) && tokens.at(b).touches.contains(touch))
+                join(a, b);
     }
     QMap<int, QSet<int>> hardGroups;
     for (int i = 0; i < tokens.size(); ++i) if (included.at(i)) hardGroups[root(i)].insert(i);
@@ -1080,6 +1262,9 @@ BasicResult inferBasicHandOrder(const QString& text, const SimaiParseResult& par
         for (int id : blockTokens) for (int touch : tokens.at(id).touches) if (touches.at(touch).hold && !localIndex.contains(touch)) {
             localIndex[touch] = localTouches.size(); localTouches.append(touches.at(touch));
         }
+        for (auto& touch : localTouches)
+            if (touch.sweepPrevious >= 0)
+                touch.sweepPrevious = localIndex.value(touch.sweepPrevious, -1);
         QVector<TimelineNoteMarker> blockMarkers;
         for (int id : blockTokens) blockMarkers += tokens.at(id).markers;
         QString failure;

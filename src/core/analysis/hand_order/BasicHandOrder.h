@@ -3,7 +3,7 @@
 #include "core/chart/transform/HandOrderEdit.h"
 
 namespace miacode::hand_order {
-inline constexpr int basicAlgorithmVersion = 5;
+inline constexpr int basicAlgorithmVersion = 6;
 inline constexpr int basicJudgeProfileRevision = 2;
 struct BasicParameters {
     static constexpr double minReturnSpeed = 1.0;

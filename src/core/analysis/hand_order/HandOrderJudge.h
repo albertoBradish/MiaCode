@@ -27,6 +27,9 @@ struct TouchTarget {
     // Touch Hold participates in the input state but never in Touch groups.
     bool hold = false;
     int lock = -1;
+    int sweepPrevious = -1;
+    double tempoBpm = 0;
+    int subdivision = 4;
 };
 struct TouchJudgement {
     bool judged = false, highQuality = false;

@@ -35,6 +35,11 @@ bool sameNative(const QString& a, const QString& b)
 int main(int argc, char** argv)
 {
     QCoreApplication app(argc, argv);
+    if (argc == 2 && QString::fromLocal8Bit(argv[1]) == QStringLiteral("--probe")) {
+        const QString chart = QTextStream(stdin).readAll();
+        QTextStream(stdout) << miacode::chart_transform::basicHandOrderLayoutInSelection(chart, 0, 0).edit.replacement;
+        return 0;
+    }
     using namespace miacode::chart_transform;
     bool ok = true;
     const auto expect = [&](bool pass, const char* label) {
@@ -261,6 +266,20 @@ int main(int argc, char** argv)
     expect(sharedMultipleLayout.edit.replacement.startsWith("(120){4}1~r/1-5[4:1]~[head=r;track=0:r]/")
         && sameNative(sharedMultipleStars, sharedMultipleLayout.edit.replacement),
         "one tap shares the head hand with multiple simultaneous stars on its lane");
+    const QString doubleStarOld = "(120){4}1-5[4:1]~[head=r;track=0:r]/"
+        "1-7[4:1]~[head=r;track=0:r],";
+    const auto doubleStarLayout = basicHandOrderLayoutInSelection(doubleStarOld, 0, 0);
+    expect(doubleStarLayout.edit.replacement == "(120){4}1-5[4:1]~[head=r;track=0:r]/"
+        "1-7[4:1]~[head=r;track=0:l],"
+        && sameNative(doubleStarOld, doubleStarLayout.edit.replacement),
+        "same-head divergent double stars share one button head but split their tracks");
+    const QString branchedDoubleOld = "(120){4}1-5[4:1]*-7[4:1]"
+        "~[head=r;branch0=0:r;branch1=0:r],";
+    const auto branchedDoubleLayout = basicHandOrderLayoutInSelection(branchedDoubleOld, 0, 0);
+    expect(branchedDoubleLayout.edit.replacement == "(120){4}1-5[4:1]*-7[4:1]"
+        "~[head=r;branch0=0:r;branch1=0:l],"
+        && sameNative(branchedDoubleOld, branchedDoubleLayout.edit.replacement),
+        "native multi-branch double stars repair simple same-hand track labels");
     const QString sharedHeadWithEach = "(120){4}1~l/1-5[4:1]~[head=r;track=0:r]/5~l,";
     const auto mixedHeadLayout = basicHandOrderLayoutInSelection(sharedHeadWithEach, 0, 0);
     expect(mixedHeadLayout.edit.replacement == "(120){4}1~r/1-5[4:1]~[head=r;track=0:r]/5~l,"
@@ -350,6 +369,12 @@ int main(int argc, char** argv)
     expect(contextualSweep.edit.replacement.endsWith("{32}8~l,7~l,6~l,5~l,4~l,")
         && sameNative(sweepAfterSlides, contextualSweep.edit.replacement),
         "the directional sweep is still recognized after nearby slides and taps");
+    const QString holdThenSweep = "(190){48}7~l,,,,5~r,,,,6~l,,,,1~r,,,,4~l,,,,3~r,,,,5h[4:1]~l,,,,,,,,,,,,"
+        "4~r,,,3~r,,,2~r,,,1~r,,,\n{32}5~l,4~r,3~r,2~r,1~r,8~l,7~l,6~l,3~r/5~l,,,,";
+    const auto holdSweepLayout = basicHandOrderLayoutInSelection(holdThenSweep, 0, 0);
+    expect(holdSweepLayout.edit.replacement.contains("4~r,,,3~r,,,2~r,,,1~r,,,\n{32}5~l,4~l,3~l,2~l,1~l,8~l,7~l,6~l,")
+        && sameNative(holdThenSweep, holdSweepLayout.edit.replacement),
+        "the right-hand lead-in stays right while the following 5-led sweep stays left");
     const QString alternatingLanes = "(120){16}3,4,3,4,3,";
     const auto laidAlternatingLanes = basicHandOrderLayoutInSelection(alternatingLanes, 0, 0);
     expect(laidAlternatingLanes.edit.replacement == "(120){16}3~r,4~l,3~r,4~l,3~r,"
@@ -359,6 +384,17 @@ int main(int argc, char** argv)
     expect(basicHandOrderLayoutInSelection(fourStepInteraction, 0, 0).edit.replacement
         == "(150){16}2~r,1~l,2~r,1~l,",
         "four-step adjacent-lane interaction repairs old one-hand labels");
+    const QString fiveNoteAxis = "(190){16}6~l,5~r,6~l,7~l,6~l,";
+    expect(basicHandOrderLayoutInSelection(fiveNoteAxis, 0, 0).edit.replacement
+        == "(190){16}6~l,5~r,6~l,7~r,6~l,",
+        "five-note axis keeps centre repeats separate from opposite-neighbour travel");
+    const QString longLongitudinal = "(190){16},,,,3~r/6~l,,4~r,5~l,5~l,5~l,5~l,5~l,5~l,5~l,4~r,5~l,"
+        "\n{16}5~l,5~l,5~l,5~l,5~l,,,,";
+    const auto verticalLayout = basicHandOrderLayoutInSelection(longLongitudinal, 0, 0);
+    expect(verticalLayout.edit.replacement.contains("5~l,5~r,5~l,5~r,5~l,5~r,5~l,")
+        && verticalLayout.edit.replacement.contains("{16}5~r,5~l,5~r,5~l,5~r,")
+        && sameNative(longLongitudinal, verticalLayout.edit.replacement),
+        "a long 190 BPM vertical alternates after surrounding Each and nearby taps");
     const auto leftHome = miacode::chart::handOrderNaturalRestPoint(0);
     const QPointF departed{1.0, 0.0};
     const auto waitingRest = miacode::chart::handOrderRestedPoint(departed, 0.0, 0.4, 0, 1.0);
@@ -418,6 +454,20 @@ int main(int argc, char** argv)
     const QString touchSweepOld = "(120){12}B6~r,E6~l,,E2~l,B2~r,,E8~r,B7~l,,B3~l,E4~r,,";
     expect(basicHandOrderLayoutInSelection(touchSweepOld, 0, 0).edit.replacement == touchSweepExpected,
         "a short Touch sweep also corrects old simple annotations");
+    const QString eRingSweep = "(190){16},,E5~l,E4~r,E3~l,,,,,,,,,,,,\n"
+        "{16},,E7~l,E6~r,E5~l,,,,,,,,,,,,\n"
+        "{16},,E3~r,E4~l,E5~r,,,,,,,,,,,,";
+    const auto laidERingSweep = basicHandOrderLayoutInSelection(eRingSweep, 0, 0);
+    expect(laidERingSweep.edit.replacement.contains("E5~r,E4~r,E3~r")
+        && laidERingSweep.edit.replacement.contains("E7~l,E6~l,E5~l")
+        && laidERingSweep.edit.replacement.contains("E3~r,E4~r,E5~r")
+        && sameNative(eRingSweep, laidERingSweep.edit.replacement),
+        "regular adjacent E-ring sweeps use one hand across all three sensors");
+    const auto simultaneousE = SimaiParser::validateSyntax(
+        basicHandOrderLayoutInSelection("(190){16}E3/E4,", 0, 0).edit.replacement);
+    expect(simultaneousE.noteMarkers.size() == 2
+        && simultaneousE.noteMarkers.at(0).handOrderHead != simultaneousE.noteMarkers.at(1).handOrderHead,
+        "simultaneous adjacent E sensors remain a two-hand Each, not a timed sweep");
     const QString nonGroupTouches = "(120){8}A4/A5,";
     expect(basicHandOrderLayoutInSelection(nonGroupTouches, 0, 0).edit.replacement == "(120){8}A4~r/A5~l,",
         "simultaneous Touches outside the native Touchgroup still use separate hands");

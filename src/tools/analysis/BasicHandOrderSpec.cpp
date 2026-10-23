@@ -27,6 +27,15 @@ QString applyPatches(const QString& text, const BasicResult& result) {
 }
 int main(int argc, char** argv) {
     QCoreApplication app(argc, argv);
+    if (argc == 2 && QString::fromLocal8Bit(argv[1]) == QStringLiteral("--probe")) {
+        const QString chart = QTextStream(stdin).readAll();
+        BasicParameters parameters;
+        parameters.overwriteExisting = true;
+        const auto result = solve(chart, 0, chart.size(), parameters);
+        QTextStream(stdout) << "error=" << result.error << " patches=" << result.patches.size()
+            << '\n' << applyPatches(chart, result);
+        return result.error.isEmpty() ? 0 : 1;
+    }
     bool ok = true;
     const auto expect = [&](bool pass, const char* message) { QTextStream(pass ? stdout : stderr)
         << (pass ? "PASS: " : "FAIL: ") << message << '\n'; ok &= pass; };
@@ -37,6 +46,37 @@ int main(int argc, char** argv) {
     const QString interactionText = applyPatches("(150){16}2,1,2,1,", interaction);
     expect(interactionText == "(150){16}2~r,1~l,2~r,1~l,",
         "automatic hand order favors four-step adjacent-lane hand alternation");
+    BasicParameters recompute;
+    recompute.overwriteExisting = true;
+    const QString fiveAxis = "(190){16}6~l,5~r,6~l,7~l,6~l,";
+    const auto repairedAxis = solve(fiveAxis, 0, -1, recompute);
+    expect(repairedAxis.error.isEmpty()
+        && applyPatches(fiveAxis, repairedAxis) == "(190){16}6~l,5~r,6~l,7~r,6~l,",
+        "automatic recomputation separates the outer moves of a five-note axis");
+    const QString longVertical = "(190){16},,,,3~r/6~l,,4~r,5~l,5~l,5~l,5~l,5~l,5~l,5~l,4~r,5~l,"
+        "\n{16}5~l,5~l,5~l,5~l,5~l,,,,";
+    const auto repairedVertical = solve(longVertical, 0, -1, recompute);
+    expect(repairedVertical.error.isEmpty()
+        && applyPatches(longVertical, repairedVertical).contains("5~l,5~r,5~l,5~r,5~l,5~r,5~l,")
+        && applyPatches(longVertical, repairedVertical).contains("{16}5~r,5~l,5~r,5~l,5~r,"),
+        "automatic recomputation alternates a long vertical without splitting winding pairs");
+    const QString holdSweep = "(190){48}7~l,,,,5~r,,,,6~l,,,,1~r,,,,4~l,,,,3~r,,,,5h[4:1]~l,,,,,,,,,,,,"
+        "4~r,,,3~r,,,2~r,,,1~r,,,\n{32}5~l,4~r,3~r,2~r,1~r,8~l,7~l,6~l,3~r/5~l,,,,"
+        "2~r,,4~l,,2~r,,4~l,,2~r,,4~l,,3~r,,4~l,,2~r,,6~l,,";
+    const auto repairedSweep = solve(holdSweep, 0, -1, recompute);
+    expect(repairedSweep.error.isEmpty()
+        && applyPatches(holdSweep, repairedSweep).contains(
+            "4~r,,,3~r,,,2~r,,,1~r,,,\n{32}5~l,4~l,3~l,2~l,1~l,8~l,7~l,6~l,"),
+        "automatic recomputation keeps a rapid 5-led sweep on the left after a right-hand lead-in");
+    const QString eSweep = "(190){16},,E5~l,E4~r,E3~l,,,,,,,,,,,,\n"
+        "{16},,E7~l,E6~r,E5~l,,,,,,,,,,,,\n"
+        "{16},,E3~r,E4~l,E5~r,,,,,,,,,,,,";
+    const auto repairedTouches = solve(eSweep, 0, -1, recompute);
+    const QString touchText = applyPatches(eSweep, repairedTouches);
+    expect(repairedTouches.error.isEmpty() && touchText.contains("E5~r,E4~r,E3~r")
+        && touchText.contains("E7~l,E6~l,E5~l")
+        && touchText.contains("E3~r,E4~r,E5~r"),
+        "automatic recomputation keeps three timed E-ring sweeps on one hand each");
     const QString occupied = "(120){4}5h[1:1]~l,6,";
     const int six = occupied.indexOf("6,");
     const auto busy = solve(occupied, six, six + 1);
@@ -96,6 +136,30 @@ int main(int argc, char** argv) {
     const auto wifi = solve("(120){4}1w5[4:1],");
     expect(wifi.patches.size() == 1 && wifi.rows.first().fullReplayVerified && wifi.patches.first().text.contains("split:"),
         "Wifi executes two real palms and writes explicit sectors instead of an unsupported or Either placeholder");
+    const QString headedWifi = "(120){4}1/1w5[4:1],";
+    const auto headedWifiResult = solve(headedWifi);
+    const auto headedWifiText = applyPatches(headedWifi, headedWifiResult);
+    expect(headedWifiResult.error.isEmpty()
+        && headedWifiText.contains("1~r/1w5[4:1]~[head=r;track=split:0:r&0:l]")
+        && std::all_of(headedWifiResult.rows.cbegin(), headedWifiResult.rows.cend(),
+            [](const BasicRow& row) { return row.fullReplayVerified; }),
+        "a playable headed Wifi shares its button press but uses two distinct tracking palms");
+    const QString doubleStarOld = "(120){4}1-5[4:1]~[head=r;track=0:r]/"
+        "1-7[4:1]~[head=r;track=0:r],";
+    const auto doubleStarResult = solve(doubleStarOld, 0, -1, recompute);
+    expect(doubleStarResult.error.isEmpty()
+        && applyPatches(doubleStarOld, doubleStarResult).contains(
+            "1-5[4:1]~[head=r;track=0:r]/1-7[4:1]~[head=r;track=0:l]")
+        && std::all_of(doubleStarResult.rows.cbegin(), doubleStarResult.rows.cend(),
+            [](const BasicRow& row) { return row.fullReplayVerified; }),
+        "automatic recomputation assigns divergent same-head star tracks to separate hands");
+    const QString branchedStars = "(120){4}1-5[4:1]*-7[4:1]"
+        "~[head=r;branch0=0:r;branch1=0:r],";
+    const auto branchResult = solve(branchedStars, 0, -1, recompute);
+    expect(branchResult.error.isEmpty()
+        && applyPatches(branchedStars, branchResult).contains(
+            "1-5[4:1]*-7[4:1]~[head=r;branch0=0:r;branch1=0:l]"),
+        "automatic recomputation also splits tracks of a single native multi-branch star");
     QString longChart = "(120){16}";
     for (int i = 0; i < 200; ++i) longChart += "6,";
     BasicParameters local; local.maxTasks = 16; local.counterfactualBudget = 4;

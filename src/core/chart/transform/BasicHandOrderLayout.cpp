@@ -62,6 +62,30 @@ QPointF headPoint(const TimelineNoteMarker& marker)
     return lanePoint(marker.lane);
 }
 
+bool divergentSlideTracks(const TimelineNoteMarker& first, const TimelineNoteMarker& second)
+{
+    if (first.endLane != second.endLane) return true;
+    const int segments = qMin(first.slideSegmentPoints.size(), second.slideSegmentPoints.size());
+    for (int segment = 0; segment < segments; ++segment) {
+        const auto& a = first.slideSegmentPoints.at(segment);
+        const auto& b = second.slideSegmentPoints.at(segment);
+        if (a.size() < 2 || b.size() < 2) continue;
+        const auto sample = [](const QVector<QPointF>& points, double fraction) {
+            const double index = fraction * (points.size() - 1);
+            const int before = int(std::floor(index));
+            const int after = qMin(before + 1, int(points.size()) - 1);
+            const double blend = index - before;
+            return points.at(before) * (1.0 - blend) + points.at(after) * blend;
+        };
+        for (double fraction : {0.25, 0.5, 0.75}) {
+            const QPointF aPoint = sample(a, fraction);
+            const QPointF bPoint = sample(b, fraction);
+            if (QLineF(aPoint, bPoint).length() > 0.32 * 240.0) return true;
+        }
+    }
+    return false;
+}
+
 struct LayoutHead {
     const TimelineNoteMarker* marker = nullptr;
     int token = -1;
@@ -84,6 +108,7 @@ struct LayoutSustain {
     bool fixed = false;
     int patternHand = -1;
     int oneStrokePrevious = -1, oneStrokeNext = -1;
+    bool splitSharedStar = false;
 };
 struct SharedHeadUnit {
     int key = -1;
@@ -112,13 +137,21 @@ QVector<int> orderedHeads(const QVector<LayoutHead>& heads)
 bool simpleLayoutSuffix(const QString& suffix, const TimelineNoteMarker& marker, int markerCount)
 {
     if (suffix.isEmpty()) return true;
-    if (markerCount != 1) return false;
     if (marker.type == QStringLiteral("slide")) {
-        for (const auto head : {'l', 'r'})
-            for (const auto track : {'l', 'r'})
-                if (suffix == QStringLiteral("~[head=%1;track=0:%2]").arg(QChar(head)).arg(QChar(track))) return true;
+        for (const auto head : {'l', 'r'}) {
+            if (markerCount == 1)
+                for (const auto track : {'l', 'r'})
+                    if (suffix == QStringLiteral("~[head=%1;track=0:%2]").arg(QChar(head)).arg(QChar(track)))
+                        return true;
+            if (markerCount == 2)
+                for (const auto first : {'l', 'r'})
+                    for (const auto second : {'l', 'r'})
+                        if (suffix == QStringLiteral("~[head=%1;branch0=0:%2;branch1=0:%3]")
+                            .arg(QChar(head)).arg(QChar(first)).arg(QChar(second))) return true;
+        }
         return false;
     }
+    if (markerCount != 1) return false;
     return suffix == QStringLiteral("~l") || suffix == QStringLiteral("~r");
 }
 
@@ -149,10 +182,15 @@ int touchLaneDistance(const QString& first, const QString& second)
 
 bool nearbyTouches(const LayoutHead& first, const LayoutHead& second)
 {
+    const QString& a = first.marker->touchPad;
+    const QString& b = second.marker->touchPad;
+    const bool adjacentE = a.size() == 2 && b.size() == 2
+        && a.at(0) == QLatin1Char('E') && b.at(0) == QLatin1Char('E')
+        && touchLaneDistance(a, b) == 1;
     return first.marker->type == QStringLiteral("touch")
         && second.marker->type == QStringLiteral("touch")
-        && chart::touchPadsAreAdjacent(first.marker->touchPad, second.marker->touchPad)
-        && touchLaneDistance(first.marker->touchPad, second.marker->touchPad) <= 2;
+        && (adjacentE || chart::touchPadsAreAdjacent(a, b))
+        && touchLaneDistance(a, b) <= 2;
 }
 
 bool regularTapStep(const LayoutHead& first, const LayoutHead& second, int minimumSubdivision)
@@ -204,6 +242,39 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
             sustain.hand = HandOrderHand::Unspecified;
         }
     };
+
+    // Two simultaneous tracks leaving the same playable star need separate
+    // tracking hands once their paths diverge. The one button head is shared.
+    for (int first = 0; first < sustains->size(); ++first) {
+        const auto& a = sustains->at(first);
+        if (a.marker->type != QStringLiteral("slide") || a.head < 0
+            || !selectedTokens.at(a.token) || !canRewrite.at(a.token)) continue;
+        QVector<int> paired{first};
+        for (int second = 0; second < sustains->size(); ++second) {
+            if (second == first) continue;
+            const auto& b = sustains->at(second);
+            if (b.marker->type != QStringLiteral("slide") || b.head < 0
+                || !selectedTokens.at(b.token) || !canRewrite.at(b.token)
+                || b.marker->lane != a.marker->lane
+                || std::abs(b.marker->second - a.marker->second) > 1e-9
+                || std::abs(b.marker->slideTraceSecond - a.marker->slideTraceSecond) > 1e-9
+                || !divergentSlideTracks(*a.marker, *b.marker)
+                || qMin(a.end, b.end) - qMax(a.marker->slideTraceSecond,
+                    b.marker->slideTraceSecond) < 0.05) continue;
+            paired.append(second);
+        }
+        if (paired.size() != 2 || paired.at(1) < first) continue;
+        const auto& b = sustains->at(paired.at(1));
+        const double firstX = lanePoint(a.marker->endLane).x();
+        const double secondX = lanePoint(b.marker->endLane).x();
+        const int firstHand = firstX < secondX ? 0 : 1;
+        allowRecalculation(a.token);
+        allowRecalculation(b.token);
+        (*sustains)[first].patternHand = firstHand;
+        (*sustains)[first].splitSharedStar = true;
+        (*sustains)[paired.at(1)].patternHand = 1 - firstHand;
+        (*sustains)[paired.at(1)].splitSharedStar = true;
+    }
 
     // A tap on a visible slide star is the same button press. Its old simple
     // label may be repaired, while the slide's own manual head stays intact.
@@ -457,6 +528,30 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
         } else ++first;
     }
 
+    // A-B-A-C-A is a five-note axis with opposite neighbours. The centre
+    // repeats on one hand while the other hand takes both outer notes.
+    for (int first = 0; first + 4 < order.size(); ++first) {
+        const int centreLane = heads->at(order.at(first)).marker->lane;
+        const int firstStep = adjacentLaneStep(centreLane, heads->at(order.at(first + 1)).marker->lane);
+        if (!firstStep || heads->at(order.at(first + 2)).marker->lane != centreLane
+            || heads->at(order.at(first + 4)).marker->lane != centreLane
+            || adjacentLaneStep(centreLane, heads->at(order.at(first + 3)).marker->lane) != -firstStep
+            || !eligible(first, first + 5)) continue;
+        bool regular = true;
+        for (int i = first + 1; i < first + 5; ++i)
+            regular &= heads->at(order.at(i)).interactionGroup < 0
+                && heads->at(order.at(i - 1)).interactionGroup < 0
+                && regularTapStep(heads->at(order.at(i - 1)), heads->at(order.at(i)), 16);
+        if (!regular) continue;
+        for (int i = first; i < first + 5; ++i) {
+            auto& head = (*heads)[order.at(i)];
+            allowRecalculation(head.token);
+            head.interactionGroup = first;
+            head.interactionStep = i - first;
+        }
+        first += 4;
+    }
+
     // Other fast same-lane runs alternate individual taps when both hands are free.
     for (int first = 0; first < order.size();) {
         const auto& initial = heads->at(order.at(first));
@@ -518,14 +613,45 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
         } else ++first;
     }
 
+    // Adjacent E sensors are intentionally not a simultaneous Touchgroup,
+    // yet a timed E-ring run is one continuous hand sweep.
+    for (int first = 0; first + 2 < order.size();) {
+        int last = first + 1;
+        while (last < order.size()) {
+            const auto& previous = heads->at(order.at(last - 1));
+            const auto& current = heads->at(order.at(last));
+            if (!nearbyTouches(previous, current) || previous.patternHand >= 0
+                || current.patternHand >= 0 || previous.marker->tempoBpm <= 0
+                || previous.marker->subdivision <= 0) break;
+            const double grid = 240.0 / (previous.marker->tempoBpm * previous.marker->subdivision);
+            const double gap = current.marker->second - previous.marker->second;
+            if (gap < grid * 0.9 - 1e-9 || gap > qMin(grid * 1.1, kTouchSweepGapSeconds) + 1e-9) break;
+            ++last;
+        }
+        if (last - first >= 3 && eligible(first, last)) {
+            const auto& start = heads->at(order.at(first));
+            int hand = handIndex(basicLayoutHandForPoint(start.point));
+            if (hand < 0) hand = handIndex(basicLayoutHandForPoint(heads->at(order.at(last - 1)).point));
+            if (hand >= 0)
+                for (int i = first; i < last; ++i) {
+                    auto& head = (*heads)[order.at(i)];
+                    allowRecalculation(head.token);
+                    head.patternHand = hand;
+                }
+            first = last;
+        } else ++first;
+    }
+
     for (int i = 0; i + 1 < order.size(); ++i) {
         auto& first = (*heads)[order.at(i)];
         auto& second = (*heads)[order.at(i + 1)];
-        if (!nearbyTouches(first, second) || !eligible(i, i + 2)) continue;
+        if (first.patternHand >= 0 || second.patternHand >= 0
+            || !nearbyTouches(first, second) || !eligible(i, i + 2)) continue;
         const double gap = second.marker->second - first.marker->second;
         const double pseudoEach = 240.0 / (64.0 * qMax(first.marker->tempoBpm, second.marker->tempoBpm));
         if (gap < -1e-9) continue;
-        if (gap < 1e-9 && first.marker->eachGroupId >= 0
+        if (gap < 1e-9 && chart::touchPadsAreAdjacent(first.marker->touchPad, second.marker->touchPad)
+            && first.marker->eachGroupId >= 0
             && first.marker->eachGroupId == second.marker->eachGroupId) {
             allowRecalculation(first.token);
             allowRecalculation(second.token);
@@ -870,7 +996,8 @@ void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustai
                 sustain.hand = head.hand;
                 continue;
             }
-            if (sustain.patternHand >= 0 && handIndex(head.hand) == sustain.patternHand
+            if (sustain.patternHand >= 0 && (sustain.splitSharedStar
+                || handIndex(head.hand) == sustain.patternHand)
                 && !busy(sustain.patternHand, head.marker->second, sustain.token)) {
                 sustain.hand = sustain.patternHand == 0 ? HandOrderHand::Left : HandOrderHand::Right;
                 continue;
@@ -987,7 +1114,6 @@ BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, in
             if (issue.line == source.line && issue.col >= source.col && issue.col < source.col + source.length)
                 annotationValid = false;
         canRewrite[tokenIndex] = firstMarker && annotationValid && (!fixed || completeTarget)
-            && !(firstMarker->type == QStringLiteral("slide") && source.markerCount != 1)
             && simpleLayoutSuffix(parts.suffix, *firstMarker, source.markerCount);
         int sharedSlideHead = -1;
         for (int index = 0; index < source.markerCount; ++index) {
