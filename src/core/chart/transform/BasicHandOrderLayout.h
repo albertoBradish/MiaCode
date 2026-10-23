@@ -2,6 +2,7 @@
 
 #include "core/chart/transform/HandOrderEdit.h"
 #include <QPair>
+#include <QSet>
 
 namespace miacode::chart_transform {
 
@@ -17,6 +18,9 @@ struct BasicHandOrderLayoutPlan {
     int preserved = 0;
     // Parse-order pairs for statically recognized cross-token one-stroke traces.
     QVector<QPair<int, int>> oneStrokeLinks;
+    // A moving hand follows these tap edges through repeated anchored Eachs.
+    QVector<QPair<int, int>> windingLinks;
+    QSet<int> windingEachHeads;
 };
 
 // An empty selection means the complete difficulty text. Existing suffixes,

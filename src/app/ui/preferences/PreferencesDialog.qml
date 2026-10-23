@@ -727,6 +727,27 @@ AppDialog {
                                 wrapMode: Text.WordWrap
                             }
 
+                            PreferenceSlider {
+                                objectName: "preferencesHandOrderPostureWeightSlider"
+                                label: qsTrId("preferences.hand_order_player.posture_weight")
+                                from: 0
+                                to: 8
+                                stepSize: 0.25
+                                decimals: 2
+                                suffix: ""
+                                value: root.preferencesModel.handOrderPlayerProfile.postureWeight
+                                onMoved: function(v) { root.preferencesModel.setHandOrderPlayerParameter("postureWeight", v) }
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: qsTrId("preferences.hand_order_player.posture_help")
+                                font.family: Theme.uiFont
+                                font.pixelSize: Theme.uiFontSize
+                                color: Theme.colors.text.secondary
+                                wrapMode: Text.WordWrap
+                            }
+
                             AppButton {
                                 objectName: "preferencesHandOrderPlayerResetButton"
                                 Layout.alignment: Qt.AlignLeft

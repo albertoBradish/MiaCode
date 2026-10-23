@@ -77,6 +77,7 @@ ApplicationContext::ApplicationContext(miacode::ApplicationServices& services,
         profile.staminaCapacity = values.value(QStringLiteral("staminaCapacity")).toDouble();
         profile.recoveryHalfLife = values.value(QStringLiteral("recoveryHalfLife")).toDouble();
         profile.techniquePreference = values.value(QStringLiteral("techniquePreference")).toDouble();
+        profile.postureWeight = values.value(QStringLiteral("postureWeight")).toDouble();
         handOrderAnalysis_.setPlayerProfile(profile);
     };
     syncHandOrderRest();

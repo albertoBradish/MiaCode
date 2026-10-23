@@ -159,6 +159,7 @@ int main(int argc, char** argv)
             {QStringLiteral("staminaCapacity"), 1.4},
             {QStringLiteral("recoveryHalfLife"), 4.0},
             {QStringLiteral("techniquePreference"), -0.7},
+            {QStringLiteral("postureWeight"), 6.25},
         };
         for (auto it = customized.cbegin(); it != customized.cend(); ++it)
             ok &= expect(player::set(&playerRoot, it.key(), it.value().toDouble()),
@@ -167,7 +168,7 @@ int main(int argc, char** argv)
         PreferenceDocument::Repository reopened(path);
         const QJsonObject saved = reopened.snapshot();
         ok &= expect(player::read(saved) == customized,
-                     QStringLiteral("all five custom fields reload from a new repository"), err);
+                     QStringLiteral("all six custom fields reload from a new repository"), err);
         ok &= expect(saved.value("app").toObject().value("hand_order_return_speed").toDouble() == 4.25
                          && saved.value("app").toObject().value("hand_order_player").toObject()
                              .value("vendor.custom").toInt() == 42,
@@ -192,11 +193,11 @@ int main(int argc, char** argv)
         }
 
         QJsonObject bounded = saved;
-        const double lower[] = {2.0, 2.0, 0.5, 0.5, -1.0};
-        const double upper[] = {12.0, 20.0, 2.0, 10.0, 1.0};
+        const double lower[] = {2.0, 2.0, 0.5, 0.5, -1.0, 0.0};
+        const double upper[] = {12.0, 20.0, 2.0, 10.0, 1.0, 8.0};
         const QStringList names{QStringLiteral("maxComfortableTapRate"), QStringLiteral("comfortableMoveSpeed"),
                                 QStringLiteral("staminaCapacity"), QStringLiteral("recoveryHalfLife"),
-                                QStringLiteral("techniquePreference")};
+                                QStringLiteral("techniquePreference"), QStringLiteral("postureWeight")};
         for (int i = 0; i < names.size(); ++i) {
             player::set(&bounded, names.at(i), -100.0);
             ok &= expect(player::read(bounded).value(names.at(i)).toDouble() == lower[i],
@@ -224,6 +225,7 @@ int main(int argc, char** argv)
             {QStringLiteral("staminaCapacity"), 1.0},
             {QStringLiteral("recoveryHalfLife"), 2.5},
             {QStringLiteral("techniquePreference"), 0.0},
+            {QStringLiteral("postureWeight"), 4.0},
         };
         ok &= expect(player::read(resetSaved) == expectedDefaults
                          && resetSaved.value("app").toObject().value("hand_order_return_speed").toDouble() == 4.25

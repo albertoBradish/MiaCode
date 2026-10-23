@@ -89,7 +89,8 @@ void HandOrderAnalysisService::setPlayerProfile(const hand_order::PlayerProfile&
         && old.comfortableMoveSpeed == profile.comfortableMoveSpeed
         && old.staminaCapacity == profile.staminaCapacity
         && old.recoveryHalfLife == profile.recoveryHalfLife
-        && old.techniquePreference == profile.techniquePreference) return;
+        && old.techniquePreference == profile.techniquePreference
+        && old.postureWeight == profile.postureWeight) return;
     auto parameters = parameters_; parameters.player = profile; setParameters(parameters);
 }
 bool HandOrderAnalysisService::isCurrent(const Request& request) const
@@ -319,7 +320,10 @@ QVariantList HandOrderAnalysisService::rows() const
             {"judgementKindText", row.judgementKind.isEmpty() ? QString() : qtTrId(("hand_order.auto.reason." + row.judgementKind).toUtf8().constData())},
             {"judgementQualityText", row.judgementQuality.isEmpty() ? QString() : qtTrId(("hand_order.auto.quality." + row.judgementQuality).toUtf8().constData())},
             {"fullReplayVerified", row.fullReplayVerified}, {"judgementSecond", row.judgementSecond}, {"judgementMargin", row.judgementMargin},
-            {"conditions", row.conditions.isEmpty() ? QString() : qtTrId("hand_order.auto.conditions_text")}, {"handoffCount", row.handoffCount},
+            {"conditions", row.conditions.isEmpty() ? QString() : qtTrId("hand_order.auto.conditions_text")
+                + (row.conditions.contains(QStringLiteral("adjusted_slide_input_timing"))
+                    ? QStringLiteral(" · ") + qtTrId("hand_order.auto.adjusted_slide_input_timing") : QString())},
+            {"handoffCount", row.handoffCount},
             {"handoffReason", row.handoffReason.isEmpty() ? QString() : qtTrId(("hand_order.auto.reason." + row.handoffReason).toUtf8().constData())},
             {"oneHandoffCost", row.oneHandoffCost}, {"oneHandoffPeak", row.oneHandoffPeak},
             {"handoffEvidence", handoffData}, {"handoffSummary", handoffs.join(QStringLiteral("; "))},

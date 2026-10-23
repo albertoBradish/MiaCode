@@ -372,3 +372,21 @@ miacode_add_dev_tool(hand_order_player_integration_spec TEST
     LIBS miacode_analysis Qt6::Core Qt6::Gui
     INCLUDES src
 )
+
+miacode_add_dev_tool(lance_pattern_spec TEST
+    SOURCES src/tools/analysis/LancePatternSpec.cpp
+    LIBS miacode_analysis Qt6::Core Qt6::Gui
+    INCLUDES src
+)
+
+miacode_add_dev_tool(hand_order_hold_candidates_spec TEST
+    SOURCES src/tools/analysis/HandOrderHoldCandidatesSpec.cpp
+    LIBS miacode_analysis Qt6::Core Qt6::Gui
+    INCLUDES src
+)
+
+miacode_add_dev_tool(hand_order_slide_timing_spec TEST
+    SOURCES src/tools/analysis/HandOrderSlideTimingSpec.cpp
+    LIBS miacode_analysis Qt6::Core Qt6::Gui
+    INCLUDES src
+)

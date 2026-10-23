@@ -57,6 +57,7 @@ void increment(QJsonObject& counts, const QString& key)
 int main(int argc, char* argv[])
 {
     QCoreApplication app(argc, argv);
+    const miacode::hand_order::BasicParameters defaults;
     QCommandLineParser cli;
     cli.setApplicationDescription("Audit automatic sticking on a local maidata copy. No player-quality claim is implied by replay verification.");
     cli.addHelpOption();
@@ -66,7 +67,7 @@ int main(int argc, char* argv[])
     cli.addOption({"report", "Structured audit JSON; must differ from source and output.", "path"});
     cli.addOption({"begin", "Inclusive UTF-16 offset within the selected inote value.", "offset", "0"});
     cli.addOption({"end", "Exclusive UTF-16 offset within the selected inote value; defaults to its end.", "offset"});
-    cli.addOption({"max-work", "Maximum inference work units.", "units", "100000000"});
+    cli.addOption({"max-work", "Maximum inference work units.", "units", QString::number(defaults.maxWorkUnits)});
     cli.addOption({"beam-width", "Search beam width.", "count", "64"});
     cli.addOption({"max-tasks", "Maximum tasks per search window.", "count", "512"});
     cli.addOption({"counterfactual-budget", "Counterfactual search budget.", "count", "64"});
@@ -78,6 +79,7 @@ int main(int argc, char* argv[])
     cli.addOption({"stamina", "Relative stamina capacity.", "factor", "1"});
     cli.addOption({"recovery", "Load recovery half-life (seconds).", "seconds", "2.5"});
     cli.addOption({"technique", "-1 decomposition, 0 balanced, +1 repeated strikes.", "preference", "0"});
+    cli.addOption({"posture-weight", "Natural posture weight (0 through 8).", "weight", QString::number(defaults.player.postureWeight)});
     cli.process(app);
     const auto fail = [](const QString& error) {
         QTextStream(stderr) << error << '\n';
@@ -106,8 +108,8 @@ int main(int argc, char* argv[])
         return value;
     };
     const int difficultyId = int(integer("difficulty", 1, 7));
-    miacode::hand_order::BasicParameters parameters;
-    parameters.maxWorkUnits = integer("max-work", 1000, 100000000);
+    auto parameters = defaults;
+    parameters.maxWorkUnits = integer("max-work", 1000, miacode::hand_order::BasicParameters::maxAllowedWorkUnits);
     parameters.beamWidth = int(integer("beam-width", 1, 128));
     parameters.maxTasks = int(integer("max-tasks", 1, 2048));
     parameters.counterfactualBudget = int(integer("counterfactual-budget", 0, 128));
@@ -124,6 +126,7 @@ int main(int argc, char* argv[])
     parameters.player.staminaCapacity = number("stamina");
     parameters.player.recoveryHalfLife = number("recovery");
     parameters.player.techniquePreference = number("technique");
+    parameters.player.postureWeight = number("posture-weight");
     valid &= miacode::hand_order::validPlayerProfile(parameters.player);
     bool speedOk = false;
     parameters.returnSpeed = cli.value("return-speed").toDouble(&speedOk);
@@ -186,7 +189,8 @@ int main(int argc, char* argv[])
             {"overwrite_existing", parameters.overwriteExisting},
             {"player", QJsonObject{{"tap_rate", parameters.player.maxComfortableTapRate},
                 {"move_speed", parameters.player.comfortableMoveSpeed}, {"stamina", parameters.player.staminaCapacity},
-                {"recovery", parameters.player.recoveryHalfLife}, {"technique", parameters.player.techniquePreference}}}}}};
+                {"recovery", parameters.player.recoveryHalfLife}, {"technique", parameters.player.techniquePreference},
+                {"posture_weight", parameters.player.postureWeight}}}}}};
     if (!parsed.ok || !parsed.annotationErrors.isEmpty()) {
         report.insert("outcome", "parse_rejected");
         if (!writeFile(reportPath, QJsonDocument(report).toJson())) return fail("Cannot save parse report.");

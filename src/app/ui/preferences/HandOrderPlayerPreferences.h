@@ -16,6 +16,7 @@ inline constexpr Parameter parameters[] = {
     {"staminaCapacity", hand_order::PlayerProfile::minStamina, hand_order::PlayerProfile::maxStamina, hand_order::PlayerProfile{}.staminaCapacity},
     {"recoveryHalfLife", hand_order::PlayerProfile::minRecoveryHalfLife, hand_order::PlayerProfile::maxRecoveryHalfLife, hand_order::PlayerProfile{}.recoveryHalfLife},
     {"techniquePreference", hand_order::PlayerProfile::minTechniquePreference, hand_order::PlayerProfile::maxTechniquePreference, hand_order::PlayerProfile{}.techniquePreference},
+    {"postureWeight", hand_order::PlayerProfile::minPostureWeight, hand_order::PlayerProfile::maxPostureWeight, hand_order::PlayerProfile{}.postureWeight},
 };
 
 inline QVariantMap read(const QJsonObject& root)

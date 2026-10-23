@@ -3,6 +3,7 @@
 <TS version="2.1" language="zh_CN">
 <context>
     <name></name>
+    <message id="hand_order.auto.adjusted_slide_input_timing"><source>This local candidate uses slightly early or late slide input within the judge window; chart timing remains unchanged</source><translation>局部候选包含判定范围内略提前或延后的滑动输入，应用时仍保留原谱时间</translation></message>
     <message id="hand_order.auto.player_effort"><source>Local candidate estimate: peak single-hand taps %1/s · load %2 times reference capacity</source><translation>局部候选负荷估计：峰值单手连打 %1 次/秒 · 体力负荷 %2 倍参考容量</translation></message>
     <message id="preferences.hand_order_player.title"><source>Player ability and technique</source><translation>玩家能力与打法</translation></message>
     <message id="preferences.hand_order_player.description"><source>Tap rate and movement speed are reference limits for comfortable play, not hard limits. Stamina and recovery are model estimates; adjust them to your playing style.</source><translation>手速与位移速度是舒适区的参考上限，不是硬性限制。体力与恢复参数用于工程估计，可按实际打法调整。</translation></message>
@@ -13,6 +14,8 @@
     <message id="preferences.hand_order_player.technique"><source>Technique preference</source><translation>打法偏好</translation></message>
     <message id="preferences.hand_order_player.technique_help"><source>Negative values favor movement and splitting patterns between hands; 0 is balanced; positive values favor repeated hits in place. Occupancy and judgement requirements still apply.</source><translation>负值偏向位移与双手拆解，0 为均衡，正值偏向原位硬抗。打法偏好不会放宽占手与判定要求。</translation></message>
     <message id="preferences.hand_order_player.reset"><source>Reset player parameters</source><translation>重置玩家参数</translation></message>
+    <message id="preferences.hand_order_player.posture_weight"><source>Natural-side posture preference</source><translation>自然侧姿态偏好</translation></message>
+    <message id="preferences.hand_order_player.posture_help"><source>0 gives a weak posture preference. Higher values favor each hand's natural side more strongly. Actual hand occupancy still takes priority.</source><translation>0 表示弱姿态偏好；数值越大，越优先使用各手的自然侧。实际占手约束仍然优先。</translation></message>
     <message id="dialog.preferences.group.hand_order"><source>Sticking</source><translation>Sticking</translation></message>
     <message id="preferences.hand_order_return_speed"><source>Hand return speed</source><translation>手部回正速度</translation></message>
     <message id="preferences.hand_order_return_speed_unit"><source>field radii/s</source><translation>场地半径/秒</translation></message>

@@ -97,6 +97,8 @@ struct LayoutHead {
     int touchPairWith = -1;
     int followSlideTail = -1;
     int interactionGroup = -1, interactionStep = -1;
+    int windingPrevious = -1;
+    bool windingEach = false;
 };
 
 struct LayoutSustain {
@@ -243,12 +245,109 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
         }
     };
 
+    // Repeated opposite anchors with three intervening adjacent taps form a
+    // winding path. The moving hand arrives at the other anchor, so the next
+    // block starts with the opposite hand rather than snapping back by side.
+    QVector<QVector<int>> moments;
+    for (int index : order) {
+        if (moments.isEmpty() || std::abs(heads->at(moments.last().first()).marker->second
+                - heads->at(index).marker->second) > 1e-9) moments.append(QVector<int>{});
+        moments.last().append(index);
+    }
+    const auto windingPath = [&](int moment, int lane) {
+        QVector<int> path;
+        if (moment + 4 >= moments.size()) return path;
+        const int opposite = (lane + 3) % 8 + 1;
+        int start = -1, finish = -1;
+        for (int boundary : {moment, moment + 4}) {
+            const auto& pair = moments.at(boundary);
+            if (pair.size() != 2) return QVector<int>{};
+            const auto& a = *heads->at(pair.at(0)).marker;
+            const auto& b = *heads->at(pair.at(1)).marker;
+            if (a.type != "tap" || b.type != "tap" || a.eachGroupId < 0
+                || a.eachGroupId != b.eachGroupId
+                || !((a.lane == lane && b.lane == opposite) || (a.lane == opposite && b.lane == lane)))
+                return QVector<int>{};
+            for (int index : pair) {
+                if (boundary == moment && heads->at(index).marker->lane == lane) start = index;
+                if (boundary == moment + 4 && heads->at(index).marker->lane == opposite) finish = index;
+            }
+        }
+        path.append(start);
+        for (int offset = 1; offset <= 3; ++offset) {
+            if (moments.at(moment + offset).size() != 1) return QVector<int>{};
+            const int index = moments.at(moment + offset).first();
+            if (heads->at(index).marker->type != "tap") return QVector<int>{};
+            path.append(index);
+        }
+        path.append(finish);
+        const int direction = adjacentLaneStep(heads->at(start).marker->lane, heads->at(path.at(1)).marker->lane);
+        const double interval = heads->at(path.at(1)).marker->second - heads->at(start).marker->second;
+        if (!direction || interval <= 1e-9 || interval > 0.18) return QVector<int>{};
+        for (int i = 1; i < path.size(); ++i) {
+            const auto& a = *heads->at(path.at(i - 1)).marker;
+            const auto& b = *heads->at(path.at(i)).marker;
+            const double gap = b.second - a.second;
+            if (adjacentLaneStep(a.lane, b.lane) != direction
+                || gap < interval * 0.9 - 1e-9 || gap > interval * 1.1 + 1e-9) return QVector<int>{};
+        }
+        return path;
+    };
+    for (int moment = 0; moment + 8 < moments.size();) {
+        bool recognized = false;
+        if (moments.at(moment).size() == 2) for (int start : moments.at(moment)) {
+            const int lane = heads->at(start).marker->lane;
+            QVector<QVector<int>> paths;
+            for (int boundary = moment; boundary + 4 < moments.size(); boundary += 4) {
+                const auto path = windingPath(boundary, lane);
+                if (path.isEmpty()) break;
+                if (!paths.isEmpty()) {
+                    const auto& previous = paths.constLast();
+                    const double interval = heads->at(path.at(1)).marker->second - heads->at(path.first()).marker->second;
+                    const double prior = heads->at(previous.at(1)).marker->second - heads->at(previous.first()).marker->second;
+                    if (heads->at(path.at(1)).marker->lane != heads->at(previous.at(1)).marker->lane
+                        || interval < prior * 0.9 - 1e-9 || interval > prior * 1.1 + 1e-9) break;
+                }
+                paths.append(path);
+            }
+            if (paths.size() < 2) continue;
+            const int locked = handIndex(heads->at(start).hand);
+            const int phase = locked >= 0 ? locked : handIndex(laneHand(lane));
+            const auto prefer = [&](int index, int hand) {
+                auto& head = (*heads)[index];
+                if (canRewrite.at(head.token) && selectedTokens.at(head.token)) allowRecalculation(head.token);
+                head.patternHand = hand;
+                head.patternNeedsBothFree = false;
+            };
+            for (int block = 0; block < paths.size(); ++block) {
+                const auto& path = paths.at(block);
+                const int hand = phase ^ (block % 2);
+                for (int i = 0; i < path.size(); ++i) {
+                    prefer(path.at(i), hand);
+                    if (i > 0) (*heads)[path.at(i)].windingPrevious = path.at(i - 1);
+                }
+                for (int boundary : {moment + 4 * block, moment + 4 * (block + 1)})
+                    for (int index : moments.at(boundary)) {
+                        (*heads)[index].windingEach = true;
+                        const bool moving = boundary == moment + 4 * block
+                            ? heads->at(index).marker->lane == lane : heads->at(index).marker->lane != lane;
+                        prefer(index, moving ? hand : 1 - hand);
+                    }
+            }
+            moment += 4 * paths.size() + 1;
+            recognized = true;
+            break;
+        }
+        if (!recognized) ++moment;
+    }
+
     // A real two-key Each on opposite sides must not retain two crossed
     // simple labels from an earlier pass.
     for (int first = 0; first + 1 < order.size(); ++first) {
         const auto& a = heads->at(order.at(first));
         const auto& b = heads->at(order.at(first + 1));
         if (a.marker->type != QStringLiteral("tap") || b.marker->type != QStringLiteral("tap")
+            || a.windingEach || b.windingEach
             || a.marker->eachGroupId < 0 || a.marker->eachGroupId != b.marker->eachGroupId
             || std::abs(a.marker->second - b.marker->second) > 1e-9
             || (first > 0 && std::abs(heads->at(order.at(first - 1)).marker->second
@@ -512,7 +611,7 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
             const auto& current = heads->at(order.at(last));
             const int step = adjacentLaneStep(previous.marker->lane, current.marker->lane);
             if (!step || (direction && step != direction) || previous.patternHand >= 0
-                || current.patternHand >= 0 || !regularTapStep(previous, current, 24)) break;
+                || current.patternHand >= 0 || !regularTapStep(previous, current, 16)) break;
             direction = step;
             ++last;
         }
@@ -520,12 +619,25 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
             && std::all_of(order.cbegin() + first, order.cbegin() + last, [&](int index) {
                 return heads->at(index).marker->subdivision >= 32;
             });
-        if ((last - first >= 5 || denseFour) && eligible(first, last)) {
+        const bool completeRing = last - first >= 8;
+        const bool fastLong = last - first >= 4
+            && std::all_of(order.cbegin() + first, order.cbegin() + last, [&](int index) {
+                return heads->at(index).marker->subdivision >= 24;
+            });
+        if ((completeRing || fastLong || denseFour) && eligible(first, last)) {
             const int hand = handIndex(laneHand(heads->at(order.at(first)).marker->lane));
+            const int tailHand = handIndex(laneHand(heads->at(order.at(last - 1)).marker->lane));
+            const double firstSecond = heads->at(order.at(first)).marker->second;
+            const bool reservedHand = std::any_of(sustains->cbegin(), sustains->cend(), [&](const auto& sustain) {
+                // A pending trace already needs a hand prepared for its entry.
+                // A Hold ending exactly at the first tap no longer reserves it.
+                return sustain.marker->second <= firstSecond + 1e-9 && sustain.end > firstSecond + 1e-9;
+            });
+            const bool splitFour = last - first == 4 && hand != tailHand && !reservedHand;
             for (int i = first; i < last; ++i) {
                 auto& head = (*heads)[order.at(i)];
                 allowRecalculation(head.token);
-                head.patternHand = hand;
+                head.patternHand = splitFour && i >= first + 2 ? tailHand : hand;
                 head.patternNeedsBothFree = false;
             }
             first = last;
@@ -1174,6 +1286,11 @@ BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, in
         }
     }
     identifyLocalPatterns(&heads, &sustains, canRewrite, selectedTokens, &rewriteTokens);
+    for (const auto& head : heads) {
+        if (head.windingPrevious >= 0)
+            result.windingLinks.append({heads.at(head.windingPrevious).marker->parseOrder, head.marker->parseOrder});
+        if (head.windingEach) result.windingEachHeads.insert(head.marker->parseOrder);
+    }
     for (const auto& sustain : sustains)
         if (sustain.oneStrokeNext >= 0)
             result.oneStrokeLinks.append({sustain.marker->parseOrder,
@@ -1270,6 +1387,7 @@ BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, in
         plan.patches.clear();
         plan.changed = 0;
         result.oneStrokeLinks.clear();
+        result.windingLinks.clear(); result.windingEachHeads.clear();
         plan.diagnostics += checked.errors;
         plan.diagnostics += checked.annotationErrors;
     }

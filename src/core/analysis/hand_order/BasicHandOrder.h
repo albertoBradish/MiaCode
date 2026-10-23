@@ -4,11 +4,12 @@
 #include "core/analysis/hand_order/HandOrderPlayerModel.h"
 
 namespace miacode::hand_order {
-inline constexpr int basicAlgorithmVersion = 9;
+inline constexpr int basicAlgorithmVersion = 10;
 inline constexpr int basicJudgeProfileRevision = 2;
 struct BasicParameters {
     static constexpr double minReturnSpeed = 1.0;
     static constexpr double maxReturnSpeed = 8.0;
+    static constexpr qint64 maxAllowedWorkUnits = 300000000;
     int version = basicAlgorithmVersion;
     int judgeProfileRevision = basicJudgeProfileRevision;
     int beamWidth = 64;
@@ -18,7 +19,7 @@ struct BasicParameters {
     double pressSeconds = 0.025;
     double returnSpeed = 3.0;
     PlayerProfile player;
-    qint64 maxWorkUnits = 100000000;
+    qint64 maxWorkUnits = 200000000;
     bool overwriteExisting = false;
     bool highConfidenceOnly = false;
     // 0: exterior preferred, 1: screen preferred, 2: mixed.

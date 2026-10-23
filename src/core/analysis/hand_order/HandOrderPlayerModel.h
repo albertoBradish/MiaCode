@@ -13,12 +13,14 @@ struct PlayerProfile {
     static constexpr double minStamina = 0.5, maxStamina = 2.0;
     static constexpr double minRecoveryHalfLife = 0.5, maxRecoveryHalfLife = 10.0;
     static constexpr double minTechniquePreference = -1.0, maxTechniquePreference = 1.0;
+    static constexpr double minPostureWeight = 0.0, maxPostureWeight = 8.0;
     double maxComfortableTapRate = 5.5;
     double comfortableMoveSpeed = 6.0;
     double staminaCapacity = 1.0;
     double recoveryHalfLife = 2.5;
     // Negative favours movement/decomposition; positive favours repeated strikes.
     double techniquePreference = 0.0;
+    double postureWeight = 4.0;
 };
 
 inline bool validPlayerProfile(const PlayerProfile& profile)
@@ -30,7 +32,8 @@ inline bool validPlayerProfile(const PlayerProfile& profile)
         && between(profile.comfortableMoveSpeed, PlayerProfile::minMoveSpeed, PlayerProfile::maxMoveSpeed)
         && between(profile.staminaCapacity, PlayerProfile::minStamina, PlayerProfile::maxStamina)
         && between(profile.recoveryHalfLife, PlayerProfile::minRecoveryHalfLife, PlayerProfile::maxRecoveryHalfLife)
-        && between(profile.techniquePreference, PlayerProfile::minTechniquePreference, PlayerProfile::maxTechniquePreference);
+        && between(profile.techniquePreference, PlayerProfile::minTechniquePreference, PlayerProfile::maxTechniquePreference)
+        && between(profile.postureWeight, PlayerProfile::minPostureWeight, PlayerProfile::maxPostureWeight);
 }
 
 struct PlayerEffortState {
