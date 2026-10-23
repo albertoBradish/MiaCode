@@ -5018,6 +5018,14 @@ Error: %1</translation>
         <source>Suggestion: review required</source>
         <translation>Suggestion: review required</translation>
     </message>
+    <message id="hand_order.auto.status.heuristic">
+        <source>Basic layout fallback: unverified</source>
+        <translation>Basic layout fallback: unverified</translation>
+    </message>
+    <message id="hand_order.auto.reason.layout_fallback_unverified">
+        <source>Search ran out of work; basic layout supplies a hand, without full replay verification.</source>
+        <translation>Search ran out of work; basic layout supplies a hand, without full replay verification.</translation>
+    </message>
     <message id="hand_order.auto.status.preserved">
         <source>Existing annotation preserved</source>
         <translation>Existing annotation preserved</translation>

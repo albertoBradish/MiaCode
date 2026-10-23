@@ -369,6 +369,13 @@ int main(int argc, char** argv)
     expect(contextualSweep.edit.replacement.endsWith("{32}8~l,7~l,6~l,5~l,4~l,")
         && sameNative(sweepAfterSlides, contextualSweep.edit.replacement),
         "the directional sweep is still recognized after nearby slides and taps");
+    for (int bpm : {120, 180, 240}) {
+        const QString chart = QStringLiteral("(%1){32}8-4[8:1],7,6,5,4,").arg(bpm);
+        const auto result = basicHandOrderLayoutInSelection(chart, 0, 0);
+        expect(result.edit.replacement.contains("7~l,6~l,5~l,4~l,")
+            && sameNative(chart, result.edit.replacement),
+            "four dense sweep keys stay on one free hand while the preceding slide uses the other");
+    }
     const QString holdThenSweep = "(190){48}7~l,,,,5~r,,,,6~l,,,,1~r,,,,4~l,,,,3~r,,,,5h[4:1]~l,,,,,,,,,,,,"
         "4~r,,,3~r,,,2~r,,,1~r,,,\n{32}5~l,4~r,3~r,2~r,1~r,8~l,7~l,6~l,3~r/5~l,,,,";
     const auto holdSweepLayout = basicHandOrderLayoutInSelection(holdThenSweep, 0, 0);
@@ -380,6 +387,16 @@ int main(int argc, char** argv)
     expect(laidAlternatingLanes.edit.replacement == "(120){16}3~r,4~l,3~r,4~l,3~r,"
         && sameNative(alternatingLanes, laidAlternatingLanes.edit.replacement),
         "adjacent-lane back-and-forth interaction alternates hands instead of one-hand sweeping");
+    for (int bpm : {100, 150, 190, 240}) {
+        const QString crossed = QStringLiteral("(%1){8}8~r/2~l,7~r/3~l,").arg(bpm);
+        expect(basicHandOrderLayoutInSelection(crossed, 0, 0).edit.replacement
+            == QStringLiteral("(%1){8}8~l/2~r,7~l/3~r,").arg(bpm),
+            "basic layout repairs extreme crossed Each labels throughout the normal BPM range");
+        const QString reversed = QStringLiteral("(%1){8}2~l/8~r,3~l/7~r,").arg(bpm);
+        expect(basicHandOrderLayoutInSelection(reversed, 0, 0).edit.replacement
+            == QStringLiteral("(%1){8}2~r/8~l,3~r/7~l,").arg(bpm),
+            "crossed Each repair is independent of slash source order");
+    }
     const QString fourStepInteraction = "(150){16}2~r,1~r,2~r,1~r,";
     expect(basicHandOrderLayoutInSelection(fourStepInteraction, 0, 0).edit.replacement
         == "(150){16}2~r,1~l,2~r,1~l,",
@@ -409,6 +426,21 @@ int main(int argc, char** argv)
         expect(basicHandOrderLayoutInSelection(chart, 0, 0).edit.replacement
             == QStringLiteral("(%1){16}3~r,4~l,3~r,4~l,3~r,").arg(bpm),
             "the alternating-lane interaction follows the score grid across normal BPM values");
+    }
+    for (int bpm : {120, 150, 190, 240}) {
+        const auto check = [&](const QString& body, const QString& expected, const char* pattern) {
+            const QString prefix = QStringLiteral("(%1)").arg(bpm);
+            const QByteArray label = QStringLiteral("%1 BPM basic %2 is stable")
+                .arg(bpm).arg(QString::fromLatin1(pattern)).toUtf8();
+            expect(basicHandOrderLayoutInSelection(prefix + body, 0, 0).edit.replacement
+                == prefix + expected, label.constData());
+        };
+        check("{16}5,5,5,5,5,5,", "{16}5~l,5~r,5~l,5~r,5~l,5~r,", "vertical");
+        check("{16}6,5,6,7,6,", "{16}6~l,5~r,6~l,7~r,6~l,", "five-note axis");
+        check("{32}5,4,3,2,1,8,7,6,", "{32}5~l,4~l,3~l,2~l,1~l,8~l,7~l,6~l,", "sweep");
+        check("{16}E7,E6,E5,", "{16}E7~l,E6~l,E5~l,", "E-ring sweep");
+        check("{4}1-5[4:1],5-1[4:1],",
+            "{4}1-5[4:1]~[head=r;track=0:r],5-1[4:1]~[head=l;track=0:r],", "one-stroke");
     }
     const QString relaxed = "(222){8}4,4,5,5,3b/6b,";
     const QString relaxedOld = "(222){8}4~l,4~r,5~l,5~l,3b~r/6b~l,";

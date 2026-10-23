@@ -228,5 +228,33 @@ int main(int argc, char** argv) {
     expect(!service.pending() && !service.canApply() && service.message() == qtTrId("hand_order.auto.cancelled"),
         "cancelled state retains its semantics across catalog changes");
     QCoreApplication::removeTranslator(&chineseCatalog);
+    ChartWorkspace fallbackWorkspace;
+    const QString fallbackSource = "(120){4}1-5[4:1],5-1[4:1],";
+    fallbackWorkspace.openSource("&inote_5=" + fallbackSource + "\n", {}, 5);
+    HandOrderAnalysisService fallbackService(fallbackWorkspace);
+    hand_order::BasicParameters tinyBudget;
+    tinyBudget.maxWorkUnits = 1000;
+    tinyBudget.counterfactualBudget = 0;
+    fallbackService.setParameters(tinyBudget);
+    expect(fallbackService.request(fallbackSource, 0, 0),
+        "service accepts a bounded search that may require basic-layout fallback");
+    settle(fallbackService);
+    bool shownUnverified = fallbackService.canApply();
+    for (const auto& item : fallbackService.rows()) {
+        const auto row = item.toMap();
+        shownUnverified &= row.value("status") == QStringLiteral("heuristic")
+            && row.value("hasAssignments").toBool()
+            && !row.value("fullReplayVerified").toBool();
+    }
+    const auto fallbackEdit = fallbackService.takeEdit(fallbackSource);
+    QString fallbackText = fallbackSource;
+    if (fallbackEdit.transaction.hasEdit)
+        fallbackText.replace(fallbackEdit.transaction.replacementStart,
+            fallbackEdit.transaction.replacementEnd - fallbackEdit.transaction.replacementStart,
+            fallbackEdit.transaction.replacementText);
+    expect(shownUnverified && fallbackEdit.consumed
+        && fallbackText.contains("5-1[4:1]~[head=l;track=0:r]")
+        && hand_order::stripAnnotations(fallbackText) == fallbackSource,
+        "worker exposes unverified layout fallback and applies it without changing native chart data");
     return ok ? 0 : 1;
 }

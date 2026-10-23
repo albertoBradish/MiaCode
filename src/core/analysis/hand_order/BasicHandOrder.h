@@ -3,7 +3,7 @@
 #include "core/chart/transform/HandOrderEdit.h"
 
 namespace miacode::hand_order {
-inline constexpr int basicAlgorithmVersion = 6;
+inline constexpr int basicAlgorithmVersion = 7;
 inline constexpr int basicJudgeProfileRevision = 2;
 struct BasicParameters {
     static constexpr double minReturnSpeed = 1.0;
@@ -104,5 +104,6 @@ double basicOrdinaryAssociationWeight(double seconds, int intermediateNotes);
 double basicMotionCost(const QVector<QPointF>& points, const QVector<double>& segmentSeconds,
                        double* peakSpeed = nullptr);
 BasicResult inferBasicHandOrder(const QString& text, const SimaiParseResult& parsed,
-    int begin, int end, const BasicParameters& parameters = {});
+    int begin, int end, const BasicParameters& parameters = {},
+    const miacode::simai::SimaiTimingMetadata& metadata = {});
 } // namespace miacode::hand_order

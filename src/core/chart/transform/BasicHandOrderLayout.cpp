@@ -243,6 +243,31 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
         }
     };
 
+    // A real two-key Each on opposite sides must not retain two crossed
+    // simple labels from an earlier pass.
+    for (int first = 0; first + 1 < order.size(); ++first) {
+        const auto& a = heads->at(order.at(first));
+        const auto& b = heads->at(order.at(first + 1));
+        if (a.marker->type != QStringLiteral("tap") || b.marker->type != QStringLiteral("tap")
+            || a.marker->eachGroupId < 0 || a.marker->eachGroupId != b.marker->eachGroupId
+            || std::abs(a.marker->second - b.marker->second) > 1e-9
+            || (first > 0 && std::abs(heads->at(order.at(first - 1)).marker->second
+                - a.marker->second) < 1e-9)
+            || (first + 2 < order.size() && std::abs(heads->at(order.at(first + 2)).marker->second
+                - a.marker->second) < 1e-9)
+            || !canRewrite.at(a.token) || !canRewrite.at(b.token)
+            || !selectedTokens.at(a.token) || !selectedTokens.at(b.token)) continue;
+        const double xA = a.point.x(), xB = b.point.x();
+        const bool crossed = (xA < -0.25 && xB > 0.25
+            && handIndex(a.hand) == 1 && handIndex(b.hand) == 0)
+            || (xB < -0.25 && xA > 0.25
+                && handIndex(b.hand) == 1 && handIndex(a.hand) == 0);
+        if (crossed) {
+            allowRecalculation(a.token);
+            allowRecalculation(b.token);
+        }
+    }
+
     // Two simultaneous tracks leaving the same playable star need separate
     // tracking hands once their paths diverge. The one button head is shared.
     for (int first = 0; first < sustains->size(); ++first) {
@@ -491,13 +516,17 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
             direction = step;
             ++last;
         }
-        if (last - first >= 5 && eligible(first, last)) {
+        const bool denseFour = last - first == 4
+            && std::all_of(order.cbegin() + first, order.cbegin() + last, [&](int index) {
+                return heads->at(index).marker->subdivision >= 32;
+            });
+        if ((last - first >= 5 || denseFour) && eligible(first, last)) {
             const int hand = handIndex(laneHand(heads->at(order.at(first)).marker->lane));
             for (int i = first; i < last; ++i) {
                 auto& head = (*heads)[order.at(i)];
                 allowRecalculation(head.token);
                 head.patternHand = hand;
-                head.patternNeedsBothFree = true;
+                head.patternNeedsBothFree = false;
             }
             first = last;
         } else ++first;
@@ -1011,8 +1040,9 @@ void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustai
                 for (const auto& future : *heads) {
                     if (future.token == sustain.token || future.marker->second <= head.marker->second + 1e-9
                         || future.marker->second > sustain.end + 1e-9) continue;
-                    const int futureHand = handIndex(future.fixed ? future.hand : basicLayoutHeadHand(*future.marker));
-                    if (futureHand == candidate) cost += 1.0;
+                    const int futureHand = future.patternHand >= 0 ? future.patternHand
+                        : handIndex(future.fixed ? future.hand : basicLayoutHeadHand(*future.marker));
+                    if (futureHand == candidate) cost += future.patternHand >= 0 ? 4.0 : 1.0;
                 }
                 if (cost < best) { best = cost; sustain.hand = candidate == 0 ? HandOrderHand::Left : HandOrderHand::Right; }
             }
@@ -1144,6 +1174,10 @@ BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, in
         }
     }
     identifyLocalPatterns(&heads, &sustains, canRewrite, selectedTokens, &rewriteTokens);
+    for (const auto& sustain : sustains)
+        if (sustain.oneStrokeNext >= 0)
+            result.oneStrokeLinks.append({sustain.marker->parseOrder,
+                sustains.at(sustain.oneStrokeNext).marker->parseOrder});
     if (!std::isfinite(returnSpeed)) returnSpeed = chart::handOrderDefaultReturnSpeed;
     assignLocalHands(&heads, &sustains, qBound(chart::handOrderMinReturnSpeed, returnSpeed,
         chart::handOrderMaxReturnSpeed));
@@ -1235,6 +1269,7 @@ BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, in
         plan.replacement = text.mid(begin, end - begin);
         plan.patches.clear();
         plan.changed = 0;
+        result.oneStrokeLinks.clear();
         plan.diagnostics += checked.errors;
         plan.diagnostics += checked.annotationErrors;
     }

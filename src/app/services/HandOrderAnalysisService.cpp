@@ -150,7 +150,7 @@ void HandOrderAnalysisService::dispatch()
             // Strict validation still runs even when the shared timeline parse is reusable.
             const auto strict = SimaiParser::validateSyntax(request.snapshot.chartText, request.snapshot.timingMetadata);
             result = hand_order::inferBasicHandOrder(request.snapshot.chartText, strict,
-                request.begin, request.end, request.parameters);
+                request.begin, request.end, request.parameters, request.snapshot.timingMetadata);
             task::CancellationScope::check();
         } catch (const task::Cancelled&) { result.reset(); }
         if (!guard) return;
@@ -165,7 +165,8 @@ void HandOrderAnalysisService::dispatch()
                 for (const auto& row : guard->result_.rows) {
                     preserved += row.status == "preserved";
                     conflicts += row.status == "conflict";
-                    undecided += row.status == "undecided" || row.status == "not_found";
+                    undecided += row.status == "undecided" || row.status == "not_found"
+                        || row.status == "heuristic";
                     unsupported += row.status == "unsupported" || row.status == "invalid" || row.status == "skipped";
                 }
                 guard->message_ = localizedText("hand_order.auto.summary").arg(guard->result_.patches.size())

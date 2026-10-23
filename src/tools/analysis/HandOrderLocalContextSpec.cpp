@@ -470,9 +470,13 @@ int syntheticSpec()
     }
     for (const auto& patch : limited.patches) {
         const auto at = std::find_if(limited.rows.cbegin(), limited.rows.cend(), [&](const auto& row) { return row.start == patch.start; });
-        honest &= at != limited.rows.cend() && hasCandidate(*at) && at->fullReplayVerified;
+        honest &= at != limited.rows.cend() && hasCandidate(*at)
+            && (at->fullReplayVerified || (at->status == "heuristic"
+                && at->reason == "layout_fallback_unverified"
+                && at->confidenceLevel == "insufficient_evidence"));
     }
-    expect(honest && sameNative(continuous, limited), "resource exhaustion cannot invent a candidate, high confidence, an unverified patch or gray fallback", limited);
+    expect(honest && sameNative(continuous, limited),
+        "resource exhaustion marks basic-layout fallback unverified without inventing high confidence or native notes", limited);
     return ok ? 0 : 1;
 }
 }

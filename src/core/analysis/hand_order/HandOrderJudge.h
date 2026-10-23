@@ -30,6 +30,7 @@ struct TouchTarget {
     int sweepPrevious = -1;
     double tempoBpm = 0;
     int subdivision = 4;
+    int layoutBasis = -1;
 };
 struct TouchJudgement {
     bool judged = false, highQuality = false;

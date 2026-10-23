@@ -1,6 +1,7 @@
 #include "core/analysis/hand_order/BasicHandOrder.h"
 #include "core/analysis/hand_order/HandOrderJudge.h"
 #include "core/analysis/hand_order/BasicHandOrderActions.h"
+#include "core/chart/transform/BasicHandOrderLayout.h"
 #include "core/chart/parser/HandOrderAnnotationSyntax.h"
 #include "core/analysis/MuriAnalyzer.h"
 #include "core/scene/PreviewSfxTimeline.h"
@@ -27,13 +28,42 @@ QString applyPatches(const QString& text, const BasicResult& result) {
 }
 int main(int argc, char** argv) {
     QCoreApplication app(argc, argv);
-    if (argc == 2 && QString::fromLocal8Bit(argv[1]) == QStringLiteral("--probe")) {
+    if (argc == 2 && (QString::fromLocal8Bit(argv[1]) == QStringLiteral("--probe")
+        || QString::fromLocal8Bit(argv[1]) == QStringLiteral("--probe-preserve")
+        || QString::fromLocal8Bit(argv[1]) == QStringLiteral("--audit")
+        || QString::fromLocal8Bit(argv[1]) == QStringLiteral("--audit-wide"))) {
         const QString chart = QTextStream(stdin).readAll();
         BasicParameters parameters;
-        parameters.overwriteExisting = true;
+        parameters.overwriteExisting = QString::fromLocal8Bit(argv[1]) != QStringLiteral("--probe-preserve");
+        if (QString::fromLocal8Bit(argv[1]) == QStringLiteral("--audit-wide"))
+            parameters.maxWorkUnits = 100000000;
         const auto result = solve(chart, 0, chart.size(), parameters);
         QTextStream(stdout) << "error=" << result.error << " patches=" << result.patches.size()
-            << '\n' << applyPatches(chart, result);
+            << " work=" << result.workUsed << " windows=" << result.windowCount
+            << " workLimited=" << result.workLimited << '\n';
+        if (QString::fromLocal8Bit(argv[1]).startsWith(QStringLiteral("--audit"))) {
+            QMap<QString, int> counts;
+            for (const auto& row : result.rows) {
+                ++counts[row.status];
+                if (row.status != QStringLiteral("review") && row.status != QStringLiteral("preserved")
+                    && !row.context)
+                    QTextStream(stdout) << "ROW " << row.line << ':' << row.col << ' '
+                        << row.status << ' ' << row.reason << '\n';
+            }
+            for (auto it = counts.cbegin(); it != counts.cend(); ++it)
+                QTextStream(stdout) << "COUNT " << it.key() << ' ' << it.value() << '\n';
+            for (const auto& window : result.searchWindows)
+                if (window.outcome != QStringLiteral("validated"))
+                    QTextStream(stdout) << "WINDOW " << window.start << ':' << window.end
+                        << " tasks=" << window.tasks << " work=" << window.workUsed
+                        << " outcome=" << window.outcome << '\n';
+        } else {
+            QTextStream(stdout) << applyPatches(chart, result);
+            if (QString::fromLocal8Bit(argv[1]) == QStringLiteral("--probe-preserve"))
+                for (const auto& row : result.rows)
+                    QTextStream(stdout) << "\nROW " << row.status << " " << row.reason
+                        << " replay=" << row.fullReplayVerified;
+        }
         return result.error.isEmpty() ? 0 : 1;
     }
     bool ok = true;
@@ -68,6 +98,15 @@ int main(int argc, char** argv) {
         && applyPatches(holdSweep, repairedSweep).contains(
             "4~r,,,3~r,,,2~r,,,1~r,,,\n{32}5~l,4~l,3~l,2~l,1~l,8~l,7~l,6~l,"),
         "automatic recomputation keeps a rapid 5-led sweep on the left after a right-hand lead-in");
+    for (int bpm : {120, 180, 240}) {
+        const QString chart = QStringLiteral("(%1){32}8-4[8:1],7,6,5,4,").arg(bpm);
+        const auto result = solve(chart);
+        expect(result.error.isEmpty()
+            && applyPatches(chart, result).contains("7~l,6~l,5~l,4~l,")
+            && std::all_of(result.rows.cbegin(), result.rows.cend(),
+                [](const BasicRow& row) { return row.fullReplayVerified; }),
+            "automatic four-key sweep stays intact after a simultaneous slide across BPM values");
+    }
     const QString eSweep = "(190){16},,E5~l,E4~r,E3~l,,,,,,,,,,,,\n"
         "{16},,E7~l,E6~r,E5~l,,,,,,,,,,,,\n"
         "{16},,E3~r,E4~l,E5~r,,,,,,,,,,,,";
@@ -77,6 +116,24 @@ int main(int argc, char** argv) {
         && touchText.contains("E7~l,E6~l,E5~l")
         && touchText.contains("E3~r,E4~r,E5~r"),
         "automatic recomputation keeps three timed E-ring sweeps on one hand each");
+    for (int bpm : {100, 150, 190, 240}) {
+        const auto check = [&](const QString& body, const QString& expected, const char* pattern) {
+            const QString source = QStringLiteral("(%1)").arg(bpm) + body;
+            const auto result = solve(source);
+            const QByteArray label = QStringLiteral("%1 BPM %2 follows the same hand pattern")
+                .arg(bpm).arg(QString::fromLatin1(pattern)).toUtf8();
+            expect(result.error.isEmpty() && applyPatches(source, result)
+                == QStringLiteral("(%1)").arg(bpm) + expected
+                && std::all_of(result.rows.cbegin(), result.rows.cend(),
+                    [](const BasicRow& row) { return row.fullReplayVerified; }), label.constData());
+        };
+        check("{16}5,5,5,5,5,5,", "{16}5~l,5~r,5~l,5~r,5~l,5~r,", "vertical");
+        check("{16}6,5,6,7,6,", "{16}6~l,5~r,6~l,7~r,6~l,", "five-note axis");
+        check("{32}5,4,3,2,1,8,7,6,", "{32}5~l,4~l,3~l,2~l,1~l,8~l,7~l,6~l,", "sweep");
+        check("{16}E7,E6,E5,", "{16}E7~l,E6~l,E5~l,", "E-ring sweep");
+        check("{4}1-5[4:1],5-1[4:1],",
+            "{4}1-5[4:1]~[head=r;track=0:r],5-1[4:1]~[head=l;track=0:r],", "one-stroke");
+    }
     const QString occupied = "(120){4}5h[1:1]~l,6,";
     const int six = occupied.indexOf("6,");
     const auto busy = solve(occupied, six, six + 1);
@@ -185,6 +242,31 @@ int main(int argc, char** argv) {
     expect(std::abs(one - split) < 1e-12, "subdividing the same physical motion cannot lower cost");
     BasicParameters invalid; invalid.contextSeconds = std::numeric_limits<double>::quiet_NaN();
     expect(solve("6,", 0, -1, invalid).error == "invalid_parameters", "non-finite search parameters are rejected");
+    BasicParameters exhaustedBudget;
+    exhaustedBudget.maxWorkUnits = 1000;
+    exhaustedBudget.counterfactualBudget = 0;
+    const QString fallbackChart = "(120){4}1-5[4:1],5-1[4:1],";
+    const auto baselineFallback = solve(fallbackChart, 0, -1, exhaustedBudget);
+    expect(baselineFallback.patches.size() == 2
+        && applyPatches(fallbackChart, baselineFallback).contains("5-1[4:1]~[head=l;track=0:r]")
+        && baselineFallback.rows.first().status == QStringLiteral("heuristic")
+        && !baselineFallback.rows.first().fullReplayVerified,
+        "a search budget limit retains the basic-layout label with explicit unverified status");
+    exhaustedBudget.highConfidenceOnly = true;
+    expect(solve(fallbackChart, 0, -1, exhaustedBudget).patches.isEmpty(),
+        "high-confidence-only application excludes unverified layout fallbacks");
+    exhaustedBudget.highConfidenceOnly = false;
+    const QString compoundBudgetChart = "(190){16}6,5,6,7,6,,5,5,5,5,,"
+        "{4}1-5[4:1],5-1[4:1],";
+    const auto baseCoverage = miacode::chart_transform::basicHandOrderLayoutInSelection(
+        compoundBudgetChart, 0, 0);
+    const auto automaticCoverage = solve(compoundBudgetChart, 0, -1, exhaustedBudget);
+    bool retained = !baseCoverage.edit.patches.isEmpty();
+    for (const auto& basePatch : baseCoverage.edit.patches)
+        retained &= std::any_of(automaticCoverage.patches.cbegin(), automaticCoverage.patches.cend(),
+            [&](const auto& automaticPatch) { return automaticPatch.start == basePatch.start; });
+    expect(retained && automaticCoverage.error.isEmpty(),
+        "a bounded automatic run retains every available basic-layout token across mixed patterns");
     expect(natural.rows.first().hasCounterfactual && natural.rows.first().signedCostGap >= -1e-9,
         "reverse-hand evidence retains a signed complete-block cost gap");
     BasicParameters old; old.version = 1;
@@ -193,8 +275,24 @@ int main(int argc, char** argv) {
     expect(solve("6,", 0, -1, old).error == "invalid_parameters", "old judging profiles cannot produce an applicable result");
     BasicParameters narrow; narrow.beamWidth = 1; narrow.counterfactualBudget = 0;
     const auto lockedEach = solve("(120){4}6/1~l,", 0, -1, narrow);
-    expect(lockedEach.patches.size() == 1 && lockedEach.patches.first().text == "6~r",
-        "simultaneous fixed tasks expand jointly before a width-one beam is pruned");
+    expect(lockedEach.patches.size() == 2
+        && applyPatches("(120){4}6/1~l,", lockedEach) == "(120){4}6~l/1~r,",
+        "an unmistakably crossed simple Each lock is repaired even with a width-one beam");
+    const QString crossedDefault = "(190){8}8~r/2~l,7~r/3~l,";
+    expect(applyPatches(crossedDefault, solve(crossedDefault))
+        == "(190){8}8~l/2~r,7~l/3~r,",
+        "default automatic inference repairs unmistakably crossed simple Each labels");
+    for (int bpm : {100, 150, 190, 240}) {
+        const QString crossed = QStringLiteral("(%1){8}8~r/2~l,7~r/3~l,").arg(bpm);
+        const QString expected = QStringLiteral("(%1){8}8~l/2~r,7~l/3~r,").arg(bpm);
+        BasicParameters overwrite; overwrite.overwriteExisting = true;
+        expect(applyPatches(crossed, solve(crossed, 0, -1, overwrite)) == expected,
+            "automatic same-time opposite-side Each never emits an extreme hand crossing");
+        const QString reversed = QStringLiteral("(%1){8}2~l/8~r,3~l/7~r,").arg(bpm);
+        expect(applyPatches(reversed, solve(reversed, 0, -1, overwrite))
+            == QStringLiteral("(%1){8}2~r/8~l,3~r/7~l,").arg(bpm),
+            "automatic crossed Each protection is independent of slash source order");
+    }
     const auto distinctGroups = solve("(120){4}A1/A5,");
     expect(distinctGroups.patches.size() == 2, "disconnected same-time Touch components do not prematurely reject one another");
     const auto group = solve("(120){4}B1/B2/B3,");
