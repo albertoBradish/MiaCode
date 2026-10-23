@@ -4,7 +4,7 @@
 
 ## 命令与入口
 
-主工具栏“手序”、调整菜单下的“手序”和编辑器右键菜单提供以下手动命令；工具栏另有直接可点的“基础排布”按钮。相同入口另有独立结构命令 `hand_order.split_native_slide` / `Ctrl+Alt+5`，先预览再一次应用，详见[拆成独立 slide](NATIVE_SLIDE_SPLIT_SPEC_ZH.md)；它不属于手序区间染色。快捷键沿用 ShortcutRegistry，可在首选项的快捷键页重新绑定，菜单展示当前绑定。
+主工具栏“Sticking”、调整菜单下的“Sticking”和编辑器右键菜单提供以下手动命令；工具栏另有直接可点的“基础排布”按钮。相同入口另有独立结构命令 `hand_order.split_native_slide` / `Ctrl+Alt+5`，先预览再一次应用，详见[拆成独立 slide](NATIVE_SLIDE_SPLIT_SPEC_ZH.md)；它不属于手序区间染色。快捷键沿用 ShortcutRegistry，可在首选项的快捷键页重新绑定，菜单展示当前绑定。
 
 | 命令 ID | 行为 | 默认绑定 |
 | --- | --- | --- |
