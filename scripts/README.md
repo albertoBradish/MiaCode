@@ -53,6 +53,14 @@ Qt 定位顺序：`-QtRoot` → `C:\Qt\<版本>\<架构目录>` → `.qt\<版本
 运行库放入 `app/`，按内容契约断言必需项，产出 7z 归档；
 单配置生成器下还会校验 `CMAKE_BUILD_TYPE` 与 `-Config` 一致。
 
+手序版预发行包完成归档校验后，在本机同步固定测试目录：
+
+```powershell
+& .\scripts\build\sync-hand-order-test-install.ps1 -PackageDir ..\dist\<已验证的手序包目录>
+```
+
+入口固定为 `D:\Maimai\MiaCode_HandOrder_Test\MiaCode.exe`。脚本只接受本工作区 `dist/` 下带独立身份的干净发行包，拒绝运行中的测试程序，先复制并验证到工作区 `exports/` 暂存区，再备份旧测试目录并替换。稳定根目录的 `runtime/`、`exports/`、`logs/` 在后续更新时保留；旧版嵌套安装目录只备份，不自动迁移其数据。详见 [测试目录更新约定](../docs/qa/hand_order/TEST_INSTALL_UPDATE_ZH.md)。
+
 预览用 FFmpeg SDK 可由 `ffmpeg/trim/build-trimmed-ffmpeg.ps1` 产出裁切版，替代
 `ffmpeg/ensure-windows-ffmpeg-dev.ps1` 下载的全量 SDK。
 
