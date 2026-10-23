@@ -70,6 +70,14 @@ ApplicationContext::ApplicationContext(miacode::ApplicationServices& services,
         const double speed = preferencesModel_.handOrderReturnSpeed();
         editor_.setHandOrderReturnSpeed(speed);
         handOrderAnalysis_.setReturnSpeed(speed);
+        const auto values = preferencesModel_.handOrderPlayerProfile();
+        hand_order::PlayerProfile profile;
+        profile.maxComfortableTapRate = values.value(QStringLiteral("maxComfortableTapRate")).toDouble();
+        profile.comfortableMoveSpeed = values.value(QStringLiteral("comfortableMoveSpeed")).toDouble();
+        profile.staminaCapacity = values.value(QStringLiteral("staminaCapacity")).toDouble();
+        profile.recoveryHalfLife = values.value(QStringLiteral("recoveryHalfLife")).toDouble();
+        profile.techniquePreference = values.value(QStringLiteral("techniquePreference")).toDouble();
+        handOrderAnalysis_.setPlayerProfile(profile);
     };
     syncHandOrderRest();
     connect(&preferencesModel_, &miacode::ui::PreferencesModel::editorChanged,

@@ -960,6 +960,8 @@ bool miacode::runtime::VideoExportHost::exportPreviewVideoFromCli(
     task.outputWidth = request.outputWidth;
     task.outputHeight = request.outputHeight;
     task.fps = request.fps;
+    task.preset = request.exportPreset;
+    task.sizePreset = request.sizePreset;
     task.showTimestamp = request.showTimestamp;
     task.showHandOrderAnnotations = request.showHandOrderAnnotations;
     task.showObjectStatsHud = request.showObjectStatsHud;

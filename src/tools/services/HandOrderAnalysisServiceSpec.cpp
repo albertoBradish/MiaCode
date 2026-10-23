@@ -5,6 +5,7 @@
 #include <QTest>
 #include <QTextStream>
 #include <QTranslator>
+#include <limits>
 using namespace miacode;
 void settle(HandOrderAnalysisService& service) {
     for (int n = 0; service.pending() && n < 500; ++n) QTest::qWait(10);
@@ -23,6 +24,18 @@ int main(int argc, char** argv) {
     settle(service);
     expect(!service.pending() && service.canApply() && service.rows().size() == 2,
         "real asynchronous inference publishes a current preview");
+    hand_order::PlayerProfile player;
+    service.setPlayerProfile(player);
+    expect(service.canApply(), "reapplying an identical player profile retains current evidence");
+    player.maxComfortableTapRate = 4.0;
+    service.setPlayerProfile(player);
+    expect(!service.canApply(), "player capability change invalidates completed evidence");
+    service.request(source, 0, 0); settle(service);
+    player.maxComfortableTapRate = std::numeric_limits<double>::quiet_NaN();
+    service.setPlayerProfile(player);
+    expect(service.canApply(), "invalid player profile cannot replace a valid profile");
+    service.setPlayerProfile({});
+    service.request(source, 0, 0); settle(service);
     const auto location = service.navigationRange(0, source);
     expect(location.value("start").toInt() == source.indexOf("6,")
         && location.value("end").toInt() == source.indexOf("6,") + 1,

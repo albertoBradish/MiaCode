@@ -74,3 +74,10 @@ miacode_add_dev_tool(miacode_firework_render
     INCLUDES src
 )
 miacode_link_dev_audio(miacode_firework_render)
+
+# Local corpus audit, intentionally not a CTest case or a distributed chart fixture.
+miacode_add_dev_tool(miacode_hand_order_audit
+    SOURCES src/devtools/HandOrderCorpusAudit.cpp
+    LIBS miacode_analysis Qt6::Core Qt6::Gui Qt6::Widgets
+    INCLUDES src
+)

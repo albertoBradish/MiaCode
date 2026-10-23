@@ -1,9 +1,11 @@
 #include "app/services/PreferenceDocument.h"
+#include "app/ui/preferences/HandOrderPlayerPreferences.h"
 
 #include <QCoreApplication>
 #include <QJsonObject>
 #include <QTemporaryDir>
 #include <QTextStream>
+#include <limits>
 
 namespace {
 
@@ -136,6 +138,99 @@ int main(int argc, char** argv)
         ok &= expect(resetUi.value(QStringLiteral("ui_scale_percent")).toInt() == 100
                          && resetUi.value(QStringLiteral("editor_text_font_size")).toInt() == 17,
                      QStringLiteral("resetting UI scale preserves the editor font size"), err);
+    }
+
+    // Exercise the same JSON accessors used by PreferencesModel, with fresh
+    // repositories proving that changes survive a new preferences lifetime.
+    namespace player = miacode::ui::hand_order_player_preferences;
+    QTemporaryDir playerDirectory;
+    ok &= expect(playerDirectory.isValid(), QStringLiteral("temporary player preferences directory"), err);
+    if (playerDirectory.isValid()) {
+        const QString path = playerDirectory.filePath(QStringLiteral("preferences.json"));
+        PreferenceDocument::Repository repository(path);
+        QJsonObject playerRoot = repository.snapshot();
+        playerRoot.insert(QStringLiteral("app"), QJsonObject{
+            {QStringLiteral("hand_order_return_speed"), 4.25},
+            {QStringLiteral("hand_order_player"), QJsonObject{{QStringLiteral("vendor.custom"), 42}}}});
+        const QVariantMap defaults = player::read(playerRoot);
+        const QVariantMap customized{
+            {QStringLiteral("maxComfortableTapRate"), 7.25},
+            {QStringLiteral("comfortableMoveSpeed"), 9.5},
+            {QStringLiteral("staminaCapacity"), 1.4},
+            {QStringLiteral("recoveryHalfLife"), 4.0},
+            {QStringLiteral("techniquePreference"), -0.7},
+        };
+        for (auto it = customized.cbegin(); it != customized.cend(); ++it)
+            ok &= expect(player::set(&playerRoot, it.key(), it.value().toDouble()),
+                         QStringLiteral("custom player field writes: ") + it.key(), err);
+        ok &= expect(repository.replace(playerRoot), QStringLiteral("custom player profile persists"), err);
+        PreferenceDocument::Repository reopened(path);
+        const QJsonObject saved = reopened.snapshot();
+        ok &= expect(player::read(saved) == customized,
+                     QStringLiteral("all five custom fields reload from a new repository"), err);
+        ok &= expect(saved.value("app").toObject().value("hand_order_return_speed").toDouble() == 4.25
+                         && saved.value("app").toObject().value("hand_order_player").toObject()
+                             .value("vendor.custom").toInt() == 42,
+                     QStringLiteral("writing profile preserves adjacent and unknown profile fields"), err);
+
+        const QJsonValue badValues[] = {QJsonValue(), QJsonValue(true), QJsonValue("5.5"),
+                                       QJsonValue(QJsonObject{}), QJsonValue(-100.0), QJsonValue(100.0)};
+        for (auto selected = customized.cbegin(); selected != customized.cend(); ++selected) {
+            for (const auto& bad : badValues) {
+                QJsonObject damaged = saved;
+                QJsonObject damagedApp = damaged.value("app").toObject();
+                QJsonObject damagedProfile = damagedApp.value("hand_order_player").toObject();
+                damagedProfile.insert(selected.key(), bad);
+                damagedApp.insert(QStringLiteral("hand_order_player"), damagedProfile);
+                damaged.insert(QStringLiteral("app"), damagedApp);
+                const auto actual = player::read(damaged);
+                QVariantMap expected = customized;
+                expected.insert(selected.key(), defaults.value(selected.key()));
+                ok &= expect(actual == expected,
+                             QStringLiteral("invalid field falls back without losing valid siblings: ") + selected.key(), err);
+            }
+        }
+
+        QJsonObject bounded = saved;
+        const double lower[] = {2.0, 2.0, 0.5, 0.5, -1.0};
+        const double upper[] = {12.0, 20.0, 2.0, 10.0, 1.0};
+        const QStringList names{QStringLiteral("maxComfortableTapRate"), QStringLiteral("comfortableMoveSpeed"),
+                                QStringLiteral("staminaCapacity"), QStringLiteral("recoveryHalfLife"),
+                                QStringLiteral("techniquePreference")};
+        for (int i = 0; i < names.size(); ++i) {
+            player::set(&bounded, names.at(i), -100.0);
+            ok &= expect(player::read(bounded).value(names.at(i)).toDouble() == lower[i],
+                         QStringLiteral("setter clamps lower bound: ") + names.at(i), err);
+            player::set(&bounded, names.at(i), 100.0);
+            ok &= expect(player::read(bounded).value(names.at(i)).toDouble() == upper[i],
+                         QStringLiteral("setter clamps upper bound: ") + names.at(i), err);
+        }
+        const QJsonObject beforeRejected = bounded;
+        ok &= expect(!player::set(&bounded, QStringLiteral("vendor.custom"), 3.0)
+                         && !player::set(&bounded, names.first(), std::numeric_limits<double>::quiet_NaN())
+                         && !player::set(&bounded, names.first(), std::numeric_limits<double>::infinity())
+                         && !player::set(&bounded, names.first(), -std::numeric_limits<double>::infinity())
+                         && bounded == beforeRejected,
+                     QStringLiteral("unknown names and nonfinite writes do not mutate preferences"), err);
+
+        QJsonObject reset = saved;
+        ok &= expect(player::reset(&reset) && reopened.replace(reset),
+                     QStringLiteral("reset profile persists"), err);
+        PreferenceDocument::Repository resetLifetime(path);
+        const auto resetSaved = resetLifetime.snapshot();
+        const QVariantMap expectedDefaults{
+            {QStringLiteral("maxComfortableTapRate"), 5.5},
+            {QStringLiteral("comfortableMoveSpeed"), 6.0},
+            {QStringLiteral("staminaCapacity"), 1.0},
+            {QStringLiteral("recoveryHalfLife"), 2.5},
+            {QStringLiteral("techniquePreference"), 0.0},
+        };
+        ok &= expect(player::read(resetSaved) == expectedDefaults
+                         && resetSaved.value("app").toObject().value("hand_order_return_speed").toDouble() == 4.25
+                         && resetSaved.value("app").toObject().value("hand_order_player").toObject()
+                             .value("vendor.custom").toInt() == 42,
+                     QStringLiteral("reset reloads defaults while preserving unrelated values"), err);
+        ok &= expect(!player::reset(&reset), QStringLiteral("repeated reset is a no-op"), err);
     }
 
     if (ok) {

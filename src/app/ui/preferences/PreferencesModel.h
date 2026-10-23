@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QString>
 #include <QVariantList>
+#include <QVariantMap>
 
 #include "app/services/PreferencesStore.h"
 #include "app/ui/preferences/CompletionCandidateModel.h"
@@ -56,6 +57,7 @@ public:
     Q_PROPERTY(bool editorSelectionBeatDisplay READ editorSelectionBeatDisplay WRITE setEditorSelectionBeatDisplay NOTIFY editorChanged)
     Q_PROPERTY(bool editorOverviewRulerEnabled READ editorOverviewRulerEnabled WRITE setEditorOverviewRulerEnabled NOTIFY editorChanged)
     Q_PROPERTY(double handOrderReturnSpeed READ handOrderReturnSpeed WRITE setHandOrderReturnSpeed NOTIFY editorChanged)
+    Q_PROPERTY(QVariantMap handOrderPlayerProfile READ handOrderPlayerProfile NOTIFY editorChanged)
 
     Q_PROPERTY(QAbstractItemModel* completionDurations READ completionDurations CONSTANT)
     Q_PROPERTY(QAbstractItemModel* completionDivisions READ completionDivisions CONSTANT)
@@ -132,6 +134,9 @@ public:
     void setEditorOverviewRulerEnabled(bool enabled);
     double handOrderReturnSpeed() const;
     void setHandOrderReturnSpeed(double speed);
+    QVariantMap handOrderPlayerProfile() const;
+    Q_INVOKABLE void setHandOrderPlayerParameter(const QString& name, double value);
+    Q_INVOKABLE void resetHandOrderPlayerProfile();
 
     bool videoDecodePrefersSoftware() const;
     void setVideoDecodePrefersSoftware(bool preferSoftware);

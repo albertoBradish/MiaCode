@@ -1,4 +1,5 @@
 #include "app/ui/preferences/PreferencesModel.h"
+#include "app/ui/preferences/HandOrderPlayerPreferences.h"
 
 #include "app/ui/layout/WorkbenchSettings.h"
 #include "app/services/PreferencesStore.h"
@@ -446,6 +447,27 @@ void PreferencesModel::setHandOrderReturnSpeed(double speed)
     QJsonObject app = root.value(QStringLiteral("app")).toObject();
     app.insert(QStringLiteral("hand_order_return_speed"), speed);
     root.insert(QStringLiteral("app"), app);
+    PreferenceDocument::savePreferencesObject(root);
+    emit editorChanged();
+}
+
+QVariantMap PreferencesModel::handOrderPlayerProfile() const
+{
+    return hand_order_player_preferences::read(PreferenceDocument::loadPreferencesObject());
+}
+
+void PreferencesModel::setHandOrderPlayerParameter(const QString& name, double value)
+{
+    QJsonObject root = PreferenceDocument::loadPreferencesObject();
+    if (!hand_order_player_preferences::set(&root, name, value)) return;
+    PreferenceDocument::savePreferencesObject(root);
+    emit editorChanged();
+}
+
+void PreferencesModel::resetHandOrderPlayerProfile()
+{
+    QJsonObject root = PreferenceDocument::loadPreferencesObject();
+    if (!hand_order_player_preferences::reset(&root)) return;
     PreferenceDocument::savePreferencesObject(root);
     emit editorChanged();
 }

@@ -33,6 +33,7 @@ public:
     void setHighConfidenceOnly(bool value);
     void setInputPreference(int value);
     void setReturnSpeed(double speed);
+    void setPlayerProfile(const hand_order::PlayerProfile& profile);
     bool request(const QString& text, int begin, int end);
     Q_INVOKABLE void cancel();
     Q_INVOKABLE void setBeamWidth(int width);

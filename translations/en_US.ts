@@ -3,6 +3,16 @@
 <TS version="2.1" language="en_US">
 <context>
     <name></name>
+    <message id="hand_order.auto.player_effort"><source>Local candidate estimate: peak single-hand taps %1/s · load %2 times reference capacity</source><translation>Local candidate estimate: peak single-hand taps %1/s · load %2 times reference capacity</translation></message>
+    <message id="preferences.hand_order_player.title"><source>Player ability and technique</source><translation>Player ability and technique</translation></message>
+    <message id="preferences.hand_order_player.description"><source>Tap rate and movement speed are reference limits for comfortable play, not hard limits. Stamina and recovery are model estimates; adjust them to your playing style.</source><translation>Tap rate and movement speed are reference limits for comfortable play, not hard limits. Stamina and recovery are model estimates; adjust them to your playing style.</translation></message>
+    <message id="preferences.hand_order_player.tap_rate"><source>Tap rate per hand (taps/s)</source><translation>Tap rate per hand (taps/s)</translation></message>
+    <message id="preferences.hand_order_player.move_speed"><source>Movement speed (radii/s)</source><translation>Movement speed (radii/s)</translation></message>
+    <message id="preferences.hand_order_player.stamina"><source>Stamina capacity multiplier</source><translation>Stamina capacity multiplier</translation></message>
+    <message id="preferences.hand_order_player.recovery"><source>Load recovery half-life (s)</source><translation>Load recovery half-life (s)</translation></message>
+    <message id="preferences.hand_order_player.technique"><source>Technique preference</source><translation>Technique preference</translation></message>
+    <message id="preferences.hand_order_player.technique_help"><source>Negative values favor movement and splitting patterns between hands; 0 is balanced; positive values favor repeated hits in place. Occupancy and judgement requirements still apply.</source><translation>Negative values favor movement and splitting patterns between hands; 0 is balanced; positive values favor repeated hits in place. Occupancy and judgement requirements still apply.</translation></message>
+    <message id="preferences.hand_order_player.reset"><source>Reset player parameters</source><translation>Reset player parameters</translation></message>
     <message id="dialog.preferences.group.hand_order"><source>Sticking</source><translation>Sticking</translation></message>
     <message id="preferences.hand_order_return_speed"><source>Hand return speed</source><translation>Hand return speed</translation></message>
     <message id="preferences.hand_order_return_speed_unit"><source>field radii/s</source><translation>field radii/s</translation></message>

@@ -1,9 +1,10 @@
 #pragma once
 #include "core/chart/parser/SimaiParser.h"
 #include "core/chart/transform/HandOrderEdit.h"
+#include "core/analysis/hand_order/HandOrderPlayerModel.h"
 
 namespace miacode::hand_order {
-inline constexpr int basicAlgorithmVersion = 7;
+inline constexpr int basicAlgorithmVersion = 9;
 inline constexpr int basicJudgeProfileRevision = 2;
 struct BasicParameters {
     static constexpr double minReturnSpeed = 1.0;
@@ -16,7 +17,8 @@ struct BasicParameters {
     double contextSeconds = 1.0;
     double pressSeconds = 0.025;
     double returnSpeed = 3.0;
-    qint64 maxWorkUnits = 30000000;
+    PlayerProfile player;
+    qint64 maxWorkUnits = 100000000;
     bool overwriteExisting = false;
     bool highConfidenceOnly = false;
     // 0: exterior preferred, 1: screen preferred, 2: mixed.
@@ -55,6 +57,7 @@ struct BasicRow {
     HandOrderHand head = HandOrderHand::Unspecified;
     HandOrderHand track = HandOrderHand::Unspecified;
     double cost = 0, peakSpeed = 0;
+    double playerCost = 0, peakTapRate = 0, peakLoad = 0;
     QVector<int> lanes;
     QVector<HandOrderHand> noteHands;
     bool hasCounterfactual = false;

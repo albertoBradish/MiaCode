@@ -732,7 +732,7 @@ foreach ($archiveFormat in $archiveFormats) {
                 Push-Location $archiveParentDir
                 try {
                     Invoke-NativeCommand -FilePath $sevenZip.Source -Arguments @(
-                        "a", "-t7z", "-mx=9", "-mmt=on", "-bso0", "-bsp0", $archivePath, $archiveFolderName
+                        "a", "-t7z", "-mx=9", "-mmt=$BuildJobs", "-bso0", "-bsp0", $archivePath, $archiveFolderName
                     ) | Out-Host
                 } finally {
                     Pop-Location

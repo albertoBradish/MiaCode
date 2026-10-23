@@ -360,3 +360,15 @@ miacode_add_dev_tool(wifi_hand_order_render_spec TEST
 target_compile_definitions(wifi_hand_order_render_spec PRIVATE
     "MIACODE_SOURCE_ROOT=\"${CMAKE_CURRENT_SOURCE_DIR}\""
 )
+
+miacode_add_dev_tool(hand_order_player_model_spec TEST
+    SOURCES src/tools/analysis/HandOrderPlayerModelSpec.cpp
+    LIBS Qt6::Core
+    INCLUDES src
+)
+
+miacode_add_dev_tool(hand_order_player_integration_spec TEST
+    SOURCES src/tools/analysis/HandOrderPlayerIntegrationSpec.cpp
+    LIBS miacode_analysis Qt6::Core Qt6::Gui
+    INCLUDES src
+)

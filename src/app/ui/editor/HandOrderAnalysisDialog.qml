@@ -161,6 +161,15 @@ AppDialog {
                     color: Theme.colors.text.secondary
                     wrapMode: Text.Wrap
                 }
+                Label {
+                    width: parent.width
+                    visible: modelData.hasCandidate && modelData.playerCost > 0
+                    text: qsTrId("hand_order.auto.player_effort")
+                        .arg(Number(modelData.peakTapRate).toFixed(2))
+                        .arg(Number(modelData.peakLoad).toFixed(2))
+                    color: Theme.colors.text.secondary
+                    wrapMode: Text.Wrap
+                }
             }
         }
     }

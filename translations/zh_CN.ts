@@ -3,6 +3,16 @@
 <TS version="2.1" language="zh_CN">
 <context>
     <name></name>
+    <message id="hand_order.auto.player_effort"><source>Local candidate estimate: peak single-hand taps %1/s · load %2 times reference capacity</source><translation>局部候选负荷估计：峰值单手连打 %1 次/秒 · 体力负荷 %2 倍参考容量</translation></message>
+    <message id="preferences.hand_order_player.title"><source>Player ability and technique</source><translation>玩家能力与打法</translation></message>
+    <message id="preferences.hand_order_player.description"><source>Tap rate and movement speed are reference limits for comfortable play, not hard limits. Stamina and recovery are model estimates; adjust them to your playing style.</source><translation>手速与位移速度是舒适区的参考上限，不是硬性限制。体力与恢复参数用于工程估计，可按实际打法调整。</translation></message>
+    <message id="preferences.hand_order_player.tap_rate"><source>Tap rate per hand (taps/s)</source><translation>单手参考手速（次/秒）</translation></message>
+    <message id="preferences.hand_order_player.move_speed"><source>Movement speed (radii/s)</source><translation>参考位移速度（半径/秒）</translation></message>
+    <message id="preferences.hand_order_player.stamina"><source>Stamina capacity multiplier</source><translation>体力容量倍率</translation></message>
+    <message id="preferences.hand_order_player.recovery"><source>Load recovery half-life (s)</source><translation>负荷减半时间（秒）</translation></message>
+    <message id="preferences.hand_order_player.technique"><source>Technique preference</source><translation>打法偏好</translation></message>
+    <message id="preferences.hand_order_player.technique_help"><source>Negative values favor movement and splitting patterns between hands; 0 is balanced; positive values favor repeated hits in place. Occupancy and judgement requirements still apply.</source><translation>负值偏向位移与双手拆解，0 为均衡，正值偏向原位硬抗。打法偏好不会放宽占手与判定要求。</translation></message>
+    <message id="preferences.hand_order_player.reset"><source>Reset player parameters</source><translation>重置玩家参数</translation></message>
     <message id="dialog.preferences.group.hand_order"><source>Sticking</source><translation>Sticking</translation></message>
     <message id="preferences.hand_order_return_speed"><source>Hand return speed</source><translation>手部回正速度</translation></message>
     <message id="preferences.hand_order_return_speed_unit"><source>field radii/s</source><translation>场地半径/秒</translation></message>

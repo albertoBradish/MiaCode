@@ -3,6 +3,16 @@
 <TS version="2.1" language="ja_JP">
 <context>
     <name></name>
+    <message id="hand_order.auto.player_effort"><source>Local candidate estimate: peak single-hand taps %1/s · load %2 times reference capacity</source><translation>局所候補の負荷推定：片手打鍵ピーク %1 回/秒 · 負荷 %2 倍（基準容量比）</translation></message>
+    <message id="preferences.hand_order_player.title"><source>Player ability and technique</source><translation>プレイヤーの能力と運指</translation></message>
+    <message id="preferences.hand_order_player.description"><source>Tap rate and movement speed are reference limits for comfortable play, not hard limits. Stamina and recovery are model estimates; adjust them to your playing style.</source><translation>打鍵速度と移動速度は無理なく動ける範囲の目安で、絶対的な制限ではありません。体力と回復はモデル上の推定値です。実際のプレイに合わせて調整できます。</translation></message>
+    <message id="preferences.hand_order_player.tap_rate"><source>Tap rate per hand (taps/s)</source><translation>片手の打鍵速度（回/秒）</translation></message>
+    <message id="preferences.hand_order_player.move_speed"><source>Movement speed (radii/s)</source><translation>移動速度（半径/秒）</translation></message>
+    <message id="preferences.hand_order_player.stamina"><source>Stamina capacity multiplier</source><translation>体力容量の倍率</translation></message>
+    <message id="preferences.hand_order_player.recovery"><source>Load recovery half-life (s)</source><translation>負荷が半減する時間（秒）</translation></message>
+    <message id="preferences.hand_order_player.technique"><source>Technique preference</source><translation>運指の好み</translation></message>
+    <message id="preferences.hand_order_player.technique_help"><source>Negative values favor movement and splitting patterns between hands; 0 is balanced; positive values favor repeated hits in place. Occupancy and judgement requirements still apply.</source><translation>負の値は移動と両手への分担、0 はバランス、正の値はその場での連打を優先します。手の占有と判定の条件は変わりません。</translation></message>
+    <message id="preferences.hand_order_player.reset"><source>Reset player parameters</source><translation>プレイヤー設定をリセット</translation></message>
     <message id="dialog.preferences.group.hand_order"><source>Sticking</source><translation>Sticking</translation></message>
     <message id="preferences.hand_order_return_speed"><source>Hand return speed</source><translation>手の復帰速度</translation></message>
     <message id="preferences.hand_order_return_speed_unit"><source>field radii/s</source><translation>フィールド半径/秒</translation></message>

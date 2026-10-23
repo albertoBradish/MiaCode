@@ -81,6 +81,17 @@ void HandOrderAnalysisService::setReturnSpeed(double speed)
     if (qFuzzyCompare(parameters_.returnSpeed, speed)) return;
     auto parameters = parameters_; parameters.returnSpeed = speed; setParameters(parameters);
 }
+void HandOrderAnalysisService::setPlayerProfile(const hand_order::PlayerProfile& profile)
+{
+    if (!hand_order::validPlayerProfile(profile)) return;
+    const auto& old = parameters_.player;
+    if (old.maxComfortableTapRate == profile.maxComfortableTapRate
+        && old.comfortableMoveSpeed == profile.comfortableMoveSpeed
+        && old.staminaCapacity == profile.staminaCapacity
+        && old.recoveryHalfLife == profile.recoveryHalfLife
+        && old.techniquePreference == profile.techniquePreference) return;
+    auto parameters = parameters_; parameters.player = profile; setParameters(parameters);
+}
 bool HandOrderAnalysisService::isCurrent(const Request& request) const
 {
     const auto current = workspace_->snapshot();
@@ -296,6 +307,7 @@ QVariantList HandOrderAnalysisService::rows() const
             {"reason", qtTrId(("hand_order.auto.reason." + row.reason).toUtf8().constData())},
             {"noteAssignments", noteAssignments.join(QStringLiteral(" / "))}, {"head", handName(row.head)}, {"track", handName(row.track)},
             {"cost", row.cost}, {"peakSpeed", row.peakSpeed}, {"inputChannel", row.inputChannel}, {"pressureLevel", row.pressureLevel},
+            {"playerCost", row.playerCost}, {"peakTapRate", row.peakTapRate}, {"peakLoad", row.peakLoad},
             {"pressureText", row.pressureLevel.isEmpty() ? QString() : qtTrId(("hand_order.auto.pressure." + row.pressureLevel).toUtf8().constData())}, {"hasCounterfactual", row.hasCounterfactual},
             {"dependencyUnit", row.dependencyUnit}, {"confidence", row.confidence}, {"confidenceLevel", row.confidenceLevel},
             {"confidenceText", qtTrId("hand_order.auto.confidence_text").arg(qRound(row.confidence * 100))

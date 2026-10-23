@@ -645,6 +645,95 @@ AppDialog {
                                 onMoved: function(v) { root.preferencesModel.handOrderReturnSpeed = Math.round(v * 4) / 4 }
                             }
                         }
+
+                        PreferenceGroup {
+                            title: qsTrId("preferences.hand_order_player.title")
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: qsTrId("preferences.hand_order_player.description")
+                                font.family: Theme.uiFont
+                                font.pixelSize: Theme.uiFontSize
+                                color: Theme.colors.text.secondary
+                                wrapMode: Text.WordWrap
+                            }
+
+                            PreferenceSlider {
+                                objectName: "preferencesHandOrderTapRateSlider"
+                                label: qsTrId("preferences.hand_order_player.tap_rate")
+                                from: 2
+                                to: 12
+                                stepSize: 0.25
+                                decimals: 2
+                                suffix: ""
+                                value: root.preferencesModel.handOrderPlayerProfile.maxComfortableTapRate
+                                onMoved: function(v) { root.preferencesModel.setHandOrderPlayerParameter("maxComfortableTapRate", v) }
+                            }
+
+                            PreferenceSlider {
+                                objectName: "preferencesHandOrderMoveSpeedSlider"
+                                label: qsTrId("preferences.hand_order_player.move_speed")
+                                from: 2
+                                to: 20
+                                stepSize: 0.25
+                                decimals: 2
+                                suffix: ""
+                                value: root.preferencesModel.handOrderPlayerProfile.comfortableMoveSpeed
+                                onMoved: function(v) { root.preferencesModel.setHandOrderPlayerParameter("comfortableMoveSpeed", v) }
+                            }
+
+                            PreferenceSlider {
+                                objectName: "preferencesHandOrderStaminaSlider"
+                                label: qsTrId("preferences.hand_order_player.stamina")
+                                from: 0.5
+                                to: 2
+                                stepSize: 0.05
+                                decimals: 2
+                                suffix: ""
+                                value: root.preferencesModel.handOrderPlayerProfile.staminaCapacity
+                                onMoved: function(v) { root.preferencesModel.setHandOrderPlayerParameter("staminaCapacity", v) }
+                            }
+
+                            PreferenceSlider {
+                                objectName: "preferencesHandOrderRecoverySlider"
+                                label: qsTrId("preferences.hand_order_player.recovery")
+                                from: 0.5
+                                to: 10
+                                stepSize: 0.25
+                                decimals: 2
+                                suffix: ""
+                                value: root.preferencesModel.handOrderPlayerProfile.recoveryHalfLife
+                                onMoved: function(v) { root.preferencesModel.setHandOrderPlayerParameter("recoveryHalfLife", v) }
+                            }
+
+                            PreferenceSlider {
+                                objectName: "preferencesHandOrderTechniqueSlider"
+                                label: qsTrId("preferences.hand_order_player.technique")
+                                from: -1
+                                to: 1
+                                stepSize: 0.1
+                                decimals: 1
+                                suffix: ""
+                                value: root.preferencesModel.handOrderPlayerProfile.techniquePreference
+                                onMoved: function(v) { root.preferencesModel.setHandOrderPlayerParameter("techniquePreference", v) }
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: qsTrId("preferences.hand_order_player.technique_help")
+                                font.family: Theme.uiFont
+                                font.pixelSize: Theme.uiFontSize
+                                color: Theme.colors.text.secondary
+                                wrapMode: Text.WordWrap
+                            }
+
+                            AppButton {
+                                objectName: "preferencesHandOrderPlayerResetButton"
+                                Layout.alignment: Qt.AlignLeft
+                                text: qsTrId("preferences.hand_order_player.reset")
+                                onClicked: root.preferencesModel.resetHandOrderPlayerProfile()
+                            }
+                        }
                     }
                 }
 

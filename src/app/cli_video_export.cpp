@@ -72,6 +72,8 @@ int runCliVideoExport(QGuiApplication& app, QString* errorMessage)
     parser.setApplicationDescription(qtTrId("cli.video_export.description"));
     parser.addHelpOption();
     parser.addVersionOption();
+    parser.addOption({"quality", "Encoding quality: fast or high_quality.", "mode", "high_quality"});
+    parser.addOption({"size-preset", "Size preset: standard, compact, ultra_compact_with_pv or ultra_compact.", "mode", "standard"});
     addSharedCliDebugOption(parser);
     parser.addOption(QCommandLineOption(
         QStringLiteral("export-video"),
@@ -343,6 +345,17 @@ int runCliVideoExport(QGuiApplication& app, QString* errorMessage)
     }
 
     Session::CliVideoExportRequest request;
+    const QString quality = parser.value("quality").trimmed().toLower();
+    const QString sizePreset = parser.value("size-preset").trimmed().toLower();
+    if ((quality != "fast" && quality != "high_quality")
+        || !QStringList{"standard", "compact", "ultra_compact_with_pv", "ultra_compact"}.contains(sizePreset)) {
+        if (errorMessage) *errorMessage = QStringLiteral("Invalid --quality or --size-preset; see --help.");
+        return 2;
+    }
+    request.exportPreset = quality == "fast" ? VideoExportPreset::Fast : VideoExportPreset::HighQuality;
+    request.sizePreset = sizePreset == "compact" ? VideoExportSizePreset::Compact
+        : sizePreset == "ultra_compact_with_pv" ? VideoExportSizePreset::UltraCompactWithPv
+        : sizePreset == "ultra_compact" ? VideoExportSizePreset::UltraCompact : VideoExportSizePreset::Standard;
     const QString handOrderMode = parser.value(QStringLiteral("hand-order")).trimmed().toLower();
     if (handOrderMode != QLatin1String("annotated")
         && handOrderMode != QLatin1String("original")) {

@@ -76,9 +76,20 @@ struct SearchConstraint {
     int primitive = -1, track = -1, touch = -1, hand = -1;
     double progress = 0;
 };
+struct PlayerPathState {
+    PlayerEffortState effort;
+    QPointF point;
+    double free = -std::numeric_limits<double>::infinity();
+    int source = -1;
+    bool known = false, screen = false;
+};
 struct State {
     int inputPreference = 0;
     double returnSpeed = chart::handOrderDefaultReturnSpeed;
+    PlayerProfile player;
+    std::array<PlayerPathState, 2> effortOrigins, effortEnds;
+    QHash<int, int> sweepPreviousSources;
+    QSet<int> holdSources;
     bool ordinaryOnly = false;
     double scoreFrom = -std::numeric_limits<double>::infinity();
     double focusSecond = 0;
@@ -95,6 +106,7 @@ struct State {
     QVector<QVector<HandOrderTrackStop>> tracks;
     QVector<BasicHandoffEvidence> transferEvidence;
     double cost = 0, peak = 0, focusPeak = 0, risk = 0;
+    double playerCost = 0, peakTapRate = 0, peakLoad = 0;
     int ergonomicBreaks = 0;
     TouchReplay replay;
 };
@@ -115,7 +127,8 @@ bool better(const State& a, const State& b)
     if (riskA != riskB) return riskA < riskB;
     if (a.ergonomicBreaks != b.ergonomicBreaks)
         return a.ergonomicBreaks < b.ergonomicBreaks;
-    if (!(a.ordinaryOnly && b.ordinaryOnly) && peakTier(a.peak) != peakTier(b.peak)) return peakTier(a.peak) < peakTier(b.peak);
+    // Speed and fatigue are soft player-relative costs. A fixed peak-speed
+    // tier must not override the configured ability or technique preference.
     if (std::abs(a.risk - b.risk) > epsilon) return a.risk < b.risk;
     if (std::abs(a.cost - b.cost) > epsilon) return a.cost < b.cost;
     return std::lexicographical_compare(a.primitiveHands.begin(), a.primitiveHands.end(), b.primitiveHands.begin(), b.primitiveHands.end());
@@ -147,6 +160,143 @@ QVector<ContactAction> contacts(const State& state)
     QVector<ContactAction> result;
     for (const auto& action : state.physical) if (!action.button) result.append(action.action);
     return result;
+}
+
+void setPlayerActionKinds(State& state, const QVector<Primitive>& primitives,
+                          const QVector<TouchTarget>& touches)
+{
+    for (const auto& primitive : primitives) {
+        if (primitive.sweepPrevious >= 0)
+            state.sweepPreviousSources.insert(primitive.action.tokenStart,
+                primitives.at(primitive.sweepPrevious).action.tokenStart);
+        if (primitive.marker.type == "hold" || primitive.marker.type == "touch_hold")
+            state.holdSources.insert(primitive.action.tokenStart);
+    }
+    for (const auto& touch : touches) if (touch.sweepPrevious >= 0)
+        state.sweepPreviousSources.insert(touch.tokenStart, touches.at(touch.sweepPrevious).tokenStart);
+    // Physical sweep effort follows elapsed time, not the spelling of the
+    // rhythmic grid: {48} with three commas is still a regular 16th-note sweep.
+    // Rim buttons crossed by one continuous wrist stroke are movement work,
+    // not repeated lifts at the configured single-key tapping rate.
+    QVector<int> taps;
+    for (int i = 0; i < primitives.size(); ++i)
+        if (primitives.at(i).marker.type == "tap") taps.append(i);
+    std::stable_sort(taps.begin(), taps.end(), [&](int a, int b) {
+        return primitives.at(a).action.start < primitives.at(b).action.start;
+    });
+    const auto direction = [&](int a, int b) {
+        const int step = (primitives.at(b).lane - primitives.at(a).lane + 8) % 8;
+        return step == 1 ? 1 : step == 7 ? -1 : 0;
+    };
+    for (int first = 0; first + 3 < taps.size();) {
+        const int step = direction(taps.at(first), taps.at(first + 1));
+        const double interval = primitives.at(taps.at(first + 1)).action.start
+            - primitives.at(taps.at(first)).action.start;
+        int last = first + 1;
+        while (step && interval > epsilon && interval <= 0.18 && last < taps.size()) {
+            const auto& a = primitives.at(taps.at(last - 1));
+            const auto& b = primitives.at(taps.at(last));
+            const double gap = b.action.start - a.action.start;
+            if (direction(taps.at(last - 1), taps.at(last)) != step
+                || gap < interval * 0.9 || gap > interval * 1.1
+                || a.interactionPrevious >= 0 || b.interactionPrevious >= 0) break;
+            ++last;
+        }
+        if (last - first >= 4) {
+            for (int i = first + 1; i < last; ++i)
+                state.sweepPreviousSources.insert(primitives.at(taps.at(i)).action.tokenStart,
+                    primitives.at(taps.at(i - 1)).action.tokenStart);
+            first = last;
+        } else ++first;
+    }
+}
+
+// Recompute from a fixed window-entry history, never from the last candidate's
+// tail. Logical screen paths already share one resolved physical centre.
+bool scorePlayerEffort(State& state, qint64& work,
+                       double through = std::numeric_limits<double>::infinity())
+{
+    state.playerCost = state.peakTapRate = state.peakLoad = 0;
+    state.effortEnds = state.effortOrigins;
+    for (int hand = 0; hand < 2; ++hand) {
+        auto& path = state.effortEnds[hand];
+        QVector<const Scheduled*> ordered;
+        QVector<double> times;
+        if (!spend(work, state.physical.size() + 1)) return false;
+        for (const auto& action : state.physical) if (action.action.hand == hand) {
+            const double begin = qMax(action.action.start, state.scoreFrom);
+            const double end = qMin(action.action.end, through);
+            if (end <= begin + epsilon) continue;
+            if (!spend(work, action.action.times.size() + 2)) return false;
+            ordered.append(&action); times.append(begin); times.append(end);
+            for (double time : action.action.times) if (time > begin && time < end) times.append(time);
+        }
+        std::stable_sort(ordered.begin(), ordered.end(), [](const auto* a, const auto* b) {
+            return a->action.start < b->action.start;
+        });
+        std::sort(times.begin(), times.end());
+        times.erase(std::unique(times.begin(), times.end(), [](double a, double b) {
+            return std::abs(a - b) < epsilon;
+        }), times.end());
+        QVector<const Scheduled*> active;
+        int next = 0;
+        const auto add = [&](const PlayerEffortDelta& delta, bool charged) {
+            if (!delta.valid) return false;
+            if (charged) {
+                state.playerCost += delta.cost;
+                state.peakTapRate = qMax(state.peakTapRate, delta.peakTapRate);
+                state.peakLoad = qMax(state.peakLoad, delta.peakLoad);
+            }
+            return true;
+        };
+        for (int i = 0; i + 1 < times.size(); ++i) {
+            if (!spend(work, active.size() + 1)) return false;
+            const double first = times.at(i), last = times.at(i + 1);
+            while (next < ordered.size() && ordered.at(next)->action.start <= first + epsilon)
+                active.append(ordered.at(next++));
+            active.erase(std::remove_if(active.begin(), active.end(), [&](const auto* action) {
+                return action->action.end <= first + epsilon;
+            }), active.end());
+            if (active.isEmpty()) continue;
+            const auto* selected = active.first();
+            const auto from = contactPosition(selected->action, first);
+            const auto to = contactPosition(selected->action, last);
+            bool charged = false, screen = false, sustained = false;
+            bool buttonDown = false, screenDown = false, chargedDown = false;
+            for (const auto* action : active) {
+                charged |= !action->committed;
+                screen |= !action->button;
+                sustained |= state.holdSources.contains(action->action.tokenStart);
+                if (std::abs(action->action.start - first) < epsilon && !action->motion) {
+                    buttonDown |= action->button;
+                    screenDown |= !action->button;
+                    chargedDown |= !action->committed;
+                }
+            }
+            const bool joinedScreen = path.known && path.screen && screen && first <= path.free + epsilon;
+            const bool joinedSweep = path.known && path.screen == screen
+                && state.sweepPreviousSources.value(selected->action.tokenStart, -2) == path.source
+                && first - path.free <= 0.35;
+            if (!path.known || first > path.free + epsilon) {
+                const QPointF rested = path.known
+                    ? chart::handOrderRestedPoint(path.point, path.free, first, hand, state.returnSpeed)
+                    : chart::handOrderNaturalRestPoint(hand);
+                const double begin = path.known ? path.free : first - 1.0;
+                // Idle recovery is lazy. The approach ending at this window's
+                // first note has not already been included in committed history.
+                if (!add(playerMovement(path.effort, begin, first,
+                        QLineF(rested, from).length(), state.player), charged)) return false;
+            }
+            if (((buttonDown && !joinedSweep) || (screenDown && !joinedScreen && !joinedSweep))
+                && first > path.effort.lastStrike + epsilon)
+                if (!add(playerStrike(path.effort, first, state.player), chargedDown)) return false;
+            if (!add(playerMovement(path.effort, first, last,
+                    QLineF(from, to).length(), state.player, sustained), charged)) return false;
+            path.point = to; path.free = last; path.known = true; path.screen = screen;
+            path.source = selected->action.tokenStart;
+        }
+    }
+    return true;
 }
 // Score and replay one realizable centre path per physical hand.
 bool score(State& state, const QVector<Track>& tracks, const QVector<Primitive>& primitives,
@@ -322,7 +472,9 @@ bool score(State& state, const QVector<Track>& tracks, const QVector<Primitive>&
             transfers.append({second, point, fixedHand(stops.at(i - 1).hand), fixedHand(stops.at(i).hand), i});
         }
     }
-    state.cost += physicalHandTransferCharge(transfers);
+    state.cost += physicalHandTransferCharge(transfers) * (1.0 + 0.35 * state.player.techniquePreference);
+    if (!scorePlayerEffort(state, work)) return false;
+    state.cost += state.playerCost;
     return true;
 }
 void addTrack(State& state, const Track& track, const QVector<HandOrderTrackStop>& stops)
@@ -391,6 +543,8 @@ Search search(const QVector<Decision>& decisions, const QVector<Primitive>& prim
     Search result; State initial = seed ? *seed : State{};
     initial.fullReplay = {}; initial.replay = {}; initial.risk = 0; initial.inputPreference = p.inputPreference;
     initial.returnSpeed = p.returnSpeed;
+    initial.player = p.player;
+    if (!seed) setPlayerActionKinds(initial, primitives, originalTouches);
     auto touches = originalTouches;
     if (constraint.touch >= 0) {
         if (constraint.touch >= touches.size() || (touches.at(constraint.touch).lock >= 0
@@ -432,6 +586,7 @@ Search search(const QVector<Decision>& decisions, const QVector<Primitive>& prim
     }
     if (buttonOnly) {
         initial.cost = initial.peak = initial.focusPeak = 0;
+        initial.playerCost = initial.peakTapRate = initial.peakLoad = 0;
         initial.ergonomicBreaks = 0;
     }
     else if (!score(initial, tracks, primitives, touches, work)) { result.exhausted = work < 0; return result; }
@@ -471,6 +626,9 @@ Search search(const QVector<Decision>& decisions, const QVector<Primitive>& prim
             state.cost = forecasts.first().cost;
             state.peak = forecasts.first().peak;
             state.ergonomicBreaks = forecasts.first().ergonomicBreaks;
+            state.playerCost = forecasts.first().playerCost;
+            state.peakTapRate = forecasts.first().peakTapRate;
+            state.peakLoad = forecasts.first().peakLoad;
         }
         return work >= 0;
     };
@@ -581,6 +739,9 @@ Search search(const QVector<Decision>& decisions, const QVector<Primitive>& prim
                                 if (branch.focusSources.contains(action.tokenStart)) branch.focusPeak = qMax(branch.focusPeak, distance / prep);
                                 branch.buttonHands[hand] = {action.end, action.points.first(), primitive.lane, true, primitive.token, action.start};
                                 branch.physical = branch.actions;
+                                branch.cost -= branch.playerCost;
+                                valid = scorePlayerEffort(branch, work);
+                                branch.cost += branch.playerCost;
                             }
                         } else if (valid) valid = score(branch, tracks, primitives, touches, work, &result.sideEffect);
                         if (valid) {
@@ -712,6 +873,7 @@ Search search(const QVector<Decision>& decisions, const QVector<Primitive>& prim
     }
     QVector<State> finished;
     for (auto& candidate : beam) {
+        if (work < 0) { result.exhausted = result.truncated = true; break; }
         if (!buttonOnly && !score(candidate, tracks, primitives, touches, work)) continue;
         candidate.replay = replayHandOrderTouches(touches, contacts(candidate), std::numeric_limits<double>::infinity(), &work);
         if (!locksSatisfied(touches, candidate.replay, std::numeric_limits<double>::infinity(), true)) continue;
@@ -719,7 +881,7 @@ Search search(const QVector<Decision>& decisions, const QVector<Primitive>& prim
         const auto& physical = candidate.physical.isEmpty() ? candidate.actions : candidate.physical;
         for (const auto& action : physical) inputs.append({action.action, action.button, action.lane});
         candidate.fullReplay = replayHandOrderChart(markers, inputs, {}, &work);
-        if (candidate.fullReplay.exhausted) { result.exhausted = true; return result; }
+        if (candidate.fullReplay.exhausted) { result.exhausted = result.truncated = true; break; }
         if (!candidate.fullReplay.valid || !candidate.fullReplay.meetsTarget) { result.sideEffect = true; continue; }
         bool fixedResponsibilities = true;
         for (int primitiveId = 0; primitiveId < primitives.size(); ++primitiveId) if (candidate.primitiveHands.at(primitiveId) >= 0) {
@@ -762,6 +924,11 @@ Search search(const QVector<Decision>& decisions, const QVector<Primitive>& prim
     for (const auto& candidate : finished) if (!result.found || better(candidate, result.state)) {
         result.found = true; result.state = candidate;
     }
+    // A later terminal candidate cannot erase an already replayed solution.
+    // Carry attribution still needs comparison evidence, so close it when the
+    // remaining terminal alternatives could not be checked.
+    if (result.found && (result.exhausted || work < 0)) for (auto& judged : result.state.replay.judgements)
+        if (judged.kind == "group_carry") judged.stableResponsibility = false;
     if (result.found) for (const auto& candidate : finished) {
         if (peakTier(candidate.peak) != peakTier(result.state.peak) || std::abs(candidate.risk - result.state.risk) > epsilon
             || candidate.cost > result.state.cost + 0.25) continue;
@@ -771,7 +938,7 @@ Search search(const QVector<Decision>& decisions, const QVector<Primitive>& prim
                 judged.stableResponsibility = false;
         }
     }
-    result.exhausted = work < 0; return result;
+    result.exhausted |= work < 0; return result;
 }
 }
 
@@ -805,6 +972,7 @@ BasicResult inferBasicHandOrder(const QString& text, const SimaiParseResult& par
         || !std::isfinite(p.pressSeconds) || p.pressSeconds <= 0 || p.pressSeconds > 1
         || !std::isfinite(p.returnSpeed) || p.returnSpeed < BasicParameters::minReturnSpeed
         || p.returnSpeed > BasicParameters::maxReturnSpeed
+        || !validPlayerProfile(p.player)
         || p.maxWorkUnits < 1000 || p.maxWorkUnits > 100000000 || p.inputPreference < 0 || p.inputPreference > 2) {
         result.error = "invalid_parameters"; return result;
     }
@@ -1099,10 +1267,10 @@ BasicResult inferBasicHandOrder(const QString& text, const SimaiParseResult& par
                 || !regular(tapOrder.at(last - 1), tapOrder.at(last))) break;
             ++last;
         }
-        const bool denseFour = last - first == 4
-            && std::all_of(tapOrder.cbegin() + first, tapOrder.cbegin() + last,
-                [&](int id) { return primitives.at(id).marker.subdivision >= 32; });
-        if (last - first >= 5 || denseFour) {
+        // Four adjacent 24th-note keys already form one wrist sweep. Keep its
+        // continuity in the search, not only in the effort discount; otherwise
+        // a short release gap can make a zigzag hand assignment look cheaper.
+        if (last - first >= 4) {
             for (int i = first + 1; i < last; ++i)
                 primitives[tapOrder.at(i)].sweepPrevious = tapOrder.at(i - 1);
             first = last;
@@ -1274,6 +1442,7 @@ BasicResult inferBasicHandOrder(const QString& text, const SimaiParseResult& par
     QVector<FullReplayJudgement> fullJudged(parsed.noteMarkers.size());
     QVector<TouchJudgement> judged(touches.size());
     QVector<double> costs(tokens.size(), 0), peaks(tokens.size(), 0), gaps(tokens.size(), 0);
+    QVector<double> playerCosts(tokens.size(), 0), tapRates(tokens.size(), 0), loads(tokens.size(), 0);
     QVector<int> tierGaps(tokens.size(), 0); QVector<bool> counter(tokens.size(), false), participated(tokens.size(), false);
     QVector<HandOrderHand> counterHands(tokens.size(), HandOrderHand::Unspecified);
     QVector<int> counterLanes(tokens.size(), 0);
@@ -1317,9 +1486,15 @@ BasicResult inferBasicHandOrder(const QString& text, const SimaiParseResult& par
         return firstA < firstB;
     });
     State committed; committed.inputPreference = p.inputPreference; committed.returnSpeed = p.returnSpeed;
+    committed.player = p.player;
+    setPlayerActionKinds(committed, primitives, touches);
     committed.primitiveHands.fill(-1, primitives.size()); committed.tracks.resize(tracks.size()); committed.wifiSingle.fill(false, tracks.size());
     QSet<int> committedTokens;
     QVector<TimelineNoteMarker> committedMarkers;
+    double historyThrough = -std::numeric_limits<double>::infinity();
+    std::array<PlayerPathState, 2> historyEnds;
+    QVector<Scheduled> pendingHistory;
+    int historyActionCount = 0;
     // Optional evidence must not consume the inexpensive ordinary main route
     // that can already fit the request. Keep a conservative work floor for
     // the remaining rolling solve and its eventual combined audit.
@@ -1422,24 +1597,55 @@ BasicResult inferBasicHandOrder(const QString& text, const SimaiParseResult& par
         const int remainingWindows = qMax(1, int(cores.size()) - coreIndex);
         const qint64 mainGrant = qMin(beforeMain, remainingWindows <= 16 ? beforeMain
             : qMax(qint64(12000), beforeMain * 4 / remainingWindows));
-        const qint64 mainReserved = beforeMain - mainGrant;
+        qint64 mainReserved = beforeMain - mainGrant;
         work = mainGrant;
+        State history = committed;
+        // Only accepted physical history contributes to the next entry state;
+        // the candidate's uncommitted lookahead must never accumulate fatigue.
+        bool reuseHistory = std::isfinite(historyThrough) && horizon >= historyThrough - epsilon;
+        for (int i = historyActionCount; reuseHistory && i < committed.actions.size(); ++i)
+            reuseHistory &= committed.actions.at(i).action.start >= historyThrough - epsilon;
+        if (!reuseHistory) {
+            pendingHistory = committed.actions;
+            historyEnds = {};
+            historyThrough = -std::numeric_limits<double>::infinity();
+        } else {
+            for (int i = historyActionCount; i < committed.actions.size(); ++i)
+                pendingHistory.append(committed.actions.at(i));
+        }
+        history.physical = pendingHistory;
+        history.scoreFrom = historyThrough;
+        history.effortOrigins = historyEnds;
+        const bool historyReady = scorePlayerEffort(history, work, horizon);
+        if (!historyReady && failure.isEmpty())
+            failure = work < 0 ? QStringLiteral("work_limit") : QStringLiteral("player_history_invalid");
+        seed.effortOrigins = history.effortEnds;
+        if (historyReady) {
+            historyThrough = horizon;
+            historyEnds = history.effortEnds;
+            historyActionCount = committed.actions.size();
+            pendingHistory.erase(std::remove_if(pendingHistory.begin(), pendingHistory.end(), [&](const auto& action) {
+                return action.action.end <= horizon + epsilon;
+            }), pendingHistory.end());
+        } else {
+            historyThrough = -std::numeric_limits<double>::infinity();
+        }
         bool carryResponsibility = false;
         for (const auto& decision : block) carryResponsibility |= decision.kind == Decision::Touches && decision.members.size() >= 3;
         const auto runSearch = [&](const QVector<int>& limits, const SearchConstraint& constraint = SearchConstraint{}, bool evidence = false) {
             Search combined;
             auto narrow = p;
             if (!evidence && !carryResponsibility) narrow.beamWidth = qMin(8, p.beamWidth);
+            for (int pass = 0; pass < (narrow.beamWidth < p.beamWidth ? 2 : 1); ++pass) {
             for (int breadth = 0; breadth < 3; ++breadth) {
-                auto attempt = search(block, primitives, tracks, localTouches, blockMarkers, narrow, limits, work, constraint, &seed, breadth);
+                // Try alternative physical channels before spending the whole
+                // window on a wider beam of the same impossible channel.
+                auto attempt = search(block, primitives, tracks, localTouches, blockMarkers,
+                    pass == 0 ? narrow : p, limits, work, constraint, &seed, breadth);
                 attempt.sideEffect |= combined.sideEffect;
-                if (!attempt.found && !attempt.exhausted && narrow.beamWidth < p.beamWidth) {
-                    auto wider = search(block, primitives, tracks, localTouches, blockMarkers, p, limits, work, constraint, &seed, breadth);
-                    wider.sideEffect |= attempt.sideEffect;
-                    attempt = std::move(wider);
-                }
                 combined = std::move(attempt);
-                if (combined.found || combined.exhausted) break;
+                if (combined.found || combined.exhausted) return combined;
+            }
             }
             return combined;
         };
@@ -1450,6 +1656,18 @@ BasicResult inferBasicHandOrder(const QString& text, const SimaiParseResult& par
         }
         if (failure.isEmpty() && !best.found && !best.exhausted) {
             caps.fill(3); best = runSearch(caps);
+        }
+        if (failure.isEmpty() && !best.found && best.exhausted) {
+            const qint64 futureFloor = qint64(qMax(0, remainingWindows - 1)) * 1000;
+            const qint64 extra = qMin(qMax(qint64(0), mainReserved - futureFloor),
+                qMax(qint64(240000), mainGrant * 4));
+            if (extra > mainGrant) {
+                mainReserved -= extra; work = extra;
+                best = runSearch(caps);
+                if (!best.found && !best.exhausted) {
+                    caps.fill(1); best = runSearch(caps);
+                }
+            }
         }
         bool pressureLimited = false, hasTrack = false;
         for (const auto& decision : block) hasTrack |= decision.kind == Decision::Slide && tracks.at(decision.index).locks.isEmpty()
@@ -1509,7 +1727,9 @@ BasicResult inferBasicHandOrder(const QString& text, const SimaiParseResult& par
         };
         best = admitTransfers(std::move(best));
         if (failure.isEmpty() && (best.exhausted || work < 0)) {
-            failure = mainReserved > 0 ? "window_work_limit" : "work_limit"; result.workLimited = true;
+            result.workLimited = true;
+            if (!best.found) failure = mainReserved > 0 ? "window_work_limit" : "work_limit";
+            else { pressureLimited = true; result.evidenceTruncated = result.truncated = true; }
         }
         work = qMax(qint64(0), work) + mainReserved;
         if (failure.isEmpty() && !best.found) failure = best.sideEffect ? "full_replay_target_failed" : "candidate_search_failed";
@@ -1635,6 +1855,8 @@ BasicResult inferBasicHandOrder(const QString& text, const SimaiParseResult& par
             }
             for (int id : core) {
                 participated[id] = true; costs[id] = best.state.cost; peaks[id] = best.state.focusPeak;
+                playerCosts[id] = best.state.playerCost;
+                tapRates[id] = best.state.peakTapRate; loads[id] = best.state.peakLoad;
                 for (int other : core) join(id, other);
             }
             for (const auto& action : best.state.physical) {
@@ -1736,12 +1958,17 @@ BasicResult inferBasicHandOrder(const QString& text, const SimaiParseResult& par
             sufficient &= proof.searched && !proof.limited;
             row.confidence = qMin(row.confidence, proof.score);
         }
-        if (peaks.at(index) >= 12.0) { row.confidence = qMin(row.confidence, 0.39); sufficient = false; }
+        const double playerPressure = qMax(peaks.at(index) / p.player.comfortableMoveSpeed,
+            qMax(tapRates.at(index) / p.player.maxComfortableTapRate, loads.at(index)));
+        if (playerPressure > 1.5) { row.confidence = qMin(row.confidence, 0.39); sufficient = false; }
+        else if (playerPressure > 1.0) row.confidence = qMin(row.confidence, 0.79);
         row.confidenceLevel = !sufficient ? QStringLiteral("insufficient_evidence")
             : row.confidence >= 0.8 ? QStringLiteral("high") : row.confidence >= 0.4 ? QStringLiteral("medium") : QStringLiteral("low");
         row.cost = costs.at(index); row.peakSpeed = peaks.at(index);
-        if (row.hasCandidate) row.pressureLevel = row.peakSpeed >= 12.0 ? QStringLiteral("extreme") : row.peakSpeed >= 8.0 ? QStringLiteral("high")
-            : row.peakSpeed >= 4.0 ? QStringLiteral("medium") : QStringLiteral("low");
+        row.playerCost = playerCosts.at(index); row.peakTapRate = tapRates.at(index); row.peakLoad = loads.at(index);
+        if (row.hasCandidate) row.pressureLevel = playerPressure > 1.5 ? QStringLiteral("extreme")
+            : playerPressure > 1.0 ? QStringLiteral("high")
+            : playerPressure >= 0.66 ? QStringLiteral("medium") : QStringLiteral("low");
         row.hasCounterfactual = counter.at(index);
         row.signedCostGap = gaps.at(index); row.signedPeakTierGap = tierGaps.at(index); row.counterfactualHand = counterHands.at(index);
         for (const auto& proof : row.counterfactualEvidence) if (proof.found) row.counterfactualComponent = proof.component;
@@ -1788,7 +2015,7 @@ BasicResult inferBasicHandOrder(const QString& text, const SimaiParseResult& par
         }
         if (participated.at(index)) {
             row.fullReplayVerified = true;
-            row.conditions = "community_profile_v2; target_critical; finite_physical_contacts; full_candidate_scope_replay; rolling_local; committed_history";
+            row.conditions = "community_profile_v2; target_critical; finite_physical_contacts; full_candidate_scope_replay; rolling_local; committed_history; player_profile_heuristic; window_peak";
             for (const auto& marker : token.markers) {
                 const auto& judgement = fullJudged.value(marker.parseOrder);
                 row.fullReplayVerified &= judgement.meetsTarget;
