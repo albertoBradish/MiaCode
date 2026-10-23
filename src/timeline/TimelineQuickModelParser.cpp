@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "timeline/TimelineQuickModelPrivate.h"
+#include "core/chart/parser/HandOrderAnnotationSyntax.h"
 
 using namespace miacode::timeline::tqm_detail;
 
@@ -666,6 +667,19 @@ bool TimelineQuickModel::parseLine(LineState* lineState, const ParseState& start
             }
             break;
         }
+        // Match SimaiParser's recovery boundaries without interpreting annotation
+        // contents as native modifiers or timing directives. Comments still win.
+        const int annotationOffset = token.indexOf(QLatin1Char('~'));
+        const QString annotationSuffix = annotationOffset >= 0
+            ? token.mid(annotationOffset + 1) : QString();
+        const bool openAnnotationContainer = annotationSuffix.startsWith(QLatin1Char('['))
+            && !annotationSuffix.contains(QLatin1Char(']'));
+        if (annotationOffset >= 0
+            && (!ch.isSpace() || openAnnotationContainer)
+            && ch != QLatin1Char(',') && ch != QLatin1Char('/') && ch != QLatin1Char('`')) {
+            token.append(ch);
+            continue;
+        }
         if (ch.isSpace()) {
             flushToken();
             continue;
@@ -799,11 +813,14 @@ bool TimelineQuickModel::parseLine(LineState* lineState, const ParseState& start
 bool TimelineQuickModel::parseNoteToken(
     LineState* lineState,
     ParseState* state,
-    const QString& token,
+    const QString& annotatedToken,
     int lineNumber,
     int column,
     QVector<int>* groupIndices) const
 {
+    // Keep original source columns while parsing only the native note, just as
+    // SimaiParser does even for incomplete or invalid hand-order suffixes.
+    const QString token = miacode::hand_order::splitToken(annotatedToken).baseToken;
     if (lineState == nullptr || state == nullptr || token.isEmpty()) {
         return false;
     }
