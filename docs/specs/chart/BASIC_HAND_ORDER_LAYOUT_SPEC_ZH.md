@@ -1,6 +1,6 @@
 # 基础排布
 
-状态：2026-10-23，纵连、绕手、低压力回弹、Touch 临位与交替星星检测已完成 Release 主程序／启动器构建。`basic_hand_order_layout_spec`、`hand_order_touch_judge_spec`、`muri_spec`、`hand_order_tools_spec`、`ui_text_locale_spec`、`simai_parser_spec` 六项聚焦测试通过；主 GUI 仍待人工验收。基础排布与[自动手序](BASIC_AUTOMATIC_HAND_ORDER_SPEC_ZH.md)是两个独立命令。
+状态：2026-10-23，高 BPM 八分回弹修复已完成 Release 主程序／启动器构建；`basic_hand_order_layout_spec`、`simai_parser_spec`、`muri_spec`、`hand_order_tools_spec`、`ui_text_locale_spec` 五项本轮聚焦测试通过。此前 Touch 判定用例另有通过记录；主 GUI 仍待人工验收。基础排布与[自动手序](BASIC_AUTOMATIC_HAND_ORDER_SPEC_ZH.md)是两个独立命令。
 
 工具栏提供直接可见的“基础排布”按钮，手序菜单和编辑器右键也可触发，默认快捷键为 `Ctrl+Alt+B`，沿用 ShortcutRegistry，可在首选项重新绑定。快捷键要求谱面编辑器焦点，快捷键录制期间不执行；没有选区时处理当前难度正文，有选区时仅处理完整选中的原生 token。同头多分支作为一个 token，部分选中的 token 保留。
 
@@ -11,7 +11,7 @@
 - 普通及链式 slide 的整条轨迹默认沿用原生运动起点手，即使后续跨屏也不预先产生换手；当轨迹占手会迫使随后音符跨手或造成同手占用冲突时，可将整条轨迹交给另一手。可见头按最近手位单独赋值；无头轨迹不新增可打头。Slide 从头时刻至终点占用轨迹手，结束后该手位于轨迹终点。
 - Hold／Touch Hold 从头至终点占用其手。期间其他单音符由未占用的手击打；已有有效手序标注原文保持不变，但其持续占手会约束新音符。
 - 同一原生 Each 组以及头时刻相差严格小于该处实际 1/64 音符时长的伪 Each，两颗独立音符必须各用一只手。同半屏时按横向相对位置分配。超过两颗同时音符或没有足够空闲手时，无法分配的 token 留在原文并计为不支持，不伪造同手双押。
-- 无锁手的同键 Tap 纵连在相邻头间隔不超过 0.13 秒时逐颗左右交替；至少三组、每组两颗同键并沿相邻键同向移动的绕手，组内保持同手、组间换手。相邻两组同键回弹若每颗间隔大于 0.13 秒且不超过 0.3 秒，保持每组默认手，不为了形式上的交替拆开低压力回弹。
+- 无锁手的同键 Tap 纵连须同时满足原生 `{16}` 或更密细分、相邻头间隔不超过 0.13 秒，才逐颗左右交替；至少三组、每组两颗同键并沿相邻键同向移动的绕手，组内保持同手、组间换手。`{8}` 或更慢的相邻两组同键回弹按谱面细分保持每组默认手，即使高 BPM 使实际间隔小于 0.13 秒，也不只凭秒数拆手；较慢的 `{16+}` 回弹同样可保持组内同手。
 - Touch 的两个临位传感区若属于同一原生 Touchgroup，可同手触碰；相邻且先后间隔不超过 0.18 秒的 Touch 可同手轻扫。邻接关系与 Muri 的 Touchgroup 规则共用。此例外仅适用于 Touch；外键 Tap／Hold 双押仍各用一手。
 - 至少三颗连续、头位左右交替且轨迹时间重叠的普通星星，头与整条轨迹交替使用左右手。普通单轨迹不因此生成换手节点；若另有占手冲突，仍以未分配或局部约束结果处理。
 - 未标注的 Wifi 生成显式 `split:`。原生扇区 0/1 对应外侧路径 0/2，比较两端点的横坐标，较左的扇区分配左手，另一扇区分配右手；即使两端都在同半屏，仍保留两只不同手。横坐标相同时以原生扇区顺序作固定裁决。基础排布不推断显式单手 Wifi。
@@ -30,7 +30,7 @@
 
 ## 验收入口
 
-- `basic_hand_order_layout_spec`：1–8/持续音符、跨屏及链式 slide、Touch 中轴、Wifi 双扇区、同半屏 Each／伪 Each、Slide／Hold 占手、快纵连、绕手、222 BPM 八分回弹、临位 Touchgroup／轻扫、旧标注交替星星修复、复杂标注及选区保护、UTF-16/CRLF、原生投影和幂等性。
+- `basic_hand_order_layout_spec`：1–8/持续音符、跨屏及链式 slide、Touch 中轴、Wifi 双扇区、同半屏 Each／伪 Each、Slide／Hold 占手、快纵连、绕手、80／222／240 BPM 八分回弹与同 BPM 十六分对照、临位 Touchgroup／轻扫、旧标注交替星星修复、复杂标注及选区保护、UTF-16/CRLF、原生投影和幂等性。
 - `hand_order_tools_spec`：真实 Controller 文本事务、Scintilla 一次撤销、空选区当前难度、可见工具栏按钮和实际点击。
 - `qml_shortcut_binding_spec`、`shortcut_preference_persistence_spec`：独立默认绑定、实际 QML 触发、空选区、重绑、录制/焦点守卫及重建注册表后的持久化。
 

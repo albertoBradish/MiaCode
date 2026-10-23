@@ -104,6 +104,7 @@ bool simpleLayoutSuffix(const QString& suffix, const TimelineNoteMarker& marker,
 bool fastTapGap(const LayoutHead& first, const LayoutHead& second)
 {
     if (first.marker->type != QStringLiteral("tap") || second.marker->type != QStringLiteral("tap")) return false;
+    if (first.marker->subdivision < 16 || second.marker->subdivision < 16) return false;
     const double gap = second.marker->second - first.marker->second;
     const double pseudoEach = 240.0 / (64.0 * qMax(first.marker->tempoBpm, second.marker->tempoBpm));
     return gap >= pseudoEach - 1e-9 && gap <= kFastRepeatedTapGapSeconds + 1e-9;
@@ -245,7 +246,12 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
             && adjacentLaneStep(firstLane, secondLane) != 0;
         const auto relaxedGap = [](const LayoutHead& left, const LayoutHead& right) {
             const double gap = right.marker->second - left.marker->second;
-            return gap > kFastRepeatedTapGapSeconds + 1e-9 && gap <= 0.3 + 1e-9;
+            const double pseudoEach = 240.0 / (64.0 * qMax(left.marker->tempoBpm, right.marker->tempoBpm));
+            const bool eighthOrSlower = left.marker->subdivision <= 8 && right.marker->subdivision <= 8;
+            const double maxGap = eighthOrSlower
+                ? 1.1 * 240.0 / (left.marker->tempoBpm * left.marker->subdivision) : 0.3;
+            return gap >= pseudoEach - 1e-9 && gap <= maxGap + 1e-9
+                && (eighthOrSlower || gap > kFastRepeatedTapGapSeconds + 1e-9);
         };
         if (pairShape && eligible(first, first + 4)
             && relaxedGap(a, b) && relaxedGap(b, c) && relaxedGap(c, d)) {

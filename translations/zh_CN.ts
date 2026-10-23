@@ -5604,8 +5604,8 @@ Error: %1</source>
         <translation>基础排布：改写 %1 个；保留已有标注 %2 个；跳过部分 token %3 个；不支持 %4 个；诊断 %5 条。</translation>
     </message>
     <message id="hand_order.basic_layout_notice">
-        <source>Fast repeated taps alternate hands; paired winding taps stay on one hand per pair, while slower rebounds stay together. Adjacent Touchgroup pairs and short Touch sweeps may share a hand; other each pairs use two. Slides and holds reserve hands, and overlapping alternating stars use alternating full tracks. No playability replay is performed.</source>
-        <translation>快纵连逐颗交替，成对绕手组内同手，较慢回弹不拆手。临位 Touchgroup 双押与短 Touch 轻扫可同手，其他双押仍用两手。Slide／Hold 占手，重叠的交替星星整轨换手。本操作不做可玩性回放。</translation>
+        <source>Fast sixteenth-note or finer repeats may alternate hands; eighth-note rebounds stay together even at high BPM. Paired winding taps stay on one hand per pair. Adjacent Touchgroup pairs and short Touch sweeps may share a hand; other each pairs use two. Slides and holds reserve hands, and overlapping alternating stars use alternating full tracks. No playability replay is performed.</source>
+        <translation>高速十六分及更密纵连可逐颗换手；八分同键回弹即使 BPM 高也保持组内同手。成对绕手同样组内同手。临位 Touchgroup 双押与短 Touch 轻扫可同手，其他双押仍用两手。Slide／Hold 占手，重叠的交替星星整轨换手。本操作不做可玩性回放。</translation>
     </message>
     <message id="hand_order.basic_layout_next_step">
         <source>Basic layout writes normal annotations. To optimize them, enable “Recompute existing annotations in selection” and analyze again.</source>

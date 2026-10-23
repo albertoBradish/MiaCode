@@ -16,6 +16,7 @@ bool sameNative(const QString& a, const QString& b)
         const auto& x = first.noteMarkers.at(index);
         const auto& y = second.noteMarkers.at(index);
         if (x.type != y.type || x.lane != y.lane || x.endLane != y.endLane
+            || x.tempoBpm != y.tempoBpm || x.subdivision != y.subdivision
             || x.second != y.second || x.endSecond != y.endSecond || x.slideTraceSecond != y.slideTraceSecond
             || x.slideSegmentDurations != y.slideSegmentDurations || x.slideSegmentKeys != y.slideSegmentKeys
             || x.slideSegmentPoints != y.slideSegmentPoints || x.wifiLanePoints != y.wifiLanePoints
@@ -214,6 +215,27 @@ int main(int argc, char** argv)
         && basicHandOrderLayoutInSelection(relaxedOld, 0, 0).edit.replacement == relaxedExpected
         && sameNative(relaxed, relaxedExpected),
         "222 BPM eighth-note rebounds do not split a low-pressure pair");
+    const QString fastEighthOld = "(240){8}4~r/7~l,,2~r/5~l,,4~r,4~l,5~l,5~r,";
+    const QString fastEighthRaw = "(240){8}4/7,,2/5,,4,4,5,5,";
+    const QString fastEighthExpected = "(240){8}4~r/7~l,,2~r/5~l,,4~r,4~r,5~l,5~l,";
+    expect(basicHandOrderLayoutInSelection(fastEighthRaw, 0, 0).edit.replacement == fastEighthExpected
+        && basicHandOrderLayoutInSelection(fastEighthOld, 0, 0).edit.replacement == fastEighthExpected
+        && sameNative(fastEighthOld, fastEighthExpected),
+        "eighth-note rebounds keep each lane on one hand despite high BPM and preceding each pairs");
+    const QString slowEighthOld = "(80){8}4~r/7~l,,2~r/5~l,,4~r,4~l,5~l,5~r,";
+    expect(basicHandOrderLayoutInSelection(slowEighthOld, 0, 0).edit.replacement
+        == "(80){8}4~r/7~l,,2~r/5~l,,4~r,4~r,5~l,5~l,",
+        "slower eighth-note pairs keep the same-hand rebound across a longer actual step");
+    expect(basicHandOrderLayoutInSelection("(240){16}4,4,4,4,", 0, 0).edit.replacement
+        == "(240){16}4~r,4~l,4~r,4~l,",
+        "sixteenth-note repeated taps still alternate at the same BPM");
+    const auto subdivisionChange = SimaiParser::validateSyntax("(240){8}4,4,{16}4,4,");
+    expect(subdivisionChange.noteMarkers.size() == 4
+        && subdivisionChange.noteMarkers.at(0).subdivision == 8
+        && subdivisionChange.noteMarkers.at(1).subdivision == 8
+        && subdivisionChange.noteMarkers.at(2).subdivision == 16
+        && subdivisionChange.noteMarkers.at(3).subdivision == 16,
+        "the parser retains the active subdivision on each note across {8}/{16} changes");
 
     const QString touchGroupOld = "(120){8}B4~l/E4~r,B7~r/E8~l,B2~l/E2~r,B5~r/E6~l,";
     const QString touchGroupRaw = "(120){8}B4/E4,B7/E8,B2/E2,B5/E6,";

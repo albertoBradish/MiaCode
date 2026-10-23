@@ -182,6 +182,7 @@ void appendNote(ParseState* state, const TimelineNoteMarker& marker, QVector<int
     TimelineNoteMarker stored = marker;
     stored.parseOrder = state->result.noteMarkers.size();
     stored.tempoBpm = state->bpm;
+    stored.subdivision = state->beats;
     stored.hsMultiplier = state->hs;
     state->result.noteMarkers.append(stored);
     if (groupIndices != nullptr) {
