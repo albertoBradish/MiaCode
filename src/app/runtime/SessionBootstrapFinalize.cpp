@@ -20,6 +20,7 @@
 #include "common/DebugOptions.h"
 #include "core/video/PreviewInteractionConfig.h"
 #include "preview/runtime/PreviewRuntime.h"
+#include "timeline/quick/TimelineQuickStateBridge.h"
 #include "preview/stage_media/PreviewStageMediaHost.h"
 #include "core/scene/PreviewProgressStatsCache.h"
 #include "core/chart/transform/ChartBatchTransform.h"
@@ -247,6 +248,10 @@ void Session::finishFrameBootstrap(const std::function<void(const QString&)>& lo
     logStartupStage("timers_ready");
 
     loadPortableState();
+    if (state_.timeline_.timelineQuickStateBridge_ != nullptr) {
+        state_.timeline_.timelineQuickStateBridge_->setShowHandOrderAnnotations(
+            previewShowHandOrderAnnotations_);
+    }
     logStartupStage("portable_state_loaded");
     // beta4: the preview debug HUD ("显示预览调试信息") is NO LONGER force-enabled in
     // --debug / diagnostic builds. It used to default ON whenever runtime debug output was

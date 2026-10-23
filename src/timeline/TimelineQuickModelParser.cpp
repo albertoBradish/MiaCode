@@ -818,12 +818,43 @@ bool TimelineQuickModel::parseNoteToken(
     int column,
     QVector<int>* groupIndices) const
 {
-    // Keep original source columns while parsing only the native note, just as
-    // SimaiParser does even for incomplete or invalid hand-order suffixes.
-    const QString token = miacode::hand_order::splitToken(annotatedToken).baseToken;
-    if (lineState == nullptr || state == nullptr || token.isEmpty()) {
+    if (lineState == nullptr || state == nullptr || annotatedToken.isEmpty()) {
         return false;
     }
+
+    const auto parts = miacode::hand_order::splitToken(annotatedToken);
+    if (parts.suffixOffset >= 0) {
+        // Native recursion retains the original source column and branch order.
+        // Validate every branch before binding, matching the authoritative parser.
+        const int firstNote = lineState->render.notes.size();
+        const bool parsed = parseNoteToken(lineState, state, parts.baseToken, lineNumber, column, groupIndices);
+        if (!parsed || lineState->render.notes.size() == firstNote) return parsed;
+        const auto& first = lineState->render.notes.at(firstNote);
+        const bool isSlide = first.kind == TimelineRenderNoteKind::Slide || first.kind == TimelineRenderNoteKind::Wifi;
+        const auto annotation = miacode::hand_order::parseAnnotation(annotatedToken, isSlide);
+        if (!annotation.valid) return parsed;
+        for (int i = firstNote; i < lineState->render.notes.size(); ++i) {
+            const auto& note = lineState->render.notes.at(i);
+            const bool slide = note.kind == TimelineRenderNoteKind::Slide || note.kind == TimelineRenderNoteKind::Wifi;
+            if ((slide && (note.slideBranchIndex < 0 || note.slideBranchIndex >= annotation.branchTracks.size()))
+                || (!slide && !annotation.branchTracks.isEmpty())
+                || (note.kind != TimelineRenderNoteKind::Wifi
+                    && annotation.wifiModes.value(note.slideBranchIndex, HandOrderWifiMode::Legacy) != HandOrderWifiMode::Legacy)) {
+                return parsed;
+            }
+        }
+        for (int i = firstNote; i < lineState->render.notes.size(); ++i) {
+            auto& note = lineState->render.notes[i];
+            note.handOrderHead = annotation.head;
+            if (isSlide) {
+                note.handOrderTrackStops = annotation.branchTracks.at(note.slideBranchIndex);
+                note.handOrderWifiMode = annotation.wifiModes.value(note.slideBranchIndex, HandOrderWifiMode::Legacy);
+                note.handOrderWifiSectorStops = annotation.wifiSectors.value(note.slideBranchIndex);
+            }
+        }
+        return parsed;
+    }
+    const QString& token = annotatedToken;
 
     const double lineBaseSecond = lineState->render.startSecond;
     const auto appendNote = [lineState, state, groupIndices, lineBaseSecond](TimelineRenderNote note) {
@@ -935,7 +966,8 @@ bool TimelineQuickModel::parseNoteToken(
             const QString prefix = token.left(1) + modifierState.rawModifiers;
             const QChar startLane = token.at(0);
             const QStringList branches = core.split(QLatin1Char('*'), Qt::KeepEmptyParts);
-            for (const QString& branchRaw : branches) {
+            for (int branchIndex = 0; branchIndex < branches.size(); ++branchIndex) {
+                const QString& branchRaw = branches.at(branchIndex);
                 QString branch = branchRaw;
                 if (branch.isEmpty()) {
                     continue;
@@ -944,8 +976,12 @@ bool TimelineQuickModel::parseNoteToken(
                     branch.prepend(startLane);
                 }
                 const QString branchToken = prefix + branch.mid(1);
+                const int firstBranchNote = lineState->render.notes.size();
                 if (!parseNoteToken(lineState, state, branchToken, lineNumber, column, groupIndices)) {
                     return false;
+                }
+                for (int i = firstBranchNote; i < lineState->render.notes.size(); ++i) {
+                    lineState->render.notes[i].slideBranchIndex = branchIndex;
                 }
             }
             return true;

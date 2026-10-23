@@ -55,6 +55,7 @@ struct TimelineSceneBuildRequest {
     double cursorSeconds = 0.0;
     double playheadUpperLimitSeconds = -1.0;
     bool showSlideTracks = true;
+    bool showHandOrderAnnotations = false;
     bool playheadIndicatorSuppressed = false;
     bool dragActive = false;
     quint64 appearanceRevision = 0;

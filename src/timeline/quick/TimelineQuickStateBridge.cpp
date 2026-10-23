@@ -775,6 +775,21 @@ void TimelineQuickStateBridge::setShowSlideTracks(bool show)
     emit renderStateChanged();
 }
 
+bool TimelineQuickStateBridge::showHandOrderAnnotations() const
+{
+    return showHandOrderAnnotations_;
+}
+
+void TimelineQuickStateBridge::setShowHandOrderAnnotations(bool show)
+{
+    if (showHandOrderAnnotations_ == show) {
+        return;
+    }
+    showHandOrderAnnotations_ = show;
+    bumpNotesRevision();
+    emit renderStateChanged();
+}
+
 bool TimelineQuickStateBridge::followPreviewEnabled() const
 {
     return followPreviewEnabled_;

@@ -6,6 +6,8 @@
 #include <QSize>
 #include <QString>
 
+#include "core/chart/model/TimelineData.h"
+
 namespace miacode::timeline {
 
 struct TimelineNoteAssetSet {
@@ -20,6 +22,9 @@ struct TimelineHoldPixmapParts {
 };
 
 TimelineNoteAssetSet loadTimelineNoteAssets(const QString& skinDirectory = QString());
+QString handOrderNoteType(const TimelineNoteAssetSet& assets, const QString& nativeType, HandOrderHand hand);
+QString handOrderSplitNoteType(const TimelineNoteAssetSet& assets, const QString& nativeType,
+    HandOrderHand firstSector, HandOrderHand secondSector);
 int transformedPixmapScalePermille(qreal scale);
 int transformedPixmapRotationTenths(qreal rotationDegrees);
 QString transformedPixmapCacheKey(const QString& type, qreal scale, qreal rotationDegrees, bool mirrorX);

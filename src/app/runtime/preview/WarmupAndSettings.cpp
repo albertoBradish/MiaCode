@@ -554,6 +554,10 @@ void Session::setPreviewRenderSetting(const QString& key, const QVariant& value)
         if (canvas != nullptr) {
             canvas->setShowHandOrderAnnotations(state_.previewShowHandOrderAnnotations_);
         }
+        if (state_.timeline_.timelineQuickStateBridge_ != nullptr) {
+            state_.timeline_.timelineQuickStateBridge_->setShowHandOrderAnnotations(
+                state_.previewShowHandOrderAnnotations_);
+        }
     } else if (key == QLatin1String("touchPadAuthoringShortcut")) {
         state_.previewTouchPadAuthoringShortcutEnabled_ = value.toBool();
         applyEffectivePreviewOutlineVariantToCanvas();

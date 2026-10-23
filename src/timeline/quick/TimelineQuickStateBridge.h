@@ -109,6 +109,8 @@ public:
     bool playbackCadenceActive() const;
     bool showSlideTracks() const;
     void setShowSlideTracks(bool show);
+    bool showHandOrderAnnotations() const;
+    void setShowHandOrderAnnotations(bool show);
     bool followPreviewEnabled() const;
     void setFollowPreviewEnabled(bool enabled);
     bool viewportLockEnabled() const;
@@ -183,6 +185,7 @@ private:
     double playheadSeconds_ = 0.0;
     double cursorSeconds_ = 0.0;
     bool showSlideTracks_ = true;
+    bool showHandOrderAnnotations_ = true;
     bool followPreviewEnabled_ = true;
     bool viewportLockEnabled_ = false;
     bool followProgressEnabled_ = true;
