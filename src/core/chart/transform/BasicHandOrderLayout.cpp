@@ -857,7 +857,24 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
                 || current.marker->lane != expected || !regularTapStep(previous, current, 16)) break;
             ++last;
         }
-        if (last - first >= 4 && eligible(first, last)) {
+        bool fiveNoteAxisOverlap = false;
+        if (last - first == 3 && first + 4 < order.size()) {
+            const int centre = heads->at(order.at(first)).marker->lane;
+            const int step = adjacentLaneStep(centre, heads->at(order.at(first + 1)).marker->lane);
+            fiveNoteAxisOverlap = heads->at(order.at(first + 4)).marker->lane == centre
+                && adjacentLaneStep(centre, heads->at(order.at(first + 3)).marker->lane) == -step
+                && regularTapStep(heads->at(order.at(first + 2)), heads->at(order.at(first + 3)), 16)
+                && regularTapStep(heads->at(order.at(first + 3)), heads->at(order.at(first + 4)), 16);
+        }
+        if (last - first == 3 && first >= 2) {
+            const int centre = heads->at(order.at(first)).marker->lane;
+            const int step = adjacentLaneStep(centre, heads->at(order.at(first + 1)).marker->lane);
+            fiveNoteAxisOverlap |= heads->at(order.at(first - 2)).marker->lane == centre
+                && adjacentLaneStep(centre, heads->at(order.at(first - 1)).marker->lane) == -step
+                && regularTapStep(heads->at(order.at(first - 2)), heads->at(order.at(first - 1)), 16)
+                && regularTapStep(heads->at(order.at(first - 1)), heads->at(order.at(first)), 16);
+        }
+        if (last - first >= 3 && !fiveNoteAxisOverlap && eligible(first, last)) {
             for (int i = first; i < last; ++i) {
                 auto& head = (*heads)[order.at(i)];
                 allowRecalculation(head.token);
@@ -994,6 +1011,50 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
             tap.patternHand = tappingHand;
             if (i > 0) tap.reboundPrevious = taps.at(i - 1);
         }
+    }
+
+    // An edge star can be struck by the near hand, then passed to the other
+    // hand by a same-key tap at trace start while the first hand takes the
+    // adjacent inner key. The trace must lead across the field; an ordinary
+    // same-key tap beside an unrelated Each does not imply a handoff.
+    for (int sustainIndex = 0; sustainIndex < sustains->size(); ++sustainIndex) {
+        auto& sustain = (*sustains)[sustainIndex];
+        if (sustain.marker->type != QStringLiteral("slide") || sustain.head < 0
+            || !sustain.marker->hasHeadStar || sustain.oneStrokePrevious >= 0
+            || sustain.oneStrokeNext >= 0 || !canRewrite.at(sustain.token)
+            || sustain.patternHand >= 0) continue;
+        const int lane = sustain.marker->lane;
+        const int travel = std::abs(sustain.marker->endLane - lane);
+        if ((lane != 1 && lane != 8) || (lane == 1 && sustain.marker->endLane < 5)
+            || (lane == 8 && sustain.marker->endLane > 4)
+            || qMin(travel, 8 - travel) < 3) continue;
+        const int innerLane = lane == 1 ? 2 : 7;
+        int startingTap = -1, neighbour = -1;
+        for (int index = 0; index < heads->size(); ++index) {
+            const auto& head = heads->at(index);
+            if (head.marker->type != QStringLiteral("tap") || !canRewrite.at(head.token)
+                || std::abs(head.marker->second - sustain.marker->slideTraceSecond) > 1e-6) continue;
+            if (head.marker->lane == lane) {
+                if (startingTap >= 0) { startingTap = -2; break; }
+                startingTap = index;
+            } else if (head.marker->lane == innerLane) {
+                if (neighbour >= 0) { neighbour = -2; break; }
+                neighbour = index;
+            }
+        }
+        if (startingTap < 0 || neighbour < 0
+            || heads->at(startingTap).patternHand >= 0
+            || heads->at(neighbour).patternHand >= 0) continue;
+        const int strikingHand = handIndex(laneHand(lane));
+        allowRecalculation(sustain.token);
+        allowRecalculation(heads->at(startingTap).token);
+        allowRecalculation(heads->at(neighbour).token);
+        sustain.patternHand = 1 - strikingHand;
+        sustain.splitSharedStar = true;
+        sustain.tapLaneReserved = true;
+        (*heads)[sustain.head].patternHand = strikingHand;
+        (*heads)[startingTap].patternHand = 1 - strikingHand;
+        (*heads)[neighbour].patternHand = strikingHand;
     }
 
     // Other fast same-lane runs alternate individual taps when both hands are free.

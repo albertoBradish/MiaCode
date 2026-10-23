@@ -78,6 +78,30 @@ int main(int argc, char** argv) {
         "automatic hand order favors four-step adjacent-lane hand alternation");
     BasicParameters recompute;
     recompute.overwriteExisting = true;
+    for (int bpm : {100, 135, 200}) {
+        const QString prefix = QStringLiteral("(%1)").arg(bpm);
+        const QString alternating = prefix + QStringLiteral("{16}7,8,7,");
+        expect(applyPatches(alternating, solve(alternating, 0, -1, recompute))
+            == prefix + QStringLiteral("{16}7~l,8~r,7~l,"),
+            "three adjacent returning taps alternate across BPMs");
+
+        const QString handed = prefix + QStringLiteral(
+            "{4}8-4[32:3],7/8,1-5[32:3]/6,1/2,");
+        const QString expected = prefix + QStringLiteral(
+            "{4}8-4[32:3]~[head=l;track=0:r],7~l/8~r,"
+            "1-5[32:3]~[head=r;track=0:l]/6~l,1~l/2~r,");
+        expect(applyPatches(handed, solve(handed, 0, -1, recompute)) == expected,
+            "the tap at trace start hands an edge star to the other palm across BPMs");
+        const QString oldLabels = prefix + QStringLiteral(
+            "{4}8-4[32:3]~[head=r;track=0:l],7~r/8~l,"
+            "1-5[32:3]~[head=l;track=0:r]/6~r,1~r/2~l,");
+        expect(applyPatches(oldLabels, solve(oldLabels, 0, -1, recompute)) == expected,
+            "recalculation uses native notes rather than previous selected labels");
+    }
+    const QString ordinaryTraceTap = "(135){4}8-4[32:3],1/8,";
+    expect(applyPatches(ordinaryTraceTap, solve(ordinaryTraceTap, 0, -1, recompute))
+        == "(135){4}8-4[32:3]~[head=l;track=0:l],1~r/8~l,",
+        "a same-key trace tap without the inner neighbour keeps the ordinary hand");
     const QString fiveAxis = "(190){16}6~l,5~r,6~l,7~l,6~l,";
     const auto repairedAxis = solve(fiveAxis, 0, -1, recompute);
     expect(repairedAxis.error.isEmpty()

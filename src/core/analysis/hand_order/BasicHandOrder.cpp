@@ -1138,9 +1138,25 @@ BasicResult inferBasicHandOrder(const QString& text, const SimaiParseResult& par
         result.error = "invalid_parameters"; return result;
     }
     QVector<int> lines{0}; for (int i = 0; i < text.size(); ++i) if (text.at(i) == '\n') lines.append(i + 1);
+    QString layoutSource = text;
+    int layoutEnd = end;
+    if (p.overwriteExisting) {
+        // Recalculation must derive its layout from the native chart, not from
+        // the old labels that happen to be present in the selected range.
+        for (int i = parsed.sourceTokens.size() - 1; i >= 0; --i) {
+            const auto& source = parsed.sourceTokens.at(i);
+            const int start = lines.at(source.line - 1) + source.col - 1;
+            const int finish = start + source.length;
+            if (start < begin || finish > end) continue;
+            const auto parts = splitToken(text.mid(start, source.length));
+            if (parts.suffix.isEmpty()) continue;
+            layoutSource.replace(start, source.length, parts.baseToken);
+            layoutEnd -= source.length - parts.baseToken.size();
+        }
+    }
     const auto layout = chart_transform::basicHandOrderLayoutInSelection(
-        text, begin, end, metadata, p.returnSpeed, p.sweepThreshold, p.colorUnresolved);
-    QString layoutText = text;
+        layoutSource, begin, layoutEnd, metadata, p.returnSpeed, p.sweepThreshold, p.colorUnresolved);
+    QString layoutText = layoutSource;
     for (int i = layout.edit.patches.size() - 1; i >= 0; --i) {
         const auto& patch = layout.edit.patches.at(i);
         layoutText.replace(patch.start, patch.end - patch.start, patch.text);
@@ -1360,7 +1376,7 @@ BasicResult inferBasicHandOrder(const QString& text, const SimaiParseResult& par
         primitive.marker.handOrderHead = HandOrderHand::Unspecified;
         for (auto& marker : token.markers) marker.handOrderHead = HandOrderHand::Unspecified;
     }
-    // Four or more regular neighbouring-lane ABAB taps are normally played by
+    // Three or more regular neighbouring-lane ABAB taps are normally played by
     // alternating hands. Keep this as a cost so occupied hands can still win.
     QVector<int> tapOrder;
     for (int id = 0; id < primitives.size(); ++id)
@@ -1382,7 +1398,7 @@ BasicResult inferBasicHandOrder(const QString& text, const SimaiParseResult& par
         if (second == (first + 6) % 8 + 1) return -1;
         return 0;
     };
-    for (int first = 0; first + 3 < tapOrder.size();) {
+    for (int first = 0; first + 2 < tapOrder.size();) {
         const int a = tapOrder.at(first), b = tapOrder.at(first + 1);
         const int delta = std::abs(primitives.at(a).lane - primitives.at(b).lane);
         if (delta != 1 && delta != 7) { ++first; continue; }
@@ -1393,7 +1409,7 @@ BasicResult inferBasicHandOrder(const QString& text, const SimaiParseResult& par
             if (primitives.at(current).lane != expected || !regular(previous, current)) break;
             ++last;
         }
-        if (last - first >= 4 && regular(a, b)) {
+        if (last - first >= 3 && regular(a, b)) {
             for (int i = first + 1; i < last; ++i)
                 primitives[tapOrder.at(i)].interactionPrevious = tapOrder.at(i - 1);
             first = last;

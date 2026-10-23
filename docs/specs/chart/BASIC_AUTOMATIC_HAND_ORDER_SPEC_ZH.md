@@ -44,7 +44,7 @@
 
 ## 版本化判定 profile
 
-自动算法 `basicAlgorithmVersion=12`，参数判定修订 `basicJudgeProfileRevision=2`；独立完整回放首次 profile 为 `fullReplayProfileRevision=1`。参考固定提交的 MaiMuriDX `0ebab7ff6853a159ef6af76d9e3c43b23157bb5e` 开发笔记与本地原生 slide 判定队列。该社区来源描述日版 Buddies / 国服舞萌 DX 2024 的范围，不等于所有框体或官方内部规格。
+自动算法 `basicAlgorithmVersion=13`，参数判定修订 `basicJudgeProfileRevision=2`；独立完整回放首次 profile 为 `fullReplayProfileRevision=1`。参考固定提交的 MaiMuriDX `0ebab7ff6853a159ef6af76d9e3c43b23157bb5e` 开发笔记与本地原生 slide 判定队列。该社区来源描述日版 Buddies / 国服舞萌 DX 2024 的范围，不等于所有框体或官方内部规格。
 
 - Tap Critical 窗口为 ±3/180 秒，可接受窗口 ±27/180 秒；Touch 对应 ±27/180 秒。
 - Slide 使用原生区域序列、短轨保护区域、长轨跳区、原生链段衔接与最终判定窗；可接受尾窗为 108/180 秒。不会把本地旧 Muri 的 24 小时宽限套入新 profile。单段 V/L 形按参考的 `is_l` / `is_special_l` 保护 0 基索引 1（特殊 L 另保护索引 3）。多原生段链按拼接队列总区域数执行普通短/长轨跳区；V 起手链不继承单独 V 的专用保护。这是固定社区参考的链式行为，不推定为官方所有版本规则，也不借此修改旧 Muri 的独立行为。
