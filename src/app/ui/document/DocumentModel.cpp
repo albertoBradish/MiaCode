@@ -1,4 +1,5 @@
 #include "app/ui/document/HandOrderCommands.h"
+#include "app/services/StickingChartCopy.h"
 #include "app/services/FileDialogPreferences.h"
 #include "common/LocalizedText.h"
 
@@ -1317,7 +1318,7 @@ void DocumentModel::createEmptyDocumentAt(const QString& targetPath, const QStri
         return;
     }
     if (bridge() != nullptr) {
-        bridge()->noteRecentDocument(targetPath);
+        bridge()->noteRecentDocument(currentFilePath());
     }
 }
 
@@ -1441,7 +1442,9 @@ net::NetEnginePort::Cancel DocumentModel::openNetPreview(const QString& path, co
 
 bool DocumentModel::openFileWithOrigin(const QUrl& fileUrl, ChartDocumentOrigin origin)
 {
-    const QString path = fileUrl.isLocalFile() ? fileUrl.toLocalFile() : fileUrl.toString();
+    const QString requestedPath = fileUrl.isLocalFile() ? fileUrl.toLocalFile() : fileUrl.toString();
+    const QString path = origin == ChartDocumentOrigin::Local
+        ? miacode::sticking::editableChartPath(requestedPath) : requestedPath;
     if (fileService_ == nullptr) return false;
     miacode::ChartWorkspaceFileResult result;
     if (!runWorkspaceMutation([&] {

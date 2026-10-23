@@ -3,6 +3,9 @@
 <TS version="2.1" language="zh_CN">
 <context>
     <name></name>
+    <message id="dialog.preferences.group.hand_order"><source>Sticking</source><translation>Sticking</translation></message>
+    <message id="preferences.hand_order_return_speed"><source>Hand return speed</source><translation>手部回正速度</translation></message>
+    <message id="preferences.hand_order_return_speed_unit"><source>field radii/s</source><translation>场地半径/秒</translation></message>
     <message id="setup.completion_hint">
         <source>Customize completion candidates in Preferences.</source>
         <translation>可在首选项中自定义补全候选列表。</translation>
@@ -326,8 +329,8 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
         <translation>读取谱面文件失败</translation>
     </message>
     <message id="cli.export.hand_order_annotation_invalid">
-        <source>hand-order annotation is invalid</source>
-        <translation>手序标注无效</translation>
+        <source>Sticking annotation is invalid</source>
+        <translation>Sticking标注无效</translation>
     </message>
     <message id="cli.export.difficulty_invalid">
         <source>invalid difficulty token</source>
@@ -450,8 +453,8 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
         <translation>隐藏输出视频中的时间戳。</translation>
     </message>
     <message id="cli.video_export.hand_order">
-        <source>Hand-order display: annotated or original.</source>
-        <translation>手序显示：annotated 或 original。</translation>
+        <source>Sticking display: annotated or original.</source>
+        <translation>Sticking显示：annotated 或 original。</translation>
     </message>
     <message id="cli.video_export.hand_order_invalid">
         <source>--hand-order must be annotated or original</source>
@@ -1586,8 +1589,8 @@ Failed: %2</source>
         <translation>显示预览调试信息</translation>
     </message>
     <message id="dialog.render_settings.gameplay.hand_order">
-        <source>Show hand-order annotations</source>
-        <translation>显示手序标注</translation>
+        <source>Show Sticking annotations</source>
+        <translation>显示Sticking标注</translation>
     </message>
     <message id="dialog.render_settings.preview_group">
         <source>Preview</source>
@@ -1878,8 +1881,8 @@ Restore the backup from %1?</source>
         <translation>显示物量统计</translation>
     </message>
     <message id="dialog.video_export.option.hand_order_mode">
-        <source>Hand-order display</source>
-        <translation>手序显示</translation>
+        <source>Sticking display</source>
+        <translation>Sticking显示</translation>
     </message>
     <message id="dialog.video_export.hand_order.follow_preview">
         <source>Follow preview</source>
@@ -1890,8 +1893,8 @@ Restore the backup from %1?</source>
         <translation>强制原谱</translation>
     </message>
     <message id="dialog.video_export.hand_order.annotated">
-        <source>Hand-order colors</source>
-        <translation>强制手序</translation>
+        <source>Sticking colors</source>
+        <translation>强制Sticking</translation>
     </message>
     <message id="dialog.video_export.option.show_timestamp">
         <source>Show bottom-left timestamp</source>
@@ -2133,7 +2136,7 @@ Restore the backup from %1?</source>
     </message>
     <message id="document.plain_export_same_path">
         <source>Choose a different file to keep the annotated chart.</source>
-        <translation>请选择其他文件，以保留含手序标注的原谱。</translation>
+        <translation>请选择其他文件，以保留含Sticking标注的原谱。</translation>
     </message>
     <message id="document.selection_beats">
         <source>Selection beats: %1</source>
@@ -4871,8 +4874,8 @@ Error: %1</source>
     </message>
 
 <message id="hand_order.title">
-        <source>Hand Order</source>
-        <translation>手序</translation>
+        <source>Sticking</source>
+        <translation>Sticking</translation>
     </message>
     <message id="hand_order.set_left">
         <source>Set Selection to Left Hand</source>
@@ -4887,24 +4890,24 @@ Error: %1</source>
         <translation>选中内容设为无色/任选</translation>
     </message>
     <message id="hand_order.split_annotation">
-        <source>Split Hand-order Intervals</source>
-        <translation>拆分手序区间</translation>
+        <source>Split Sticking Intervals</source>
+        <translation>拆分Sticking区间</translation>
     </message>
     <message id="hand_order.selection_scope">
         <source>Edit complete notes in the source selection, including slide heads and all branches</source>
         <translation>对源文本选区中的完整音符操作；整条 slide 的头与全部分支一并修改</translation>
     </message>
     <message id="hand_order.feedback">
-        <source>Hand order: %1 changed, %2 partial tokens skipped, %3 unsupported, %4 diagnostics (click for details)</source>
-        <translation>手序：修改 %1 项，跳过部分 token %2 项、不支持 %3 项，诊断 %4 项（点击查看）</translation>
+        <source>Sticking: %1 changed, %2 partial tokens skipped, %3 unsupported, %4 diagnostics (click for details)</source>
+        <translation>Sticking：修改 %1 项，跳过部分 token %2 项、不支持 %3 项，诊断 %4 项（点击查看）</translation>
     </message>
     <message id="hand_order.diagnostic">
         <source>Line %1, column %2: %3</source>
         <translation>第 %1 行，第 %2 列：%3</translation>
     </message>
     <message id="hand_order.intervals">
-        <source>Hand-order Intervals</source>
-        <translation>手序区间</translation>
+        <source>Sticking Intervals</source>
+        <translation>Sticking区间</translation>
     </message>
     <message id="hand_order.draft_notice">
         <source>Changes affect the corresponding interval. Assign every track interval, then write them to the chart in one edit. An unspecified head keeps its original skin. Unwritten choices remain in this session for the matching document version and are not saved with the chart.</source>
@@ -4939,13 +4942,13 @@ Error: %1</source>
         <translation>写入谱面</translation>
     </message>
     <message id="hand_order.applied">
-        <source>Hand-order intervals written; undo restores them in one step.</source>
-        <translation>手序区间已写入谱面，可一次撤销。</translation>
+        <source>Sticking intervals written; undo restores them in one step.</source>
+        <translation>Sticking区间已写入谱面，可一次撤销。</translation>
     </message>
 
 <message id="hand_order.analyze">
-        <source>Basic Automatic Hand Order (Experimental)</source>
-        <translation>基础自动手序（实验性）</translation>
+        <source>Basic Automatic Sticking (Experimental)</source>
+        <translation>基础自动Sticking（实验性）</translation>
     </message>
     <message id="hand_order.auto.notice">
         <source>Review every suggestion before applying. Full judgement replay checks ordinary and chained slides, shared actions and both Wifi modes. Confidence scores are experimental, not correctness probabilities or proof of playability. Existing annotations remain unchanged unless recomputation is selected.</source>
@@ -5101,7 +5104,7 @@ Error: %1</source>
     </message>
     <message id="hand_order.auto.reason.existing_annotation">
         <source>Source preserved exactly; existing labels constrain occupancy</source>
-        <translation>原文完全保留，已有手序参与占用约束</translation>
+        <translation>原文完全保留，已有Sticking参与占用约束</translation>
     </message>
     <message id="hand_order.auto.reason.fixed_event_candidate">
         <source>Exterior buttons, full occupancy and natural-path candidate; real judging and stray contact unverified</source>
@@ -5200,7 +5203,7 @@ Error: %1</source>
     </message>
     <message id="hand_order.auto.reason.existing_handoff_constraint">
         <source>Transfers follow the preserved original interval constraints</source>
-        <translation>按保留的原手序区间执行换手约束</translation>
+        <translation>按保留的原Sticking区间执行换手约束</translation>
     </message>
     <message id="hand_order.auto.quality.critical">
         <source>Target quality</source>
@@ -5341,7 +5344,7 @@ Error: %1</source>
     </message>
     <message id="hand_order.auto.overwrite_existing">
         <source>Recompute existing annotations within the selection; keep outside annotations locked</source>
-        <translation>重算选区已有手序；选区外已有标注保持锁定</translation>
+        <translation>重算选区已有Sticking；选区外已有标注保持锁定</translation>
     </message>
     <message id="hand_order.auto.high_confidence_only">
         <source>Apply only high-confidence complete dependency units</source>
@@ -5493,19 +5496,19 @@ Error: %1</source>
     </message>
     <message id="hand_order.native.reason.invalid_annotation">
         <source>A selected target has an invalid hand annotation.</source>
-        <translation>选中目标含非法手序标注。</translation>
+        <translation>选中目标含非法Sticking标注。</translation>
     </message>
     <message id="hand_order.native.reason.wifi_not_supported">
-        <source>Wifi paths cannot be split into independent native segments here. Use hand-order interval splitting for colouring.</source>
-        <translation>Wifi 展开路径不在原生结构拆分范围；精细染色可用“拆分手序区间”。</translation>
+        <source>Wifi paths cannot be split into independent native segments here. Use Sticking interval splitting for colouring.</source>
+        <translation>Wifi 展开路径不在原生结构拆分范围；精细染色可用“拆分Sticking区间”。</translation>
     </message>
     <message id="hand_order.native.reason.missing_markers">
         <source>Parsed native objects are missing.</source>
         <translation>缺少可核对的原生解析对象。</translation>
     </message>
     <message id="hand_order.native.reason.single_segment">
-        <source>This slide has one native segment. Use hand-order interval splitting for colouring.</source>
-        <translation>此 slide 只有一个原生段；精细染色可用“拆分手序区间”。</translation>
+        <source>This slide has one native segment. Use Sticking interval splitting for colouring.</source>
+        <translation>此 slide 只有一个原生段；精细染色可用“拆分Sticking区间”。</translation>
     </message>
     <message id="hand_order.native.reason.invalid_geometry">
         <source>Native geometry or motion times are missing or invalid.</source>
@@ -5517,7 +5520,7 @@ Error: %1</source>
     </message>
     <message id="hand_order.native.reason.hand_order_unrepresentable">
         <source>The original hand intervals cannot be mapped reliably to every new segment.</source>
-        <translation>原有手序无法可靠重映射到全部新段。</translation>
+        <translation>原有Sticking无法可靠重映射到全部新段。</translation>
     </message>
     <message id="hand_order.native.reason.no_chain_selected">
         <source>No convertible native chain is fully selected.</source>
@@ -5529,7 +5532,7 @@ Error: %1</source>
     </message>
     <message id="hand_order.native.reason.round_trip_mismatch">
         <source>Reparsing did not preserve geometry, actual motion times or annotations.</source>
-        <translation>复读核对未能保持几何、实际运动时刻或手序。</translation>
+        <translation>复读核对未能保持几何、实际运动时刻或Sticking。</translation>
     </message>
     <message id="hand_order.native.reason.head_count_mismatch">
         <source>The proposed result would change the real shared-head count.</source>
@@ -5609,7 +5612,7 @@ Error: %1</source>
     </message>
     <message id="hand_order.basic_layout_next_step">
         <source>Basic layout writes normal annotations. To optimize them, enable “Recompute existing annotations in selection” and analyze again.</source>
-        <translation>基础排布会写入正常标注；继续自动优化时，请勾选“重算选区已有手序”并重新分析。</translation>
+        <translation>基础排布会写入正常标注；继续自动优化时，请勾选“重算选区已有Sticking”并重新分析。</translation>
     </message>
 </context>
 </TS>

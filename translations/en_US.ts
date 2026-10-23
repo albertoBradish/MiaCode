@@ -3,6 +3,9 @@
 <TS version="2.1" language="en_US">
 <context>
     <name></name>
+    <message id="dialog.preferences.group.hand_order"><source>Sticking</source><translation>Sticking</translation></message>
+    <message id="preferences.hand_order_return_speed"><source>Hand return speed</source><translation>Hand return speed</translation></message>
+    <message id="preferences.hand_order_return_speed_unit"><source>field radii/s</source><translation>field radii/s</translation></message>
     <message id="setup.completion_hint">
         <source>Customize completion candidates in Preferences.</source>
         <translation>Customize completion candidates in Preferences.</translation>
@@ -326,8 +329,8 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
         <translation>failed to read chart file</translation>
     </message>
     <message id="cli.export.hand_order_annotation_invalid">
-        <source>hand-order annotation is invalid</source>
-        <translation>hand-order annotation is invalid</translation>
+        <source>Sticking annotation is invalid</source>
+        <translation>Sticking annotation is invalid</translation>
     </message>
     <message id="cli.export.difficulty_invalid">
         <source>invalid difficulty token</source>
@@ -450,8 +453,8 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
         <translation>Hide timestamp overlay in output video.</translation>
     </message>
     <message id="cli.video_export.hand_order">
-        <source>Hand-order display: annotated or original.</source>
-        <translation>Hand-order display: annotated or original.</translation>
+        <source>Sticking display: annotated or original.</source>
+        <translation>Sticking display: annotated or original.</translation>
     </message>
     <message id="cli.video_export.hand_order_invalid">
         <source>--hand-order must be annotated or original</source>
@@ -1586,8 +1589,8 @@ Failed: %2</translation>
         <translation>Show preview debug info</translation>
     </message>
     <message id="dialog.render_settings.gameplay.hand_order">
-        <source>Show hand-order annotations</source>
-        <translation>Show hand-order annotations</translation>
+        <source>Show Sticking annotations</source>
+        <translation>Show Sticking annotations</translation>
     </message>
     <message id="dialog.render_settings.preview_group">
         <source>Preview</source>
@@ -1878,8 +1881,8 @@ Restore the backup from %1?</translation>
         <translation>Show object stats</translation>
     </message>
     <message id="dialog.video_export.option.hand_order_mode">
-        <source>Hand-order display</source>
-        <translation>Hand-order display</translation>
+        <source>Sticking display</source>
+        <translation>Sticking display</translation>
     </message>
     <message id="dialog.video_export.hand_order.follow_preview">
         <source>Follow preview</source>
@@ -1890,8 +1893,8 @@ Restore the backup from %1?</translation>
         <translation>Original chart</translation>
     </message>
     <message id="dialog.video_export.hand_order.annotated">
-        <source>Hand-order colors</source>
-        <translation>Hand-order colors</translation>
+        <source>Sticking colors</source>
+        <translation>Sticking colors</translation>
     </message>
     <message id="dialog.video_export.option.show_timestamp">
         <source>Show bottom-left timestamp</source>
@@ -4871,8 +4874,8 @@ Error: %1</translation>
     </message>
 
 <message id="hand_order.title">
-        <source>Hand Order</source>
-        <translation>Hand Order</translation>
+        <source>Sticking</source>
+        <translation>Sticking</translation>
     </message>
     <message id="hand_order.set_left">
         <source>Set Selection to Left Hand</source>
@@ -4887,24 +4890,24 @@ Error: %1</translation>
         <translation>Set Selection to Either Hand</translation>
     </message>
     <message id="hand_order.split_annotation">
-        <source>Split Hand-order Intervals</source>
-        <translation>Split Hand-order Intervals</translation>
+        <source>Split Sticking Intervals</source>
+        <translation>Split Sticking Intervals</translation>
     </message>
     <message id="hand_order.selection_scope">
         <source>Edit complete notes in the source selection, including slide heads and all branches</source>
         <translation>Edit complete notes in the source selection, including slide heads and all branches</translation>
     </message>
     <message id="hand_order.feedback">
-        <source>Hand order: %1 changed, %2 partial tokens skipped, %3 unsupported, %4 diagnostics (click for details)</source>
-        <translation>Hand order: %1 changed, %2 partial tokens skipped, %3 unsupported, %4 diagnostics (click for details)</translation>
+        <source>Sticking: %1 changed, %2 partial tokens skipped, %3 unsupported, %4 diagnostics (click for details)</source>
+        <translation>Sticking: %1 changed, %2 partial tokens skipped, %3 unsupported, %4 diagnostics (click for details)</translation>
     </message>
     <message id="hand_order.diagnostic">
         <source>Line %1, column %2: %3</source>
         <translation>Line %1, column %2: %3</translation>
     </message>
     <message id="hand_order.intervals">
-        <source>Hand-order Intervals</source>
-        <translation>Hand-order Intervals</translation>
+        <source>Sticking Intervals</source>
+        <translation>Sticking Intervals</translation>
     </message>
     <message id="hand_order.draft_notice">
         <source>Changes affect the corresponding interval. Assign every track interval, then write them to the chart in one edit. An unspecified head keeps its original skin. Unwritten choices remain in this session for the matching document version and are not saved with the chart.</source>
@@ -4939,13 +4942,13 @@ Error: %1</translation>
         <translation>Write to Chart</translation>
     </message>
     <message id="hand_order.applied">
-        <source>Hand-order intervals written; undo restores them in one step.</source>
-        <translation>Hand-order intervals written; undo restores them in one step.</translation>
+        <source>Sticking intervals written; undo restores them in one step.</source>
+        <translation>Sticking intervals written; undo restores them in one step.</translation>
     </message>
 
 <message id="hand_order.analyze">
-        <source>Basic Automatic Hand Order (Experimental)</source>
-        <translation>Basic Automatic Hand Order (Experimental)</translation>
+        <source>Basic Automatic Sticking (Experimental)</source>
+        <translation>Basic Automatic Sticking (Experimental)</translation>
     </message>
     <message id="hand_order.auto.notice">
         <source>Review every suggestion before applying. Full judgement replay checks ordinary and chained slides, shared actions and both Wifi modes. Confidence scores are experimental, not correctness probabilities or proof of playability. Existing annotations remain unchanged unless recomputation is selected.</source>
@@ -5496,16 +5499,16 @@ Error: %1</translation>
         <translation>A selected target has an invalid hand annotation.</translation>
     </message>
     <message id="hand_order.native.reason.wifi_not_supported">
-        <source>Wifi paths cannot be split into independent native segments here. Use hand-order interval splitting for colouring.</source>
-        <translation>Wifi paths cannot be split into independent native segments here. Use hand-order interval splitting for colouring.</translation>
+        <source>Wifi paths cannot be split into independent native segments here. Use Sticking interval splitting for colouring.</source>
+        <translation>Wifi paths cannot be split into independent native segments here. Use Sticking interval splitting for colouring.</translation>
     </message>
     <message id="hand_order.native.reason.missing_markers">
         <source>Parsed native objects are missing.</source>
         <translation>Parsed native objects are missing.</translation>
     </message>
     <message id="hand_order.native.reason.single_segment">
-        <source>This slide has one native segment. Use hand-order interval splitting for colouring.</source>
-        <translation>This slide has one native segment. Use hand-order interval splitting for colouring.</translation>
+        <source>This slide has one native segment. Use Sticking interval splitting for colouring.</source>
+        <translation>This slide has one native segment. Use Sticking interval splitting for colouring.</translation>
     </message>
     <message id="hand_order.native.reason.invalid_geometry">
         <source>Native geometry or motion times are missing or invalid.</source>

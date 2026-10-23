@@ -39,7 +39,7 @@ function Import-TestedFunctions {
 }
 
 $buildScripts = Join-Path $sourceRoot 'scripts\build'
-$definitions = Import-TestedFunctions (Join-Path $buildScripts 'Start_HandOrder.ps1') @(
+$definitions = Import-TestedFunctions (Join-Path $buildScripts 'Start_Sticking.ps1') @(
     'ConvertTo-WindowsCommandLineArgument')
 foreach ($definition in $definitions) { . ([scriptblock]::Create($definition)) }
 

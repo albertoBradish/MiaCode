@@ -371,7 +371,7 @@ Window {
         host.editor.send(SCI_UNDO);
         expect(host.text() == unknown && !host.editor.send(SCI_CANUNDO), "one native undo restores the interval edit");
         auto* toolButton = findVisualItem(window->contentItem(), "handOrderButton");
-        expect(toolButton && toolButton->property("label").toString() == QStringLiteral("手序")
+        expect(toolButton && toolButton->property("label").toString() == QStringLiteral("Sticking")
             && toolButton->property("tooltip").toString() == qtTrId("hand_order.selection_scope")
             && toolButton->property("tooltip").toString() != QStringLiteral("hand_order.selection_scope"),
             "actual toolbar label and tooltip resolve compiled Chinese IDs instead of displaying raw keys");
@@ -577,7 +577,7 @@ Window {
             && host.controller.nativeSlideSplitMessage() != chineseNativeSummary
             && host.controller.handOrderFeedback() != chineseFeedback && host.text() == beforeNative && host.applications == 0,
             "live language refresh changes native counts, reasons and manual feedback while retaining the exact applicable draft");
-        expect(QTest::qWaitFor([&] { return toolButton && toolButton->property("label").toString() == "Hand Order"
+        expect(QTest::qWaitFor([&] { return toolButton && toolButton->property("label").toString() == "Sticking"
             && toolButton->property("tooltip").toString() == qtTrId("hand_order.selection_scope"); }, 1000),
             "the existing toolbar QML updates its label and tooltip after a real catalog switch");
         expect(host.applyNative() && host.applications == 1 && host.text() != beforeNative

@@ -34,14 +34,14 @@ Windows:
 cmake --preset hand_order
 cmake --build --preset hand_order_release
 & .\scripts\build\package-win.ps1 -Config Release -Arch x64 -QtRoot $env:MIACODE_HAND_ORDER_QT_ROOT `
-    -BuildDir ..\build\windows_x64 -DistDir ..\dist\MiaCode_HandOrder_2.0.0_alpha_dev_win_x64 -BuildJobs 4
+    -BuildDir ..\build\windows_x64 -DistDir ..\dist\MiaCode_Sticking_2.0.0_alpha_dev_win_x64 -BuildJobs 4
 ```
 
 `build-win.ps1` 依次执行：导出用 `ffmpeg.exe`、预览用 FFmpeg
 dev SDK（x64 与 arm64 均走固定版本下载）、Qt 定位、CMake 配置与构建、调用 `package-win.ps1` 打包。两条 FFmpeg 链与打包
 链都按 `-Toolchain` 推导出的目标架构选择各自的目录：`third_party\ffmpeg\windows\<win64|winarm64>\`
-与 `third_party\bass\bin\<win64|winarm64>\`，包名分别为 `MiaCode_HandOrder_<version>_win_x64` 与
-`MiaCode_HandOrder_<version>_win_arm64`（Nightly 渠道在版本后插入 `_nightly`，`MIACODE_PACKAGE_CHANNEL` 可指定包名渠道段）。arm64 不随包分发 `bass_aac.dll`（上游只提供 x86/x64 版本），
+与 `third_party\bass\bin\<win64|winarm64>\`，包名分别为 `MiaCode_Sticking_<version>_win_x64` 与
+`MiaCode_Sticking_<version>_win_arm64`（Nightly 渠道在版本后插入 `_nightly`，`MIACODE_PACKAGE_CHANNEL` 可指定包名渠道段）。arm64 不随包分发 `bass_aac.dll`（上游只提供 x86/x64 版本），
 音频后端对缺失插件已有存在性检查。
 
 Qt 定位顺序：`-QtRoot` → `C:\Qt\<版本>\<架构目录>` → `.qt\<版本>\<架构目录>` →

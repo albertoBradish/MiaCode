@@ -60,6 +60,7 @@ public:
     void setCompletionConfig(const miacode::editor::SimaiCompletionConfig& config);
     void setImeInputDisabled(bool disabled);
     void setWholeBpm(const QString& bpm);
+    void setHandOrderReturnSpeed(double speed) { handOrderReturnSpeed_ = speed; }
 
     miacode::editor::SimaiTextEditResult processKey(
         const QString& text, int anchor, int position, const QString& input, int key, int modifiers);
@@ -118,6 +119,7 @@ private:
     int completionIndex_ = -1;
     int activeDifficultyId_ = -1;
     QString handOrderScope_;
+    double handOrderReturnSpeed_ = 3.0;
     QString handOrderText_;
     QString handOrderKey_;
     miacode::LocalizedText handOrderFeedback_;

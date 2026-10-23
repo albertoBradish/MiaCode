@@ -403,6 +403,7 @@ add_executable(MiaCode WIN32 MACOSX_BUNDLE
     src/app/services/ChartMediaImport.h
     src/app/services/ChartWorkspaceFileService.cpp
     src/app/services/ChartWorkspaceFileService.h
+    src/app/services/StickingChartCopy.h
     src/app/services/HandOrderAnalysisService.cpp
     src/app/services/HandOrderAnalysisService.h
     src/app/services/AnalysisService.cpp
@@ -579,8 +580,8 @@ qt_add_shaders(MiaCode "ui_shaders"
         src/app/ui/pet/shaders/pet.frag
 )
 set_target_properties(MiaCode PROPERTIES
-    MACOSX_BUNDLE_BUNDLE_NAME "MiaCodeHandOrder"
-    MACOSX_BUNDLE_GUI_IDENTIFIER "com.fanfaredash.MiaCodeHandOrder"
+    MACOSX_BUNDLE_BUNDLE_NAME "MiaCodeSticking"
+    MACOSX_BUNDLE_GUI_IDENTIFIER "com.fanfaredash.MiaCodeSticking"
 )
 
 if(UNIX AND NOT APPLE)

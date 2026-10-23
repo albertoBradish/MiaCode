@@ -33,8 +33,8 @@ function ConvertTo-WindowsCommandLineArgument {
 }
 
 $packageRoot = $PSScriptRoot
-if (-not (Test-Path -LiteralPath (Join-Path $packageRoot 'HandOrderPackage.marker') -PathType Leaf)) {
-    throw 'Hand-order package marker is missing.'
+if (-not (Test-Path -LiteralPath (Join-Path $packageRoot 'StickingPackage.marker') -PathType Leaf)) {
+    throw 'Sticking package marker is missing.'
 }
 
 $executable = Join-Path $packageRoot 'app\MiaCode.exe'

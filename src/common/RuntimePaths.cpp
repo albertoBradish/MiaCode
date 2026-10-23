@@ -36,7 +36,7 @@ bool initializeFromEnvironment(QString* error)
 
     const QFileInfo requestedInfo(QDir::cleanPath(requested));
     if (!requestedInfo.isAbsolute() || requestedInfo.fileName() != QStringLiteral("runtime")) {
-        return fail(error, QStringLiteral("runtime root must be an absolute hand-order runtime directory"));
+        return fail(error, QStringLiteral("runtime root must be an absolute Sticking runtime directory"));
     }
 
     const QDir workspace = requestedInfo.dir();
@@ -44,10 +44,10 @@ bool initializeFromEnvironment(QString* error)
         QFileInfo::exists(workspace.filePath(QStringLiteral("baseline.json")))
         && QFileInfo::exists(workspace.filePath(QStringLiteral("source/AGENTS.md")));
     const bool portablePackage =
-        QFileInfo::exists(workspace.filePath(QStringLiteral("HandOrderPackage.marker")))
+        QFileInfo::exists(workspace.filePath(QStringLiteral("StickingPackage.marker")))
         && QFileInfo::exists(workspace.filePath(QStringLiteral("app/MiaCode.exe")));
     if (!developmentWorkspace && !portablePackage) {
-        return fail(error, QStringLiteral("runtime root parent is not a hand-order workspace or package"));
+        return fail(error, QStringLiteral("runtime root parent is not a Sticking workspace or package"));
     }
 
     const QString root = requestedInfo.absoluteFilePath();
@@ -66,7 +66,7 @@ bool initializeFromEnvironment(QString* error)
     const QString expectedRoot = QDir(workspace.canonicalPath()).filePath(QStringLiteral("runtime"));
     if (canonicalRoot.isEmpty()
         || canonicalRoot.compare(QDir::cleanPath(expectedRoot), Qt::CaseInsensitive) != 0) {
-        return fail(error, QStringLiteral("runtime root resolves outside its hand-order directory: %1").arg(root));
+        return fail(error, QStringLiteral("runtime root resolves outside its Sticking directory: %1").arg(root));
     }
 
     for (const QString& name : {QStringLiteral("config"), QStringLiteral("cache"),
@@ -78,14 +78,14 @@ bool initializeFromEnvironment(QString* error)
         }
         const QString canonicalPath = QFileInfo(path).canonicalFilePath();
         if (canonicalPath.compare(path, Qt::CaseInsensitive) != 0) {
-            return fail(error, QStringLiteral("runtime directory resolves outside its hand-order directory: %1").arg(path));
+            return fail(error, QStringLiteral("runtime directory resolves outside its Sticking directory: %1").arg(path));
         }
     }
 
     const QString exports = QDir(workspace.canonicalPath()).filePath(QStringLiteral("exports"));
     if (!QDir().mkpath(exports)
         || QFileInfo(exports).canonicalFilePath().compare(exports, Qt::CaseInsensitive) != 0) {
-        return fail(error, QStringLiteral("cannot prepare hand-order exports directory: %1").arg(exports));
+        return fail(error, QStringLiteral("cannot prepare Sticking exports directory: %1").arg(exports));
     }
 
     initializedRoot = canonicalRoot;

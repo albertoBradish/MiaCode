@@ -66,6 +66,14 @@ ApplicationContext::ApplicationContext(miacode::ApplicationServices& services,
     syncEditorAppearance();
     connect(&preferencesModel_, &miacode::ui::PreferencesModel::editorChanged,
             this, syncEditorAppearance);
+    const auto syncHandOrderRest = [this]() {
+        const double speed = preferencesModel_.handOrderReturnSpeed();
+        editor_.setHandOrderReturnSpeed(speed);
+        handOrderAnalysis_.setReturnSpeed(speed);
+    };
+    syncHandOrderRest();
+    connect(&preferencesModel_, &miacode::ui::PreferencesModel::editorChanged,
+            this, syncHandOrderRest);
 
     const auto applyEditorSettings = [this] {
         const int inputHandlingMode = preferencesModel_.editorInputHandlingMode();

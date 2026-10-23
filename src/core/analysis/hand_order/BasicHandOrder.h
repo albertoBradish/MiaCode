@@ -3,9 +3,11 @@
 #include "core/chart/transform/HandOrderEdit.h"
 
 namespace miacode::hand_order {
-inline constexpr int basicAlgorithmVersion = 4;
+inline constexpr int basicAlgorithmVersion = 5;
 inline constexpr int basicJudgeProfileRevision = 2;
 struct BasicParameters {
+    static constexpr double minReturnSpeed = 1.0;
+    static constexpr double maxReturnSpeed = 8.0;
     int version = basicAlgorithmVersion;
     int judgeProfileRevision = basicJudgeProfileRevision;
     int beamWidth = 64;
@@ -13,6 +15,7 @@ struct BasicParameters {
     int counterfactualBudget = 64;
     double contextSeconds = 1.0;
     double pressSeconds = 0.025;
+    double returnSpeed = 3.0;
     qint64 maxWorkUnits = 30000000;
     bool overwriteExisting = false;
     bool highConfidenceOnly = false;

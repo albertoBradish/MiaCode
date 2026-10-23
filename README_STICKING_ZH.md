@@ -1,6 +1,8 @@
-# MiaCode HandOrder 2.0.0-alpha（Windows x64）
+# MiaCode Sticking 2.0.0-alpha（Windows x64）
 
-将整个压缩包解压到**可写目录**，双击根目录的 `MiaCode.exe` 启动。请保留 `app/`、`assets/` 和 `HandOrderPackage.marker`；只复制 exe 无法运行。
+将整个压缩包解压到**可写目录**，双击根目录的 `MiaCode.exe` 启动。请保留 `app/`、`assets/` 和 `StickingPackage.marker`；只复制 exe 无法运行。
+
+打开项目的 `maidata.txt` 时，Sticking 会在同一目录创建原始字节副本 `maidata_sticking.txt`，并将后者作为当前编辑和普通保存目标。若副本已存在，则直接继续编辑副本，绝不自动覆盖。原 `maidata.txt` 不会因普通保存改变；明确使用“另存为”选择其他路径仍按所选路径保存。该目录需要可写权限，副本创建失败时不会打开原文件供编辑。
 
 本版本支持 `~l`（左手蓝）、`~r`（右手红）、`~m`（左右任选灰白）的手序标注；`m` 不表示未知或双手。Slide 可按运动进度换手；Wifi 可选择两扇区独立标注，或整条轨迹同一只手的显式单手模式。显式单手会显示圈“1”，这个标识不保证实际手法可打。内置 SD/DX 皮肤使用从原美术生成的染色素材。未标注的音符及关闭手序显示后的画面使用原皮肤；视频导出可选择跟随预览、原谱或手序模式。
 
@@ -22,6 +24,6 @@
 
 发布包初始 `runtime/` 为空。请按 [acceptance/MANUAL_CHECKLIST_ZH.md](acceptance/MANUAL_CHECKLIST_ZH.md) 使用随包合成 `maidata.txt` 做人工验收；建议先复制合成文件到新位置，再测试保存和重开。清单复选框留给操作者，尚未勾选的主 GUI 项目不能视为已通过。不需要打开真实谱面或复制正式版配置。
 
-如需命令行，可用 `powershell.exe -NoProfile -File .\Start_HandOrder.ps1 <参数>` 或 PowerShell 7 的 `pwsh` 运行同一脚本；它会为子进程设置包内运行根并转发参数。如果本机禁止 PowerShell 脚本，使用根目录的 `MiaCode.exe` 启动器即可，无需修改系统策略。不要直接运行 `app/MiaCode.exe`。打包时会在本文末尾附加该构建的版本、渠道和 Git 身份。
+如需命令行，可用 `powershell.exe -NoProfile -File .\Start_Sticking.ps1 <参数>` 或 PowerShell 7 的 `pwsh` 运行同一脚本；它会为子进程设置包内运行根并转发参数。如果本机禁止 PowerShell 脚本，使用根目录的 `MiaCode.exe` 启动器即可，无需修改系统策略。不要直接运行 `app/MiaCode.exe`。打包时会在本文末尾附加该构建的版本、渠道和 Git 身份。
 
 本包仍为 alpha。合成谱面的解析、自动手序及编辑事务、真实离屏控件和 QSG/导出回归已通过；主 GUI 人工视觉与交互、真实谱面批量导出和跨平台行为仍待验收。自动手序采用有限动作模型及社区参考规则，结果需要复核，不是官方规则或可玩性保证。Windows 可执行文件未附代码签名。

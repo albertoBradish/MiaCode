@@ -109,7 +109,7 @@ ApplicationWindow {
         property var handOrderModeOptions: [
             { value: 0, label: "Follow preview" },
             { value: 1, label: "Original chart" },
-            { value: 2, label: "Hand-order colors" }
+            { value: 2, label: "Sticking colors" }
         ]
         property bool clockCountEnabled: false
         property var fontLibraryOptions: [

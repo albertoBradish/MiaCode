@@ -1,6 +1,7 @@
 #include "core/chart/transform/BasicHandOrderLayout.h"
 
 #include "core/chart/parser/HandOrderAnnotationSyntax.h"
+#include "core/chart/model/HandOrderRestPosition.h"
 #include "core/chart/model/TouchPadAdjacency.h"
 
 #include <cmath>
@@ -13,7 +14,6 @@ namespace miacode::chart_transform {
 namespace {
 constexpr double kCentreTolerance = 1e-6;
 constexpr double kTouchCanvasCentre = 270.0;
-constexpr double kPositionMemorySeconds = 0.4;
 constexpr double kFastRepeatedTapGapSeconds = 0.13;
 constexpr double kWindingPairGapSeconds = 0.4;
 constexpr double kTouchSweepGapSeconds = 0.18;
@@ -72,6 +72,7 @@ struct LayoutHead {
     bool patternNeedsBothFree = false;
     int touchPairWith = -1;
     int followSlideTail = -1;
+    int interactionGroup = -1, interactionStep = -1;
 };
 
 struct LayoutSustain {
@@ -445,13 +446,12 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
                 || current.marker->lane != expected || !regularTapStep(previous, current, 16)) break;
             ++last;
         }
-        if (last - first >= 5 && eligible(first, last)) {
-            const int initial = handIndex(laneHand(firstLane));
+        if (last - first >= 4 && eligible(first, last)) {
             for (int i = first; i < last; ++i) {
                 auto& head = (*heads)[order.at(i)];
                 allowRecalculation(head.token);
-                head.patternHand = initial ^ ((i - first) % 2);
-                head.patternNeedsBothFree = true;
+                head.interactionGroup = first;
+                head.interactionStep = i - first;
             }
             first = last;
         } else ++first;
@@ -595,10 +595,10 @@ HandOrderHand handAt(const LayoutSustain& sustain, double second)
 }
 
 // This is a local scheduling constraint, not a judgement or playability proof.
-void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustains)
+void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustains, double returnSpeed)
 {
     const auto order = orderedHeads(*heads);
-    QPointF position[2] = {lanePoint(6), lanePoint(3)};
+    QPointF position[2] = {chart::handOrderNaturalRestPoint(0), chart::handOrderNaturalRestPoint(1)};
     double positionTime[2] = {-std::numeric_limits<double>::infinity(), -std::numeric_limits<double>::infinity()};
     QVector<bool> ended(sustains->size(), false);
     const auto busy = [&](int hand, double second, int token) {
@@ -646,8 +646,8 @@ void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustai
     const auto headCost = [&](const LayoutHead& head, int hand) {
         const auto preferred = basicLayoutHeadHand(*head.marker);
         const double sideCost = handIndex(preferred) >= 0 && handIndex(preferred) != hand ? 0.25 : 0.0;
-        const QPointF origin = head.marker->second - positionTime[hand] > kPositionMemorySeconds
-            ? lanePoint(hand == 0 ? 6 : 3) : position[hand];
+        const QPointF origin = chart::handOrderRestedPoint(position[hand], positionTime[hand],
+            head.marker->second, hand, returnSpeed);
         return QLineF(origin, head.point).length() + sideCost
             + (busy(hand, head.marker->second, head.token) ? 100.0 : 0.0);
     };
@@ -679,6 +679,42 @@ void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustai
             const double threshold = 240.0 / (64.0 * qMax(anchor.marker->tempoBpm, next.marker->tempoBpm));
             if (next.marker->second - anchor.marker->second >= threshold - 1e-9) break;
             ++last;
+        }
+        if (anchor.interactionGroup >= 0 && anchor.interactionStep == 0) {
+            QVector<int> members;
+            for (int index : order)
+                if (heads->at(index).interactionGroup == anchor.interactionGroup) members.append(index);
+            const int preferred = handIndex(laneHand(anchor.marker->lane));
+            int selectedPhase = -1;
+            double best = std::numeric_limits<double>::infinity();
+            for (int phase : {preferred, 1 - preferred}) {
+                QPointF projectedPosition[2] = {position[0], position[1]};
+                double projectedTime[2] = {positionTime[0], positionTime[1]};
+                double cost = 0.0;
+                bool valid = true;
+                for (int index : members) {
+                    const auto& head = heads->at(index);
+                    const int hand = phase ^ (head.interactionStep % 2);
+                    const double second = head.marker->second;
+                    if (busy(hand, second, head.token)) { valid = false; break; }
+                    const QPointF from = chart::handOrderRestedPoint(projectedPosition[hand], projectedTime[hand],
+                        second, hand, returnSpeed);
+                    const double distance = QLineF(from, head.point).length();
+                    const double gap = second - projectedTime[hand];
+                    if (std::isfinite(gap) && gap <= 1e-9 && distance > 1e-6) { valid = false; break; }
+                    const double travelSeconds = std::isfinite(gap) ? qMax(0.05, gap) : 1.0;
+                    cost += distance + 0.05 * distance * distance / travelSeconds;
+                    if (handIndex(basicLayoutHeadHand(*head.marker)) != hand) cost += 0.25;
+                    projectedPosition[hand] = head.point;
+                    projectedTime[hand] = second;
+                }
+                if (valid && cost < best) { best = cost; selectedPhase = phase; }
+            }
+            if (selectedPhase >= 0)
+                for (int index : members) {
+                    auto& head = (*heads)[index];
+                    head.patternHand = selectedPhase ^ (head.interactionStep % 2);
+                }
         }
         for (int i = first; i < last; ++i) {
             auto& head = (*heads)[order.at(i)];
@@ -733,8 +769,8 @@ void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustai
             };
             const auto unitCost = [&](const SharedHeadUnit& unit, int hand) {
                 const auto& head = representative(unit);
-                const QPointF origin = head.marker->second - positionTime[hand] > kPositionMemorySeconds
-                    ? lanePoint(hand == 0 ? 6 : 3) : position[hand];
+                const QPointF origin = chart::handOrderRestedPoint(position[hand], positionTime[hand],
+                    head.marker->second, hand, returnSpeed);
                 return QLineF(origin, head.point).length()
                     + (handIndex(basicLayoutHeadHand(*head.marker)) != hand ? 0.25 : 0.0);
             };
@@ -811,8 +847,8 @@ void assignLocalHands(QVector<LayoutHead>* heads, QVector<LayoutSustain>* sustai
                 && !busy(0, head.marker->second, head.token)
                 && !busy(1, head.marker->second, head.token)) commitHead(index, -1);
             else if (!head.fixed && handIndex(preferred) >= 0
-                && head.marker->second - positionTime[0] > kPositionMemorySeconds
-                && head.marker->second - positionTime[1] > kPositionMemorySeconds
+                && head.marker->second > chart::handOrderFullyReturnedTime(position[0], positionTime[0], 0, returnSpeed)
+                && head.marker->second > chart::handOrderFullyReturnedTime(position[1], positionTime[1], 1, returnSpeed)
                 && !busy(handIndex(preferred), head.marker->second, head.token))
                 commitHead(index, handIndex(preferred));
             else commitHead(index, fixed >= 0 ? fixed : headCost(head, 0) <= headCost(head, 1) ? 0 : 1);
@@ -910,7 +946,7 @@ HandOrderHand basicLayoutWifiSectorHand(const TimelineNoteMarker& marker, int se
 }
 
 BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, int begin, int end,
-    const miacode::simai::SimaiTimingMetadata& metadata)
+    const miacode::simai::SimaiTimingMetadata& metadata, double returnSpeed)
 {
     BasicHandOrderLayoutPlan result;
     auto& plan = result.edit;
@@ -982,7 +1018,9 @@ BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, in
         }
     }
     identifyLocalPatterns(&heads, &sustains, canRewrite, selectedTokens, &rewriteTokens);
-    assignLocalHands(&heads, &sustains);
+    if (!std::isfinite(returnSpeed)) returnSpeed = chart::handOrderDefaultReturnSpeed;
+    assignLocalHands(&heads, &sustains, qBound(chart::handOrderMinReturnSpeed, returnSpeed,
+        chart::handOrderMaxReturnSpeed));
     int delta = 0;
     for (int tokenIndex = 0; tokenIndex < parsed.sourceTokens.size(); ++tokenIndex) {
         const auto& source = parsed.sourceTokens.at(tokenIndex);

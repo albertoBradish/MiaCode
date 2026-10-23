@@ -416,7 +416,8 @@ miacode::editor::SimaiTextEditResult EditorController::handOrderCommand(
     const int begin = qBound(0, qMin(anchor, position), int(text.size()));
     const int end = qBound(begin, qMax(anchor, position), int(text.size()));
     if (command == QStringLiteral("hand_order.basic_layout")) {
-        const auto layout = miacode::chart_transform::basicHandOrderLayoutInSelection(text, begin, end, metadata);
+        const auto layout = miacode::chart_transform::basicHandOrderLayoutInSelection(
+            text, begin, end, metadata, handOrderReturnSpeed_);
         const auto& plan = layout.edit;
         const bool wholeDifficulty = begin == end;
         auto result = selectionTransaction(text, wholeDifficulty ? 0 : anchor,

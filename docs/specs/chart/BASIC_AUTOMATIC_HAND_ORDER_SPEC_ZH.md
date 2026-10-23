@@ -1,4 +1,6 @@
-# 自动手序（实验性，算法 v4）
+# 自动手序（实验性，算法 v5）
+
+算法 v5 增加四颗及以上相邻键 ABAB 十六分及更密交互的同手连续击打软代价；回正位置改为左 E7、右 E3，空闲 0.4 秒后按首选项速度向自然位置移动。默认 3 场地半径/秒，范围 1–8；它是归一化场地单位中的可调启发值，尚未按实体屏幕距离校准。已有标注默认仍受保护，重算已有手序须启用对应选项。下文所述 v4 验收是历史记录，不代表 v5 的验证结果。
 
 状态：2026-10-22，v4 已经主代理独立验收。完整 MiaCode / MiaCodeLauncher Release 构建成功，23/23 项关联 CTest 通过（11.97 秒）。普通局部推断、默认 6/3 手位、基础手别共享、滚动状态传递、原生全目标输入竞争审计和预算诊断已通过本页列出的合成与授权副本回归。
 
@@ -24,7 +26,7 @@
 
 ## 版本化判定 profile
 
-自动算法 `basicAlgorithmVersion=4`，参数判定修订 `basicJudgeProfileRevision=2`；独立完整回放首次 profile 为 `fullReplayProfileRevision=1`。参考固定提交的 MaiMuriDX `0ebab7ff6853a159ef6af76d9e3c43b23157bb5e` 开发笔记与本地原生 slide 判定队列。该社区来源描述日版 Buddies / 国服舞萌 DX 2024 的范围，不等于所有框体或官方内部规格。
+自动算法 `basicAlgorithmVersion=5`，参数判定修订 `basicJudgeProfileRevision=2`；独立完整回放首次 profile 为 `fullReplayProfileRevision=1`。参考固定提交的 MaiMuriDX `0ebab7ff6853a159ef6af76d9e3c43b23157bb5e` 开发笔记与本地原生 slide 判定队列。该社区来源描述日版 Buddies / 国服舞萌 DX 2024 的范围，不等于所有框体或官方内部规格。
 
 - Tap Critical 窗口为 ±3/180 秒，可接受窗口 ±27/180 秒；Touch 对应 ±27/180 秒。
 - Slide 使用原生区域序列、短轨保护区域、长轨跳区、原生链段衔接与最终判定窗；可接受尾窗为 108/180 秒。不会把本地旧 Muri 的 24 小时宽限套入新 profile。单段 V/L 形按参考的 `is_l` / `is_special_l` 保护 0 基索引 1（特殊 L 另保护索引 3）。多原生段链按拼接队列总区域数执行普通短/长轨跳区；V 起手链不继承单独 V 的专用保护。这是固定社区参考的链式行为，不推定为官方所有版本规则，也不借此修改旧 Muri 的独立行为。

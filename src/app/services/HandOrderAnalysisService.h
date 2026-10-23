@@ -32,6 +32,7 @@ public:
     void setOverwriteExisting(bool value);
     void setHighConfidenceOnly(bool value);
     void setInputPreference(int value);
+    void setReturnSpeed(double speed);
     bool request(const QString& text, int begin, int end);
     Q_INVOKABLE void cancel();
     Q_INVOKABLE void setBeamWidth(int width);

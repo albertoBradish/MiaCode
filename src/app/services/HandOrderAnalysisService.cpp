@@ -1,4 +1,5 @@
 #include "app/services/HandOrderAnalysisService.h"
+#include <cmath>
 #include <QPointer>
 #include <QThreadPool>
 #include <algorithm>
@@ -71,6 +72,14 @@ void HandOrderAnalysisService::setInputPreference(int value)
     value = qBound(0, value, 2);
     if (parameters_.inputPreference == value) return;
     auto parameters = parameters_; parameters.inputPreference = value; setParameters(parameters);
+}
+void HandOrderAnalysisService::setReturnSpeed(double speed)
+{
+    if (!std::isfinite(speed)) return;
+    speed = qBound(hand_order::BasicParameters::minReturnSpeed, speed,
+        hand_order::BasicParameters::maxReturnSpeed);
+    if (qFuzzyCompare(parameters_.returnSpeed, speed)) return;
+    auto parameters = parameters_; parameters.returnSpeed = speed; setParameters(parameters);
 }
 bool HandOrderAnalysisService::isCurrent(const Request& request) const
 {

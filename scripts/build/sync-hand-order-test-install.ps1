@@ -31,12 +31,12 @@ function Assert-PlainDirectory {
 
 Assert-ChildPath -Path $packageRoot -Parent $distRoot -Label 'PackageDir'
 Assert-PlainDirectory -Path $packageRoot
-foreach ($required in @('HandOrderPackage.marker', 'MiaCode.exe', 'app\MiaCode.exe', 'README_HAND_ORDER_ZH.md')) {
+foreach ($required in @('StickingPackage.marker', 'MiaCode.exe', 'app\MiaCode.exe', 'README_STICKING_ZH.md')) {
     if (!(Test-Path -LiteralPath (Join-Path $packageRoot $required) -PathType Leaf)) {
-        throw "Incomplete hand-order package: $required"
+        throw "Incomplete Sticking package: $required"
     }
 }
-$identity = Get-Content -LiteralPath (Join-Path $packageRoot 'README_HAND_ORDER_ZH.md') -Raw
+$identity = Get-Content -LiteralPath (Join-Path $packageRoot 'README_STICKING_ZH.md') -Raw
 if ($identity -notmatch '(?m)^- Git dirty: 0\s*$' -or $identity -notmatch '(?m)^- Git revision: [0-9a-f]{12}\s*$') {
     throw 'Package lacks a clean, recorded Git build identity.'
 }
@@ -59,7 +59,8 @@ foreach ($entry in Get-ChildItem -LiteralPath $packageRoot -Force) {
 }
 
 # Once the test installation has a stable root, retain its isolated data on updates.
-$hasStableInstall = (Test-Path -LiteralPath (Join-Path $testRoot 'HandOrderPackage.marker') -PathType Leaf)
+$hasStableInstall = (Test-Path -LiteralPath (Join-Path $testRoot 'StickingPackage.marker') -PathType Leaf) `
+    -or (Test-Path -LiteralPath (Join-Path $testRoot 'HandOrderPackage.marker') -PathType Leaf)
 if ($hasStableInstall) {
     foreach ($name in @('runtime', 'exports', 'logs')) {
         $oldData = Join-Path $testRoot $name

@@ -96,6 +96,45 @@ bool verifyDifficultyCardProjection()
     return ok;
 }
 
+bool verifyStickingCopyOnOpen()
+{
+    QTemporaryDir directory;
+    if (!directory.isValid()) return false;
+    const QString original = directory.filePath(QStringLiteral("maidata.txt"));
+    const QString sticking = directory.filePath(QStringLiteral("maidata_sticking.txt"));
+    const QByteArray initial = "&title=Original\n&lv_5=12\n&inote_5=(150){16}2,1,2,1,E\n";
+    QFile source(original);
+    if (!source.open(QIODevice::WriteOnly) || source.write(initial) != initial.size()) return false;
+    source.close();
+    miacode::ChartWorkspace workspace;
+    miacode::ChartWorkspaceFileService files(workspace);
+    miacode::AnalysisService analysis(workspace);
+    analysis.setDiagnosticsDeferred(true);
+    miacode::ShellNotifications notifications;
+    miacode::UiRequestService requests;
+    FakeBridge fake;
+    miacode::DocumentBridge* bridge = &fake;
+    miacode::PreviewSurface* preview = nullptr;
+    miacode::ui::DocumentModel model(notifications, workspace, files, analysis, requests, bridge, preview);
+    bool ok = expect(model.openFile(QUrl::fromLocalFile(original))
+        && workspace.snapshot().filePath == sticking && read(sticking) == initial,
+        "opening maidata creates and selects the Sticking copy");
+    model.setChartText(QStringLiteral("(150){16}2~r,1~l,2~r,1~l,E"));
+    ok &= expect(model.saveWholeDocument() && read(original) == initial
+        && read(sticking).contains("2~r,1~l,2~r,1~l"),
+        "saving edits the Sticking copy and preserves original bytes");
+    const QByteArray saved = read(sticking);
+    ok &= expect(model.openFile(QUrl::fromLocalFile(original))
+        && workspace.snapshot().filePath == sticking && read(sticking) == saved
+        && model.chartText().contains("2~r,1~l,2~r,1~l"),
+        "reopening maidata resumes the existing Sticking copy without replacing it");
+    ok &= expect(model.openFile(QUrl::fromLocalFile(directory.path()))
+        && workspace.snapshot().filePath == sticking && read(original) == initial,
+        "opening the project folder also selects its existing Sticking copy");
+    analysis.shutdown();
+    return ok;
+}
+
 bool verifyRejectedDraftBlocksPersistenceAndLeave()
 {
     QTemporaryDir directory;
@@ -291,6 +330,7 @@ int main(int argc, char** argv)
         QTextStream(stderr) << runtimeError << Qt::endl;
         return 1;
     }
-    return verifyDifficultyCardProjection() && verifyRejectedDraftBlocksPersistenceAndLeave()
+    return verifyDifficultyCardProjection() && verifyStickingCopyOnOpen()
+        && verifyRejectedDraftBlocksPersistenceAndLeave()
         && verifyPickerDirectories() && verifyPlainSimaiExport() ? 0 : 1;
 }

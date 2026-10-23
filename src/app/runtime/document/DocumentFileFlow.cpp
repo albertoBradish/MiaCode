@@ -14,6 +14,7 @@
 #include "common/DebugOptions.h"
 #include "common/OperationLog.h"
 #include "app/services/ProjectPreferences.h"
+#include "app/services/StickingChartCopy.h"
 #include "audio/WaveformCache.h"
 #include "app/services/PlaybackStateAuthority.h"
 #include "app/runtime/latency/LatencySandboxController.h"
@@ -56,7 +57,7 @@ struct PreparedDocumentOpenPayload {
 PreparedDocumentOpenPayload prepareDocumentOpenPayload(const QString& path, bool probeTrackDuration)
 {
     PreparedDocumentOpenPayload payload;
-    payload.normalizedPath = path.isEmpty() ? QString() : QDir::cleanPath(path);
+    payload.normalizedPath = miacode::sticking::editableChartPath(path);
     if (payload.normalizedPath.isEmpty()) {
         return payload;
     }
@@ -170,7 +171,7 @@ bool miacode::runtime::DocumentSessionHost::restoreLastSessionFile()
     if (state_.lastSessionFilePath_.isEmpty()) {
         return false;  // not a failure — first run or cleared session
     }
-    const QFileInfo fileInfo(state_.lastSessionFilePath_);
+    const QFileInfo fileInfo(miacode::sticking::editableChartPath(state_.lastSessionFilePath_));
     if (!fileInfo.exists() || !fileInfo.isFile()) {
         _mc_op_.fail(QStringLiteral("session_file_missing"));
         state_.lastSessionFilePath_.clear();
@@ -197,7 +198,7 @@ void miacode::runtime::DocumentSessionHost::scheduleStartupRestoreLastSessionFil
         return;
     }
 
-    const QFileInfo fileInfo(state_.lastSessionFilePath_);
+    const QFileInfo fileInfo(miacode::sticking::editableChartPath(state_.lastSessionFilePath_));
     if (!fileInfo.exists() || !fileInfo.isFile()) {
         state_.lastSessionFilePath_.clear();
         state_.startupRestorePending_ = false;

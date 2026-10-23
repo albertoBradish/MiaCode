@@ -626,7 +626,7 @@ void miacode::runtime::PlaybackCoordinator::updateWindowTitle()
     const QFontMetrics metrics(QGuiApplication::font());
     const QString elided = metrics.elidedText(titleText, Qt::ElideRight, 420);
     const bool dirty = state_.documentDirty_;
-    state_.titleText_ = QString("MiaCode Hand Order - %1%2")
+    state_.titleText_ = QString("MiaCode Sticking - %1%2")
         .arg(elided, dirty ? QStringLiteral("[*]") : QString());
 }
 

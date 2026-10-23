@@ -143,7 +143,7 @@ int main(int argc, char* argv[])
 {
     QString runtimePathError;
     if (!miacode::runtime_paths::initializeFromEnvironment(&runtimePathError)) {
-        std::fprintf(stderr, "Hand-order runtime initialization failed: %s\n",
+        std::fprintf(stderr, "Sticking runtime initialization failed: %s\n",
                      runtimePathError.toUtf8().constData());
         return 1;
     }
@@ -159,13 +159,13 @@ int main(int argc, char* argv[])
         }
     }
     if (!qputenv("MIACODE_LOG_DIR", miacode::runtime_paths::logDirectory().toUtf8())) {
-        std::fputs("Cannot set hand-order log directory\n", stderr);
+        std::fputs("Cannot set Sticking log directory\n", stderr);
         return 1;
     }
     const QByteArray runtimeTemp = miacode::runtime_paths::tempDirectory().toUtf8();
     for (const char* key : {"TEMP", "TMP", "TMPDIR"}) {
         if (!qputenv(key, runtimeTemp)) {
-            std::fprintf(stderr, "Cannot set hand-order temporary directory: %s\n", key);
+            std::fprintf(stderr, "Cannot set Sticking temporary directory: %s\n", key);
             return 1;
         }
     }
@@ -443,9 +443,9 @@ int main(int argc, char* argv[])
     QGuiApplication app(argc, argv);
     // All roles share this entry point. Establish the development identity
     // before any configuration or cache is read.
-    app.setOrganizationName(QStringLiteral("MiaCodeHandOrder"));
+    app.setOrganizationName(QStringLiteral("MiaCodeSticking"));
     app.setOrganizationDomain(QStringLiteral("handorder.miacode.local"));
-    app.setApplicationName(QStringLiteral("MiaCodeHandOrder"));
+    app.setApplicationName(QStringLiteral("MiaCodeSticking"));
     app.setApplicationVersion(MIACODE_DISPLAY_VERSION_STRING);
 #ifdef Q_OS_WIN
     setWindowsAppUserModelId();

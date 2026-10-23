@@ -1,4 +1,5 @@
 #include "core/chart/transform/BasicHandOrderLayout.h"
+#include "core/chart/model/HandOrderRestPosition.h"
 #include "core/chart/parser/HandOrderAnnotationSyntax.h"
 
 #include <QCoreApplication>
@@ -354,6 +355,19 @@ int main(int argc, char** argv)
     expect(laidAlternatingLanes.edit.replacement == "(120){16}3~r,4~l,3~r,4~l,3~r,"
         && sameNative(alternatingLanes, laidAlternatingLanes.edit.replacement),
         "adjacent-lane back-and-forth interaction alternates hands instead of one-hand sweeping");
+    const QString fourStepInteraction = "(150){16}2~r,1~r,2~r,1~r,";
+    expect(basicHandOrderLayoutInSelection(fourStepInteraction, 0, 0).edit.replacement
+        == "(150){16}2~r,1~l,2~r,1~l,",
+        "four-step adjacent-lane interaction repairs old one-hand labels");
+    const auto leftHome = miacode::chart::handOrderNaturalRestPoint(0);
+    const QPointF departed{1.0, 0.0};
+    const auto waitingRest = miacode::chart::handOrderRestedPoint(departed, 0.0, 0.4, 0, 1.0);
+    const auto slowRest = miacode::chart::handOrderRestedPoint(departed, 0.0, 0.9, 0, 1.0);
+    const auto fastRest = miacode::chart::handOrderRestedPoint(departed, 0.0, 0.9, 0, 8.0);
+    expect(waitingRest == departed && slowRest.x() < departed.x() && slowRest.x() > leftHome.x()
+        && fastRest == leftHome && leftHome.x() < 0
+        && miacode::chart::handOrderNaturalRestPoint(1).x() > 0,
+        "hands wait 0.4 seconds, then return by configurable distance-based speed to E7 and E3");
     for (int bpm : {80, 240}) {
         const QString chart = QStringLiteral("(%1){16}3,4,3,4,3,").arg(bpm);
         expect(basicHandOrderLayoutInSelection(chart, 0, 0).edit.replacement

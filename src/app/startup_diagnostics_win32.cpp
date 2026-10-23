@@ -33,7 +33,7 @@ void setWindowsAppUserModelId()
         ::GetProcAddress(shell32Module, "SetCurrentProcessExplicitAppUserModelID")
     );
     if (setAppId != nullptr) {
-        setAppId(L"fanfaredash.MiaCodeHandOrder");
+        setAppId(L"fanfaredash.MiaCodeSticking");
     }
 }
 

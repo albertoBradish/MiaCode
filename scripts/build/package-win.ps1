@@ -377,11 +377,11 @@ $allowedBuildRoot = [System.IO.Path]::GetFullPath((Join-Path $workspace "build")
 $allowedDistRoot = [System.IO.Path]::GetFullPath((Join-Path $workspace "dist"))
 if (!$BuildDir.StartsWith($allowedBuildRoot + [System.IO.Path]::DirectorySeparatorChar,
         [System.StringComparison]::OrdinalIgnoreCase)) {
-    throw "BuildDir must be inside this hand-order workspace build directory: $allowedBuildRoot"
+    throw "BuildDir must be inside this Sticking workspace build directory: $allowedBuildRoot"
 }
 if (!$DistDir.StartsWith($allowedDistRoot + [System.IO.Path]::DirectorySeparatorChar,
         [System.StringComparison]::OrdinalIgnoreCase)) {
-    throw "DistDir must be a child of this hand-order workspace dist directory: $allowedDistRoot"
+    throw "DistDir must be a child of this Sticking workspace dist directory: $allowedDistRoot"
 }
 foreach ($candidate in @($allowedBuildRoot, $allowedDistRoot, $DistDir)) {
     if ((Test-Path -LiteralPath $candidate) -and
@@ -456,10 +456,10 @@ if (!(Test-Path $launcherExe)) {
 }
 Copy-Item $launcherExe (Join-Path $DistDir "MiaCode.exe") -Force
 
-Copy-Item (Join-Path $PSScriptRoot "Start_HandOrder.ps1") (Join-Path $DistDir "Start_HandOrder.ps1") -Force
+Copy-Item (Join-Path $PSScriptRoot "Start_Sticking.ps1") (Join-Path $DistDir "Start_Sticking.ps1") -Force
 
 # Both launch entries use the package-local runtime root; the launcher is the
-# normal double-click entry and Start_HandOrder.ps1 also accepts CLI arguments.
+# normal double-click entry and Start_Sticking.ps1 also accepts CLI arguments.
 
 New-Item -ItemType Directory -Path (Join-Path $DistDir "logs") -Force | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $DistDir "logs\\worker-hwnd") -Force | Out-Null
@@ -675,7 +675,7 @@ $buildIdentity = @"
 
 The identity above comes from the packaged build's generated AppVersion.h.
 "@
-Add-Content -LiteralPath (Join-Path $DistDir 'README_HAND_ORDER_ZH.md') -Value $buildIdentity -Encoding UTF8
+Add-Content -LiteralPath (Join-Path $DistDir 'README_STICKING_ZH.md') -Value $buildIdentity -Encoding UTF8
 
 $acceptanceSrc = Join-Path $repoRoot 'docs\qa\hand_order'
 foreach ($acceptanceFile in @('MANUAL_CHECKLIST_ZH.md', 'maidata.txt')) {

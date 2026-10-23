@@ -88,6 +88,7 @@ QString resolveChartPathFromCliInput(const QString& inputPath)
 
     const QDir dir(info.absoluteFilePath());
     const QStringList preferredNames{
+        QStringLiteral("maidata_sticking.txt"),
         QStringLiteral("majdata.txt"),
         QStringLiteral("maidata.txt"),
         QStringLiteral("majdata.simai"),

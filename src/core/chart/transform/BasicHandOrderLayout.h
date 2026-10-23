@@ -19,6 +19,6 @@ struct BasicHandOrderLayoutPlan {
 // An empty selection means the complete difficulty text. Existing suffixes,
 // including malformed ones, remain untouched. No execution feasibility is inferred.
 BasicHandOrderLayoutPlan basicHandOrderLayoutInSelection(const QString& text, int begin, int end,
-    const miacode::simai::SimaiTimingMetadata& metadata = {});
+    const miacode::simai::SimaiTimingMetadata& metadata = {}, double returnSpeed = 3.0);
 
 } // namespace miacode::chart_transform

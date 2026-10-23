@@ -56,6 +56,7 @@ miacode_add_module(miacode_chart
         src/core/chart/document/SimaiDocument.h
         src/core/chart/document/SimaiTimingMetadata.cpp
         src/core/chart/document/SimaiTimingMetadata.h
+        src/core/chart/model/HandOrderRestPosition.h
         src/core/chart/model/TimelineData.h
         src/core/chart/model/TimelineMarkerOffset.h
         src/core/chart/parser/HandOrderAnnotationSyntax.cpp

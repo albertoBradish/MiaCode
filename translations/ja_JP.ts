@@ -3,6 +3,9 @@
 <TS version="2.1" language="ja_JP">
 <context>
     <name></name>
+    <message id="dialog.preferences.group.hand_order"><source>Sticking</source><translation>Sticking</translation></message>
+    <message id="preferences.hand_order_return_speed"><source>Hand return speed</source><translation>手の復帰速度</translation></message>
+    <message id="preferences.hand_order_return_speed_unit"><source>field radii/s</source><translation>フィールド半径/秒</translation></message>
     <message id="setup.completion_hint">
         <source>Customize completion candidates in Preferences.</source>
         <translation>補完候補リストは環境設定でカスタマイズできます。</translation>
@@ -223,7 +226,7 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
     </message>
     <message id="action.transform.mirror_lr_swap_hands">
         <source>Mirror Left/Right and swap hands</source>
-        <translation>左右反転して運指の左右を入れ替える</translation>
+        <translation>左右反転してStickingの左右を入れ替える</translation>
     </message>
     <message id="action.transform.mirror_ud">
         <source>Mirror Up/Down</source>
@@ -231,7 +234,7 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
     </message>
     <message id="action.transform.mirror_ud_swap_hands">
         <source>Mirror Up/Down and swap hands</source>
-        <translation>上下反転して運指の左右を入れ替える</translation>
+        <translation>上下反転してStickingの左右を入れ替える</translation>
     </message>
     <message id="action.transform.more">
         <source>More...</source>
@@ -326,8 +329,8 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
         <translation>譜面ファイルを読み込めませんでした</translation>
     </message>
     <message id="cli.export.hand_order_annotation_invalid">
-        <source>hand-order annotation is invalid</source>
-        <translation>運指の注釈が無効です</translation>
+        <source>Sticking annotation is invalid</source>
+        <translation>Stickingの注釈が無効です</translation>
     </message>
     <message id="cli.export.difficulty_invalid">
         <source>invalid difficulty token</source>
@@ -450,8 +453,8 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
         <translation>出力動画のタイムスタンプを非表示にします。</translation>
     </message>
     <message id="cli.video_export.hand_order">
-        <source>Hand-order display: annotated or original.</source>
-        <translation>運指表示：annotated または original。</translation>
+        <source>Sticking display: annotated or original.</source>
+        <translation>Sticking表示：annotated または original。</translation>
     </message>
     <message id="cli.video_export.hand_order_invalid">
         <source>--hand-order must be annotated or original</source>
@@ -1586,8 +1589,8 @@ Failed: %2</source>
         <translation>プレビューの検査情報を表示</translation>
     </message>
     <message id="dialog.render_settings.gameplay.hand_order">
-        <source>Show hand-order annotations</source>
-        <translation>運指の注釈を表示</translation>
+        <source>Show Sticking annotations</source>
+        <translation>Stickingの注釈を表示</translation>
     </message>
     <message id="dialog.render_settings.preview_group">
         <source>Preview</source>
@@ -1878,8 +1881,8 @@ Restore the backup from %1?</source>
         <translation>物量を表示</translation>
     </message>
     <message id="dialog.video_export.option.hand_order_mode">
-        <source>Hand-order display</source>
-        <translation>運指表示</translation>
+        <source>Sticking display</source>
+        <translation>Sticking表示</translation>
     </message>
     <message id="dialog.video_export.hand_order.follow_preview">
         <source>Follow preview</source>
@@ -1890,8 +1893,8 @@ Restore the backup from %1?</source>
         <translation>原譜面を表示</translation>
     </message>
     <message id="dialog.video_export.hand_order.annotated">
-        <source>Hand-order colors</source>
-        <translation>運指の色を表示</translation>
+        <source>Sticking colors</source>
+        <translation>Stickingの色を表示</translation>
     </message>
     <message id="dialog.video_export.option.show_timestamp">
         <source>Show bottom-left timestamp</source>
@@ -2133,7 +2136,7 @@ Restore the backup from %1?</source>
     </message>
     <message id="document.plain_export_same_path">
         <source>Choose a different file to keep the annotated chart.</source>
-        <translation>運指の注釈付き譜面を残すため、別のファイルを選んでください。</translation>
+        <translation>Stickingの注釈付き譜面を残すため、別のファイルを選んでください。</translation>
     </message>
     <message id="document.selection_beats">
         <source>Selection beats: %1</source>
@@ -4871,8 +4874,8 @@ Error: %1</source>
     </message>
 
 <message id="hand_order.title">
-        <source>Hand Order</source>
-        <translation>運指</translation>
+        <source>Sticking</source>
+        <translation>Sticking</translation>
     </message>
     <message id="hand_order.set_left">
         <source>Set Selection to Left Hand</source>
@@ -4887,24 +4890,24 @@ Error: %1</source>
         <translation>選択範囲を指定なしに設定</translation>
     </message>
     <message id="hand_order.split_annotation">
-        <source>Split Hand-order Intervals</source>
-        <translation>運指区間を分割</translation>
+        <source>Split Sticking Intervals</source>
+        <translation>Sticking区間を分割</translation>
     </message>
     <message id="hand_order.selection_scope">
         <source>Edit complete notes in the source selection, including slide heads and all branches</source>
         <translation>ソースの選択範囲内の完全なノーツを編集（スライド始点と全分岐を含む）</translation>
     </message>
     <message id="hand_order.feedback">
-        <source>Hand order: %1 changed, %2 partial tokens skipped, %3 unsupported, %4 diagnostics (click for details)</source>
-        <translation>運指：%1 件変更、部分トークン %2 件・未対応 %3 件をスキップ、診断 %4 件（詳細を表示）</translation>
+        <source>Sticking: %1 changed, %2 partial tokens skipped, %3 unsupported, %4 diagnostics (click for details)</source>
+        <translation>Sticking：%1 件変更、部分トークン %2 件・未対応 %3 件をスキップ、診断 %4 件（詳細を表示）</translation>
     </message>
     <message id="hand_order.diagnostic">
         <source>Line %1, column %2: %3</source>
         <translation>%1 行 %2 列：%3</translation>
     </message>
     <message id="hand_order.intervals">
-        <source>Hand-order Intervals</source>
-        <translation>運指区間</translation>
+        <source>Sticking Intervals</source>
+        <translation>Sticking区間</translation>
     </message>
     <message id="hand_order.draft_notice">
         <source>Changes affect the corresponding interval. Assign every track interval, then write them to the chart in one edit. An unspecified head keeps its original skin. Unwritten choices remain in this session for the matching document version and are not saved with the chart.</source>
@@ -4939,13 +4942,13 @@ Error: %1</source>
         <translation>譜面に反映</translation>
     </message>
     <message id="hand_order.applied">
-        <source>Hand-order intervals written; undo restores them in one step.</source>
-        <translation>運指区間を反映しました。1 回の取り消しで元に戻せます。</translation>
+        <source>Sticking intervals written; undo restores them in one step.</source>
+        <translation>Sticking区間を反映しました。1 回の取り消しで元に戻せます。</translation>
     </message>
 
 <message id="hand_order.analyze">
-        <source>Basic Automatic Hand Order (Experimental)</source>
-        <translation>基本自動運指（実験的）</translation>
+        <source>Basic Automatic Sticking (Experimental)</source>
+        <translation>基本自動Sticking（実験的）</translation>
     </message>
     <message id="hand_order.auto.notice">
         <source>Review every suggestion before applying. Full judgement replay checks ordinary and chained slides, shared actions and both Wifi modes. Confidence scores are experimental, not correctness probabilities or proof of playability. Existing annotations remain unchanged unless recomputation is selected.</source>
@@ -5200,7 +5203,7 @@ Error: %1</source>
     </message>
     <message id="hand_order.auto.reason.existing_handoff_constraint">
         <source>Transfers follow the preserved original interval constraints</source>
-        <translation>保持した元の手順区間に従う持ち替え</translation>
+        <translation>保持した元のSticking区間に従う持ち替え</translation>
     </message>
     <message id="hand_order.auto.quality.critical">
         <source>Target quality</source>
@@ -5341,7 +5344,7 @@ Error: %1</source>
     </message>
     <message id="hand_order.auto.overwrite_existing">
         <source>Recompute existing annotations within the selection; keep outside annotations locked</source>
-        <translation>選択範囲の既存手順を再計算（範囲外は固定）</translation>
+        <translation>選択範囲の既存Stickingを再計算（範囲外は固定）</translation>
     </message>
     <message id="hand_order.auto.high_confidence_only">
         <source>Apply only high-confidence complete dependency units</source>
@@ -5493,19 +5496,19 @@ Error: %1</source>
     </message>
     <message id="hand_order.native.reason.invalid_annotation">
         <source>A selected target has an invalid hand annotation.</source>
-        <translation>選択対象の手順注釈が不正です。</translation>
+        <translation>選択対象のSticking注釈が不正です。</translation>
     </message>
     <message id="hand_order.native.reason.wifi_not_supported">
-        <source>Wifi paths cannot be split into independent native segments here. Use hand-order interval splitting for colouring.</source>
-        <translation>Wifi の展開経路はネイティブ分割に非対応です。着色には手順区間分割を使ってください。</translation>
+        <source>Wifi paths cannot be split into independent native segments here. Use Sticking interval splitting for colouring.</source>
+        <translation>Wifi の展開経路はネイティブ分割に非対応です。着色にはSticking区間分割を使ってください。</translation>
     </message>
     <message id="hand_order.native.reason.missing_markers">
         <source>Parsed native objects are missing.</source>
         <translation>照合する解析済みネイティブ対象がありません。</translation>
     </message>
     <message id="hand_order.native.reason.single_segment">
-        <source>This slide has one native segment. Use hand-order interval splitting for colouring.</source>
-        <translation>この slide はネイティブ区間が1つです。着色には手順区間分割を使ってください。</translation>
+        <source>This slide has one native segment. Use Sticking interval splitting for colouring.</source>
+        <translation>この slide はネイティブ区間が1つです。着色にはSticking区間分割を使ってください。</translation>
     </message>
     <message id="hand_order.native.reason.invalid_geometry">
         <source>Native geometry or motion times are missing or invalid.</source>
@@ -5517,7 +5520,7 @@ Error: %1</source>
     </message>
     <message id="hand_order.native.reason.hand_order_unrepresentable">
         <source>The original hand intervals cannot be mapped reliably to every new segment.</source>
-        <translation>元の手順区間を全ての新しい区間へ確実に写せません。</translation>
+        <translation>元のSticking区間を全ての新しい区間へ確実に写せません。</translation>
     </message>
     <message id="hand_order.native.reason.no_chain_selected">
         <source>No convertible native chain is fully selected.</source>
@@ -5529,7 +5532,7 @@ Error: %1</source>
     </message>
     <message id="hand_order.native.reason.round_trip_mismatch">
         <source>Reparsing did not preserve geometry, actual motion times or annotations.</source>
-        <translation>再解析で形状・実移動時刻・手順を保持できませんでした。</translation>
+        <translation>再解析で形状・実移動時刻・Stickingを保持できませんでした。</translation>
     </message>
     <message id="hand_order.native.reason.head_count_mismatch">
         <source>The proposed result would change the real shared-head count.</source>
@@ -5609,7 +5612,7 @@ Error: %1</source>
     </message>
     <message id="hand_order.basic_layout_next_step">
         <source>Basic layout writes normal annotations. To optimize them, enable “Recompute existing annotations in selection” and analyze again.</source>
-        <translation>基本配置は通常の注釈を書き込みます。続けて自動最適化する場合は「選択内の既存手順を再計算」を有効にして再解析してください。</translation>
+        <translation>基本配置は通常の注釈を書き込みます。続けて自動最適化する場合は「選択内の既存Stickingを再計算」を有効にして再解析してください。</translation>
     </message>
 </context>
 </TS>

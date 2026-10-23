@@ -33,6 +33,10 @@ int main(int argc, char** argv) {
     const auto natural = solve("(120){4}6,");
     expect(natural.patches.size() == 1 && natural.patches.first().text == "6~l",
         "lane six has a mild natural left-hand preference");
+    const auto interaction = solve("(150){16}2,1,2,1,");
+    const QString interactionText = applyPatches("(150){16}2,1,2,1,", interaction);
+    expect(interactionText == "(150){16}2~r,1~l,2~r,1~l,",
+        "automatic hand order favors four-step adjacent-lane hand alternation");
     const QString occupied = "(120){4}5h[1:1]~l,6,";
     const int six = occupied.indexOf("6,");
     const auto busy = solve(occupied, six, six + 1);
