@@ -70,6 +70,16 @@ int main()
     expect(weakCost > usualCost && close(tired.load, usual.load),
         "lower stamina increases repeated-hit cost without inventing extra physical work");
 
+    PlayerEffortState burst;
+    double firstBurst = 0.0, sustainedBurst = 0.0;
+    for (int i = 0; i < 32; ++i) {
+        const auto strike = playerStrike(burst, i * 0.08, profile);
+        if (i == 1) firstBurst = strike.cost;
+        if (i == 31) sustainedBurst = strike.cost;
+    }
+    expect(sustainedBurst > firstBurst * 2.0,
+        "brief speed bursts cost less than sustained overload at the identical strike rate");
+
     auto decomposition = profile, bracing = profile;
     decomposition.techniquePreference = -1.0; bracing.techniquePreference = 1.0;
     PlayerEffortState a, b;

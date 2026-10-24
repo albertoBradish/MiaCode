@@ -17,6 +17,8 @@
 
 #include "core/analysis/hand_order/BasicHandOrder.h"
 #include "core/chart/document/SimaiDocument.h"
+#include "core/chart/parser/HandOrderAnnotationSyntax.h"
+#include "core/chart/transform/BasicHandOrderLayout.h"
 
 namespace {
 
@@ -65,6 +67,7 @@ int main(int argc, char* argv[])
     cli.addOption({"difficulty", "Difficulty slot, 1 through 7.", "id", "5"});
     cli.addOption({"output", "Annotated maidata copy; must differ from source.", "path"});
     cli.addOption({"report", "Structured audit JSON; must differ from source and output.", "path"});
+    cli.addOption({"layout-output", "Optional full-difficulty basic-layout maidata before inference.", "path"});
     cli.addOption({"begin", "Inclusive UTF-16 offset within the selected inote value.", "offset", "0"});
     cli.addOption({"end", "Exclusive UTF-16 offset within the selected inote value; defaults to its end.", "offset"});
     cli.addOption({"max-work", "Maximum inference work units.", "units", QString::number(defaults.maxWorkUnits)});
@@ -93,6 +96,8 @@ int main(int argc, char* argv[])
     const QString inputPath = QFileInfo(cli.positionalArguments().first()).absoluteFilePath();
     const QString outputPath = QFileInfo(cli.value("output")).absoluteFilePath();
     const QString reportPath = QFileInfo(cli.value("report")).absoluteFilePath();
+    const QString layoutPath = cli.isSet("layout-output")
+        ? QFileInfo(cli.value("layout-output")).absoluteFilePath() : QString{};
 #ifdef Q_OS_WIN
     constexpr auto pathCase = Qt::CaseInsensitive;
 #else
@@ -102,6 +107,9 @@ int main(int argc, char* argv[])
         || identity(inputPath).compare(identity(reportPath), pathCase) == 0
         || identity(outputPath).compare(identity(reportPath), pathCase) == 0)
         return fail("Input, output and report paths must be distinct.");
+    if (!layoutPath.isEmpty()) for (const auto& other : {inputPath, outputPath, reportPath})
+        if (identity(layoutPath).compare(identity(other), pathCase) == 0)
+            return fail("Layout output must differ from input, output and report.");
 
     bool valid = true;
     const auto integer = [&](const QString& name, qint64 minimum, qint64 maximum) {
@@ -153,6 +161,8 @@ int main(int argc, char* argv[])
     const int scopeEnd = cli.isSet("end")
         ? int(integer("end", scopeBegin, difficulty->chart.size())) : int(difficulty->chart.size());
     if (!valid) return fail("Invalid selection: require 0 <= begin <= end <= inote UTF-16 length.");
+    if (!layoutPath.isEmpty() && (scopeBegin != 0 || scopeEnd != difficulty->chart.size()))
+        return fail("Layout output requires a complete difficulty selection.");
 
     // Locate the original value so unrelated metadata, comments and line endings stay intact.
     // SimaiDocument trims only trailing whitespace; leading whitespace and CRLF remain in chart.
@@ -203,6 +213,24 @@ int main(int argc, char* argv[])
         report.insert("outcome", "parse_rejected");
         if (!writeFile(reportPath, QJsonDocument(report).toJson())) return fail("Cannot save parse report.");
         return 3;
+    }
+
+    if (!layoutPath.isEmpty()) {
+        const QString source = parameters.overwriteExisting
+            ? miacode::hand_order::stripAnnotations(difficulty->chart) : difficulty->chart;
+        const auto layout = miacode::chart_transform::basicHandOrderLayoutInSelection(
+            source, 0, 0, metadata, parameters.returnSpeed, parameters.sweepThreshold, parameters.colorUnresolved);
+        const auto layoutParsed = SimaiParser::validateSyntax(layout.edit.replacement, metadata);
+        if (!layoutParsed.ok || !layoutParsed.annotationErrors.isEmpty()
+            || layoutParsed.noteMarkers.size() != parsed.noteMarkers.size())
+            return fail("Basic layout failed native parsing or note count validation.");
+        QString laidOut = text;
+        laidOut.replace(chartOffset, difficulty->chart.size(), layout.edit.replacement);
+        QByteArray layoutBytes = laidOut.toUtf8();
+        if (bom) layoutBytes.prepend("\xEF\xBB\xBF");
+        if (!writeFile(layoutPath, layoutBytes)) return fail("Cannot save basic-layout maidata.");
+        report.insert("layout_path", layoutPath);
+        report.insert("layout_sha256", sha256(layoutBytes));
     }
 
     timer.restart();

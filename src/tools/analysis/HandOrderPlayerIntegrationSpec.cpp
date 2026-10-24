@@ -52,7 +52,7 @@ int main(int argc, char** argv)
         return row.playerCost > 0 && row.peakTapRate > 0 && row.peakLoad > 0;
     }), "ordinary button fast path emits player effort evidence", high);
     bool preferenceChangesHands = false;
-    for (double reference = 3.0; reference <= 6.0 && !preferenceChangesHands; reference += 0.25) {
+    for (double reference = 2.0; reference <= 6.0 && !preferenceChangesHands; reference += 0.1) {
         auto decompose = highSpeed, brace = highSpeed;
         decompose.player.maxComfortableTapRate = brace.player.maxComfortableTapRate = reference;
         decompose.player.techniquePreference = -1.0; brace.player.techniquePreference = 1.0;

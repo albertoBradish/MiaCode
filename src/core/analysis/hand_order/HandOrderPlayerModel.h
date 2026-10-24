@@ -96,7 +96,10 @@ inline PlayerEffortDelta playerStrike(PlayerEffortState& state, double second,
     const double fatigue = 0.04 * strikeWeight * (before * before + next.load * next.load)
         / (profile.staminaCapacity * profile.staminaCapacity);
     const double technique = 1.0 - 0.35 * profile.techniquePreference;
-    const double cost = (0.03 * strikeWeight + 0.9 * excess * excess) * technique + fatigue;
+    // A fresh hand can spend a short burst above its sustained reference.
+    // The discount disappears as real committed effort accumulates.
+    const double burstCharge = 0.2 + 0.8 * std::min(1.0, before / profile.staminaCapacity);
+    const double cost = (0.03 * strikeWeight + 0.9 * burstCharge * excess * excess) * technique + fatigue;
     if (!std::isfinite(next.load) || !std::isfinite(cost)) return invalidPlayerEffort();
     state = next;
     return {cost, rate, next.load / profile.staminaCapacity, true};

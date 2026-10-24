@@ -373,6 +373,12 @@ miacode_add_dev_tool(hand_order_player_integration_spec TEST
     INCLUDES src
 )
 
+miacode_add_dev_tool(hand_order_ergonomics_spec TEST
+    SOURCES src/tools/analysis/HandOrderErgonomicsSpec.cpp
+    LIBS miacode_analysis Qt6::Core Qt6::Gui
+    INCLUDES src
+)
+
 miacode_add_dev_tool(lance_pattern_spec TEST
     SOURCES src/tools/analysis/LancePatternSpec.cpp
     LIBS miacode_analysis Qt6::Core Qt6::Gui

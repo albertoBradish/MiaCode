@@ -41,7 +41,10 @@ inline QVector<ContactAction> holdReleaseCandidates(const ContactAction& full,
     const double bodyFirst = marker.second + headIgnore;
     const double bodyLast = std::max(bodyFirst, marker.endSecond - FullReplayProfile::holdTailIgnoreSeconds);
     const double guard = 2.0 / FullReplayProfile::ticksPerSecond;
-    const double earliest = std::max(full.start + pressSeconds, bodyLast + guard);
+    const bool hasBody = marker.endSecond - marker.second > headIgnore
+        + FullReplayProfile::holdTailIgnoreSeconds + epsilon;
+    const double earliest = hasBody ? std::max(full.start + pressSeconds, bodyLast + guard)
+                                    : full.start + pressSeconds;
     if (!std::isfinite(earliest)) return candidates;
 
     const auto append = [&](double requestedEnd) {
@@ -60,6 +63,7 @@ inline QVector<ContactAction> holdReleaseCandidates(const ContactAction& full,
     };
     append(marker.endSecond - 0.05);
     append(marker.endSecond - FullReplayProfile::holdTailIgnoreSeconds + guard);
+    if (!hasBody) append(full.start + pressSeconds);
     return candidates;
 }
 

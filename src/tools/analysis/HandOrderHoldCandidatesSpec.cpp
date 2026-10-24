@@ -41,6 +41,29 @@ int main(int argc, char** argv)
         }
     }
     const QString chain = QStringLiteral("(130){8}6,5,4,3,{16}2h[16:3],,,3h[16:3],,,4,,");
+    for (bool touch : {false, true}) for (bool longBody : {false, true})
+        for (bool ex : {false, true}) for (bool breaking : {false, true}) {
+            const QString text = touch ? QStringLiteral("(120){4}Ch[2:1],") : QStringLiteral("(120){4}1h[2:1],");
+            auto marker = SimaiParser::validateSyntax(text).noteMarkers.first();
+            marker.isEx = marker.headEx = ex;
+            marker.isBreak = marker.headBreak = breaking && !touch;
+            marker.endSecond = marker.second + (touch ? 0.45 : 0.3) + (longBody ? 0.08 : -0.01);
+            ContactAction full;
+            full.hand = 1; full.kind = touch ? QStringLiteral("touch_hold") : QStringLiteral("button");
+            full.start = marker.second; full.end = marker.endSecond;
+            full.points = {touch ? touchPadPoint(marker.touchPad) : QPointF(0.3826834324, -0.9238795325)};
+            full.times = {full.start};
+            const auto choices = holdReleaseCandidates(full, marker, 0.025);
+            const bool tapRelease = std::any_of(choices.cbegin(), choices.cend(), [&](const auto& action) {
+                return std::abs(action.end - action.start - 0.025) < 1e-8;
+            });
+            expect(tapRelease != longBody,
+                "DX short Hold/Touch Hold may tap-release only when their distinct required body is empty");
+            auto instant = full; instant.end = instant.start + 0.025;
+            const auto replay = replayHandOrderChart({marker}, {{instant, !touch, marker.lane}});
+            expect(replay.meetsTarget != longBody,
+                "EX and Break do not remove the required sustained Hold body in complete replay");
+        }
     BasicParameters parameters; parameters.counterfactualBudget = 0;
     const auto result = inferBasicHandOrder(chain, SimaiParser::validateSyntax(chain), 0, chain.size(), parameters);
     expect(!result.rows.isEmpty() && std::all_of(result.rows.cbegin(), result.rows.cend(), [](const auto& row) {

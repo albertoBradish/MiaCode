@@ -16,3 +16,4 @@
 - [拆成独立 slide](specs/chart/NATIVE_SLIDE_SPLIT_SPEC_ZH.md)：原生链段结构拆分、差异预览、原子应用与身份拒绝。
 
 - [基础自动手序（实验性，阶段 B）](specs/chart/BASIC_AUTOMATIC_HAND_ORDER_SPEC_ZH.md)：支持范围、异步身份、候选代价与未支持边界。
+- [动作连贯性与 DX 验收（v15）](qa/hand_order/ERGONOMICS_V15_20261024_ZH.md)：爆发、HOLD、同头分支、浅出张和多预设语料口径。

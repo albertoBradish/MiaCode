@@ -365,6 +365,7 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
             || !canRewrite.at(a.token) || !canRewrite.at(b.token)
             || !selectedTokens.at(a.token) || !selectedTokens.at(b.token)) continue;
         const double xA = a.point.x(), xB = b.point.x();
+        if (qMax(std::abs(xA), std::abs(xB)) <= 0.65) continue;
         const bool crossed = (xA < -0.25 && xB > 0.25
             && handIndex(a.hand) == 1 && handIndex(b.hand) == 0)
             || (xB < -0.25 && xA > 0.25
@@ -609,14 +610,28 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
     // A fast directional key sweep stays on the starting hand. A back-and-
     // forth interaction reverses direction and is handled separately below.
     for (int first = 0; first < order.size();) {
+        // A complete fast ring remains one gesture just below the configured
+        // partial-sweep threshold (for example 156 BPM sixteenth notes).
+        bool wholeCircle = first + 7 < order.size();
+        const int circleStep = wholeCircle ? adjacentLaneStep(heads->at(order.at(first)).marker->lane,
+            heads->at(order.at(first + 1)).marker->lane) : 0;
+        wholeCircle &= circleStep != 0;
+        for (int i = first + 1; wholeCircle && i <= first + 7; ++i) {
+            const auto& a = heads->at(order.at(i - 1));
+            const auto& b = heads->at(order.at(i));
+            wholeCircle = regularTapStep(a, b, 1) && b.marker->second - a.marker->second <= 0.13 + 1e-9
+                && adjacentLaneStep(a.marker->lane, b.marker->lane) == circleStep;
+        }
+        const double maximumGap = wholeCircle ? qMax(0.13, maximumSweepGap) : maximumSweepGap;
         int last = first + 1;
         int direction = 0;
         while (last < order.size()) {
             const auto& previous = heads->at(order.at(last - 1));
             const auto& current = heads->at(order.at(last));
             const int step = adjacentLaneStep(previous.marker->lane, current.marker->lane);
-            const bool starEnding = current.marker->type == QStringLiteral("slide")
-                && current.marker->hasHeadStar && last == first + 2;
+            const bool starEnding = last == first + 2
+                && ((current.marker->type == QStringLiteral("slide") && current.marker->hasHeadStar)
+                    || current.marker->type == QStringLiteral("hold"));
             const double grid = 240.0 / (previous.marker->tempoBpm * previous.marker->subdivision);
             const double gap = current.marker->second - previous.marker->second;
             const bool regularStar = starEnding && previous.marker->type == QStringLiteral("tap")
@@ -624,7 +639,7 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
                 && gap >= grid * 0.9 - 1e-9 && gap <= grid * 1.1 + 1e-9;
             if (!step || (direction && step != direction) || previous.patternHand >= 0
                 || current.patternHand >= 0
-                || gap > maximumSweepGap + 1e-9
+                || gap > maximumGap + 1e-9
                 || (!regularTapStep(previous, current, 1) && !regularStar)) break;
             direction = step;
             ++last;
