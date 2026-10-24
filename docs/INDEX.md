@@ -17,3 +17,4 @@
 
 - [基础自动手序（实验性，阶段 B）](specs/chart/BASIC_AUTOMATIC_HAND_ORDER_SPEC_ZH.md)：支持范围、异步身份、候选代价与未支持边界。
 - [动作连贯性与 DX 验收（v15）](qa/hand_order/ERGONOMICS_V15_20261024_ZH.md)：爆发、HOLD、同头分支、浅出张和多预设语料口径。
+- [持续动作细化（v16）](qa/hand_order/REFINEMENT_V16_20261024_ZH.md)：固定占手、物理交叉计费、长 HOLD 姿态和中速同侧扫。

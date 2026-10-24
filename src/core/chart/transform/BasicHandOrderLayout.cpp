@@ -610,19 +610,23 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
     // A fast directional key sweep stays on the starting hand. A back-and-
     // forth interaction reverses direction and is handled separately below.
     for (int first = 0; first < order.size();) {
-        // A complete fast ring remains one gesture just below the configured
-        // partial-sweep threshold (for example 156 BPM sixteenth notes).
-        bool wholeCircle = first + 7 < order.size();
-        const int circleStep = wholeCircle ? adjacentLaneStep(heads->at(order.at(first)).marker->lane,
+        // Same-side four-key sweeps and complete rings remain gestures just
+        // below the partial-sweep threshold, rather than isolated taps.
+        const bool sameSide = first + 3 < order.size()
+            && (heads->at(order.at(first)).marker->lane <= 4)
+                == (heads->at(order.at(first + 3)).marker->lane <= 4);
+        const int gestureSize = sameSide ? 4 : 8;
+        bool coherentGesture = first + gestureSize - 1 < order.size();
+        const int circleStep = coherentGesture ? adjacentLaneStep(heads->at(order.at(first)).marker->lane,
             heads->at(order.at(first + 1)).marker->lane) : 0;
-        wholeCircle &= circleStep != 0;
-        for (int i = first + 1; wholeCircle && i <= first + 7; ++i) {
+        coherentGesture &= circleStep != 0;
+        for (int i = first + 1; coherentGesture && i < first + gestureSize; ++i) {
             const auto& a = heads->at(order.at(i - 1));
             const auto& b = heads->at(order.at(i));
-            wholeCircle = regularTapStep(a, b, 1) && b.marker->second - a.marker->second <= 0.13 + 1e-9
+            coherentGesture = regularTapStep(a, b, 1) && b.marker->second - a.marker->second <= 0.13 + 1e-9
                 && adjacentLaneStep(a.marker->lane, b.marker->lane) == circleStep;
         }
-        const double maximumGap = wholeCircle ? qMax(0.13, maximumSweepGap) : maximumSweepGap;
+        const double maximumGap = coherentGesture ? qMax(0.13, maximumSweepGap) : maximumSweepGap;
         int last = first + 1;
         int direction = 0;
         while (last < order.size()) {

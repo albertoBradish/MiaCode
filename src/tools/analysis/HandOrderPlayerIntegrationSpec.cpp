@@ -105,6 +105,22 @@ int main(int argc, char** argv)
     expect(rejected.error == QStringLiteral("invalid_parameters") && rejected.patches.isEmpty(),
         "invalid player settings cannot produce applicable annotations", rejected);
 
+    BasicParameters postureFree; postureFree.player.postureWeight = 0;
+    const QString shortReach = QStringLiteral("(120){4}1h[4:1]~l,");
+    const QString longReach = QStringLiteral("(120){4}1h[1:2]~l,");
+    const auto shortHeld = solve(shortReach), longHeld = solve(longReach);
+    const auto shortNeutral = solve(shortReach, postureFree), longNeutral = solve(longReach, postureFree);
+    expect(verified(shortHeld) && verified(longHeld) && verified(shortNeutral) && verified(longNeutral)
+        && shortHeld.rows.first().playerCost > shortNeutral.rows.first().playerCost
+        && longHeld.rows.first().playerCost - longNeutral.rows.first().playerCost
+            > 10 * (shortHeld.rows.first().playerCost - shortNeutral.rows.first().playerCost),
+        "holding a contralateral pose costs its required body time rather than only one shallow strike", longHeld);
+    const QString centreHold = QStringLiteral("(120){4}Ch[1:2]~l,");
+    const auto centreHeld = solve(centreHold), centreNeutral = solve(centreHold, postureFree);
+    expect(verified(centreHeld) && verified(centreNeutral)
+        && std::abs(centreHeld.rows.first().playerCost - centreNeutral.rows.first().playerCost) < 1e-8,
+        "a central DX Touch Hold has no invented contralateral posture charge", centreHeld);
+
     QString budgetChart = QStringLiteral("(120){4}1w5[4:1],,,,,B8/C/B1,,,,{16}");
     for (int i = 0; i < 24; ++i) budgetChart += i % 2 ? QStringLiteral("6,") : QStringLiteral("2,");
     bool observedLimit = false, observedVerified = false;

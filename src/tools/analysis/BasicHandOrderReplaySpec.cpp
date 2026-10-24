@@ -91,6 +91,43 @@ int main(int argc, char** argv)
         ContactAction contact; contact.start = first; contact.end = last; contact.hand = hand;
         contact.points = {point}; contact.times = {first}; return ScheduledAction{contact, true, false, lane};
     };
+    auto tracing = held(0, 1, 0, 2, {0.92, -0.38});
+    tracing.action.tokenStart = 11; tracing.button = false; tracing.motion = true;
+    tracing.action.points = {{0.92, -0.38}, {0.89, -0.40}}; tracing.action.times = {0, 1};
+    auto anchor = held(0, 1, 1, 1, {0.38, -0.92}); anchor.action.tokenStart = 12;
+    work = 100000;
+    const auto anchored = physicalHandCrossingEffort({tracing, anchor}, {12}, {}, work);
+    auto duplicate = tracing; duplicate.action.tokenStart = 13;
+    work = 100000;
+    const auto duplicated = physicalHandCrossingEffort({tracing, duplicate, anchor}, {12}, {}, work);
+    auto firstPart = tracing; firstPart.action.end = 0.5;
+    firstPart.action.points = {{0.92, -0.38}, {0.905, -0.39}}; firstPart.action.times = {0, 0.5};
+    auto secondPart = tracing; secondPart.action.start = 0.5;
+    secondPart.action.points = {{0.905, -0.39}, {0.89, -0.40}}; secondPart.action.times = {0.5, 1};
+    work = 100000;
+    const auto subdivided = physicalHandCrossingEffort({firstPart, secondPart, anchor}, {12}, {}, work);
+    expect(anchored.valid && anchored.flowingConflicts == 0 && anchored.stationarySeconds > 0.9,
+        "a stationary anchor crossing is soft effort rather than an impossible flowing topology");
+    expect(duplicated.valid && subdivided.valid
+        && std::abs(anchored.stationarySeconds - duplicated.stationarySeconds) < 1e-8
+        && std::abs(anchored.stationarySeconds - subdivided.stationarySeconds) < 1e-8,
+        "crossing effort is unchanged by duplicate logical branches and constant-pose subdivision");
+    auto moving = anchor; moving.motion = true; moving.button = false;
+    moving.action.points = {{0.38, -0.92}, {0.41, -0.91}}; moving.action.times = {0, 1};
+    work = 100000;
+    const auto intertwined = physicalHandCrossingEffort({tracing, duplicate, moving}, {}, {}, work);
+    expect(intertwined.valid && intertwined.flowingConflicts == 1 && intertwined.stationarySeconds == 0,
+        "two intertwined flowing hands remain one physical conflict across duplicate logical branches");
+    auto waiting = anchor; waiting.motion = true; waiting.button = false;
+    work = 100000;
+    const auto paused = physicalHandCrossingEffort({tracing, waiting}, {}, {}, work);
+    expect(paused.valid && paused.flowingConflicts == 0 && paused.stationarySeconds > 0.9,
+        "an actual stationary interval inside a logical slide is treated as an anchor");
+    auto sweepTap = held(0.3, 0.325, 1, 1, {0.38, -0.92}); sweepTap.action.tokenStart = 14;
+    work = 100000;
+    const auto sweeping = physicalHandCrossingEffort({tracing, sweepTap}, {}, {14}, work);
+    expect(sweeping.valid && sweeping.flowingConflicts == 1,
+        "a tap belonging to a continuous key sweep retains its flowing conflict with the opposite slide");
     const QVector<ScheduledAction> occupations{held(-0.5, 0.4, 1, 1, {0.8, -0.8}),
         held(0.8, 1.3, 0, 5, {-0.8, 0.8}), held(1.6, 2.4, 1, 2, {0.8, 0.8})};
     const auto routed = [](double first, double last, int hand) {

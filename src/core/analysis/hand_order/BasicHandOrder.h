@@ -5,7 +5,7 @@
 #include "core/chart/model/HandOrderSweepThreshold.h"
 
 namespace miacode::hand_order {
-inline constexpr int basicAlgorithmVersion = 15;
+inline constexpr int basicAlgorithmVersion = 16;
 inline constexpr int basicJudgeProfileRevision = 2;
 struct BasicParameters {
     static constexpr double minReturnSpeed = 1.0;

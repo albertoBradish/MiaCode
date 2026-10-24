@@ -1,6 +1,6 @@
-# 自动 Sticking（实验性，算法 v15）
+# 自动 Sticking（实验性，算法 v16）
 
-v15 增加随负荷变化的短时爆发评分、扫尾 HOLD、同头分支空间次序和持续轨迹交叉前臂约束；降低浅单键出张代价，避免一笔画起滑前的反向折返。三扫及快速整圈仍优先保持连贯。一笔画从首组开始整体准备，新轨迹纳入持续期间另一手的任务。判定回放继续独立核对 DX TOUCH、TOUCH HOLD、EX、BREAK 和 WiFi，参数与边界见 [玩家能力与动作负荷](PLAYER_CAPABILITY_HAND_ORDER_ZH.md#第-15-版动作约束)。
+v16 区分固定占手旁的短暂跨手与两条连续动作穿插；交叉代价按实际物理手掌的时间段统计，不随重合逻辑轨迹数重复增加。HOLD/TOUCH HOLD 的持续出张压力按必需按压段时长计费，同侧四键的中速连扫也保留连贯。沿用 v15 的短时爆发、扫尾 HOLD、同头分支空间次序和一笔画准备，判定回放继续独立核对 DX 元素。参数与边界见 [玩家能力与动作负荷](PLAYER_CAPABILITY_HAND_ORDER_ZH.md#第-16-版持续动作细化)。
 
 沿用 v14 的异键 Hold 名义尾接头换手约束、A/D/E 及跨圈 Touch 扫、每颗 Touch 的独立责任手。四种风格预设为综合、硬抗、分页、拆谱；默认综合参数为 6.5 次/秒、7 场地半径/秒、体力 1、恢复半衰期 2.5 秒、打法 -0.2、姿态权重 4。默认预算 3 亿工作单位，支持低 5000 万、高 6 亿及最多 10 亿。未决按基础排布补色时明确标为未验证，只有实际回放通过的候选计入已验证行。
 
@@ -50,7 +50,7 @@ v15 增加随负荷变化的短时爆发评分、扫尾 HOLD、同头分支空�
 
 ## 版本化判定 profile
 
-自动算法 `basicAlgorithmVersion=15`，参数判定修订 `basicJudgeProfileRevision=2`；独立完整回放首次 profile 为 `fullReplayProfileRevision=1`。参考固定提交的 MaiMuriDX `0ebab7ff6853a159ef6af76d9e3c43b23157bb5e` 开发笔记与本地原生 slide 判定队列。该社区来源描述日版 Buddies / 国服舞萌 DX 2024 的范围，不等于所有框体或官方内部规格。
+自动算法 `basicAlgorithmVersion=16`，参数判定修订 `basicJudgeProfileRevision=2`；独立完整回放首次 profile 为 `fullReplayProfileRevision=1`。参考固定提交的 MaiMuriDX `0ebab7ff6853a159ef6af76d9e3c43b23157bb5e` 开发笔记与本地原生 slide 判定队列。该社区来源描述日版 Buddies / 国服舞萌 DX 2024 的范围，不等于所有框体或官方内部规格。
 
 - Tap Critical 窗口为 ±3/180 秒，可接受窗口 ±27/180 秒；Touch 对应 ±27/180 秒。
 - Slide 使用原生区域序列、短轨保护区域、长轨跳区、原生链段衔接与最终判定窗；可接受尾窗为 108/180 秒。不会把本地旧 Muri 的 24 小时宽限套入新 profile。单段 V/L 形按参考的 `is_l` / `is_special_l` 保护 0 基索引 1（特殊 L 另保护索引 3）。多原生段链按拼接队列总区域数执行普通短/长轨跳区；V 起手链不继承单独 V 的专用保护。这是固定社区参考的链式行为，不推定为官方所有版本规则，也不借此修改旧 Muri 的独立行为。

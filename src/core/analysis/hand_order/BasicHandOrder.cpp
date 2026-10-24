@@ -98,8 +98,10 @@ struct State {
     PlayerProfile player;
     std::array<PlayerPathState, 2> effortOrigins, effortEnds;
     QHash<int, int> sweepPreviousSources;
+    QSet<int> sweepSources;
     QSet<int> holdSources;
     QHash<int, double> holdNominalEnds;
+    QHash<int, QPair<double, double>> holdBodyRanges;
     QSet<int> proposedHeads;
     bool ordinaryOnly = false;
     double scoreFrom = -std::numeric_limits<double>::infinity();
@@ -178,53 +180,6 @@ bool extremeCrossedEach(const Primitive& a, int handA, const Primitive& b, int h
     // A shallow reach at 1/4/5/8 is valid even in an opposite Each.
     return (xA < -0.25 && xB > 0.25 && qMax(-xA, xB) > 0.65 && handA == 1 && handB == 0)
         || (xB < -0.25 && xA > 0.25 && qMax(-xB, xA) > 0.65 && handB == 1 && handA == 0);
-}
-
-bool crossedForearms(const QPointF& left, const QPointF& right)
-{
-    // Project two forearms from below the cabinet. This permits the common
-    // shallow top/bottom reach, but catches a hand trapped underneath the
-    // other arm while that arm must keep tracing a slide or holding a pad.
-    const QLineF leftArm(QPointF(-0.55, 1.5), left);
-    const QLineF rightArm(QPointF(0.55, 1.5), right);
-    QPointF crossing;
-    return QLineF(left, right).length() > 0.35
-        && leftArm.intersects(rightArm, &crossing) == QLineF::BoundedIntersection
-        && QLineF(crossing, left).length() > 0.08
-        && QLineF(crossing, right).length() > 0.08;
-}
-
-int sustainedCrossings(const State& state, qint64& work)
-{
-    QSet<QPair<int, int>> crossedSources;
-    for (int i = 0; i < state.physical.size(); ++i) {
-        const auto& a = state.physical.at(i);
-        for (int j = i + 1; j < state.physical.size(); ++j) {
-            const auto& b = state.physical.at(j);
-            if (a.action.hand == b.action.hand || (a.committed && b.committed)
-                || (!a.motion && !b.motion && !state.holdSources.contains(a.action.tokenStart)
-                    && !state.holdSources.contains(b.action.tokenStart))) continue;
-            const double first = qMax(a.action.start, b.action.start);
-            const double last = qMin(a.action.end, b.action.end);
-            if (last <= first + epsilon) continue;
-            if (!spend(work)) return -1;
-            QVector<double> times{first, last};
-            for (double t : a.action.times) if (t > first && t < last) times.append(t);
-            for (double t : b.action.times) if (t > first && t < last) times.append(t);
-            std::sort(times.begin(), times.end());
-            for (int k = 1; k < times.size(); ++k) {
-                if (!spend(work)) return -1;
-                const double at = (times.at(k - 1) + times.at(k)) / 2;
-                const auto pa = contactPosition(a.action, at), pb = contactPosition(b.action, at);
-                if (crossedForearms(a.action.hand == 0 ? pa : pb, a.action.hand == 0 ? pb : pa)) {
-                    crossedSources.insert({qMin(a.action.tokenStart, b.action.tokenStart),
-                        qMax(a.action.tokenStart, b.action.tokenStart)});
-                    break;
-                }
-            }
-        }
-    }
-    return crossedSources.size();
 }
 
 bool oneStrokeEntryDetour(const State& state, const QVector<Track>& tracks,
@@ -320,6 +275,13 @@ void setPlayerActionKinds(State& state, const QVector<Primitive>& primitives,
         if (primitive.marker.type == "hold" || primitive.marker.type == "touch_hold") {
             state.holdSources.insert(primitive.action.tokenStart);
             state.holdNominalEnds.insert(primitive.action.tokenStart, primitive.marker.endSecond);
+            if (holdHasRequiredBody(primitive.marker)) {
+                const double headIgnore = primitive.marker.type == QStringLiteral("touch_hold")
+                    ? FullReplayProfile::touchHoldHeadIgnoreSeconds : FullReplayProfile::holdHeadIgnoreSeconds;
+                state.holdBodyRanges.insert(primitive.action.tokenStart,
+                    {primitive.marker.second + headIgnore,
+                        primitive.marker.endSecond - FullReplayProfile::holdTailIgnoreSeconds});
+            }
         }
     }
     for (const auto& touch : touches) if (touch.sweepPrevious >= 0)
@@ -360,6 +322,10 @@ void setPlayerActionKinds(State& state, const QVector<Primitive>& primitives,
             first = last;
         } else ++first;
     }
+    for (auto it = state.sweepPreviousSources.cbegin(); it != state.sweepPreviousSources.cend(); ++it) {
+        state.sweepSources.insert(it.key());
+        state.sweepSources.insert(it.value());
+    }
 }
 
 // Recompute from a fixed window-entry history, never from the last candidate's
@@ -381,6 +347,9 @@ bool scorePlayerEffort(State& state, qint64& work,
             if (!spend(work, action.action.times.size() + 2)) return false;
             ordered.append(&action); times.append(begin); times.append(end);
             for (double time : action.action.times) if (time > begin && time < end) times.append(time);
+            const auto body = state.holdBodyRanges.constFind(action.action.tokenStart);
+            if (body != state.holdBodyRanges.cend()) for (double at : {body->first, body->second})
+                if (at > begin && at < end) times.append(at);
         }
         std::stable_sort(ordered.begin(), ordered.end(), [](const auto* a, const auto* b) {
             return a->action.start < b->action.start;
@@ -412,12 +381,17 @@ bool scorePlayerEffort(State& state, qint64& work,
             const auto* selected = active.first();
             const auto from = contactPosition(selected->action, first);
             const auto to = contactPosition(selected->action, last);
-            bool charged = false, screen = false, sustained = false;
+            bool charged = false, screen = false, sustained = false, requiredHold = false, committedHold = false;
             bool buttonDown = false, screenDown = false, chargedDown = false;
             for (const auto* action : active) {
                 charged |= !action->committed;
                 screen |= !action->button;
                 sustained |= state.holdSources.contains(action->action.tokenStart);
+                const auto body = state.holdBodyRanges.constFind(action->action.tokenStart);
+                const bool holding = body != state.holdBodyRanges.cend()
+                    && (first + last) / 2 >= body->first && (first + last) / 2 <= body->second;
+                if (action->committed) committedHold |= holding;
+                else requiredHold |= holding;
                 if (std::abs(action->action.start - first) < epsilon && !action->motion) {
                     buttonDown |= action->button;
                     screenDown |= !action->button;
@@ -443,6 +417,17 @@ bool scorePlayerEffort(State& state, qint64& work,
                 if (!add(playerStrike(path.effort, first, state.player), chargedDown)) return false;
             if (!add(playerMovement(path.effort, first, last,
                     QLineF(from, to).length(), state.player, sustained), charged)) return false;
+            if (charged && requiredHold && !committedHold) {
+                // A shallow strike is brief; maintaining the same contralateral
+                // pose through a required Hold body has time-dependent effort.
+                const double x0 = hand == 0 ? from.x() : -from.x();
+                const double x1 = hand == 0 ? to.x() : -to.x();
+                double area = 0.0;
+                if (x0 >= 0.0 && x1 >= 0.0) area = (x0 + x1) / 2;
+                else if (qMax(x0, x1) > 0.0)
+                    area = qMax(x0, x1) * qMax(x0, x1) / (2 * std::abs(x1 - x0));
+                state.playerCost += state.player.postureWeight * area * (last - first);
+            }
             path.point = to; path.free = last; path.known = true; path.screen = screen;
             path.source = selected->action.tokenStart;
         }
@@ -592,10 +577,10 @@ bool score(State& state, const QVector<Track>& tracks, const QVector<Primitive>&
             }
         }
     }
-    const int crossings = sustainedCrossings(state, work);
-    if (crossings < 0) return false;
-    state.ergonomicBreaks += crossings;
-    state.cost += 12.0 * crossings;
+    const auto crossings = physicalHandCrossingEffort(state.physical, state.holdSources, state.sweepSources, work);
+    if (!crossings.valid) return false;
+    state.ergonomicBreaks += crossings.flowingConflicts;
+    state.cost += 12.0 * crossings.flowingConflicts + 1.5 * crossings.stationarySeconds;
     for (int hand = 0; hand < 2; ++hand) {
         QVector<const Scheduled*> active;
         for (const auto& action : state.physical) if (action.action.hand == hand) active.append(&action);
@@ -1581,16 +1566,20 @@ BasicResult inferBasicHandOrder(const QString& text, const SimaiParseResult& par
     // 8/1 seam; charging each handoff avoids a last-moment return jump.
     for (int first = 0; first + 3 < tapOrder.size();) {
         const int direction = adjacentStep(tapOrder.at(first), tapOrder.at(first + 1));
-        bool wholeCircle = direction && first + 7 < tapOrder.size();
-        for (int i = first + 1; wholeCircle && i <= first + 7; ++i) {
+        const bool sameSide = first + 3 < tapOrder.size()
+            && (primitives.at(tapOrder.at(first)).lane <= 4)
+                == (primitives.at(tapOrder.at(first + 3)).lane <= 4);
+        const int gestureSize = sameSide ? 4 : 8;
+        bool coherentGesture = direction && first + gestureSize - 1 < tapOrder.size();
+        for (int i = first + 1; coherentGesture && i < first + gestureSize; ++i) {
             const auto& a = primitives.at(tapOrder.at(i - 1)).marker;
             const auto& b = primitives.at(tapOrder.at(i)).marker;
             const double grid = a.tempoBpm > 0 && a.subdivision > 0 ? 240.0 / (a.tempoBpm * a.subdivision) : 0;
             const double gap = b.second - a.second;
-            wholeCircle = grid > 0 && gap >= grid * 0.9 - epsilon && gap <= grid * 1.1 + epsilon
+            coherentGesture = grid > 0 && gap >= grid * 0.9 - epsilon && gap <= grid * 1.1 + epsilon
                 && gap <= 0.13 + epsilon && adjacentStep(tapOrder.at(i - 1), tapOrder.at(i)) == direction;
         }
-        const double maximumGap = wholeCircle ? qMax(0.13, chart::handOrderSweepGapSeconds(p.sweepThreshold))
+        const double maximumGap = coherentGesture ? qMax(0.13, chart::handOrderSweepGapSeconds(p.sweepThreshold))
                                               : chart::handOrderSweepGapSeconds(p.sweepThreshold);
         int last = first + 1;
         while (direction && last < tapOrder.size() && last - first < 8) {

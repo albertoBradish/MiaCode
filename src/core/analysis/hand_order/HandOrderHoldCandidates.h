@@ -8,6 +8,16 @@
 
 namespace miacode::hand_order {
 
+inline bool holdHasRequiredBody(const TimelineNoteMarker& marker)
+{
+    const bool touch = marker.type == QStringLiteral("touch_hold");
+    if (!touch && marker.type != QStringLiteral("hold")) return false;
+    const double headIgnore = touch ? FullReplayProfile::touchHoldHeadIgnoreSeconds
+                                    : FullReplayProfile::holdHeadIgnoreSeconds;
+    return marker.endSecond - marker.second > headIgnore
+        + FullReplayProfile::holdTailIgnoreSeconds + 1e-8;
+}
+
 // Alternative physical releases only. The original template remains first;
 // the full chart replay must validate every selected candidate independently.
 inline QVector<ContactAction> holdReleaseCandidates(const ContactAction& full,
@@ -41,8 +51,7 @@ inline QVector<ContactAction> holdReleaseCandidates(const ContactAction& full,
     const double bodyFirst = marker.second + headIgnore;
     const double bodyLast = std::max(bodyFirst, marker.endSecond - FullReplayProfile::holdTailIgnoreSeconds);
     const double guard = 2.0 / FullReplayProfile::ticksPerSecond;
-    const bool hasBody = marker.endSecond - marker.second > headIgnore
-        + FullReplayProfile::holdTailIgnoreSeconds + epsilon;
+    const bool hasBody = holdHasRequiredBody(marker);
     const double earliest = hasBody ? std::max(full.start + pressSeconds, bodyLast + guard)
                                     : full.start + pressSeconds;
     if (!std::isfinite(earliest)) return candidates;

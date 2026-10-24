@@ -41,7 +41,9 @@ int main(int argc, char** argv)
         {"same-head coordination and following sweep", "{8}6-4[8:1],4V68[4:1],6,1,2,2-6[8:1],,2>5[8:1]/6,{24},,,1/2,8,7,6,,,,,,1/8,,,1/8,,,2/7-5[8:1],,,,,",
             {{5,true,right},{6,true,right},{8,false,left},{9,false,right},{10,false,left},{11,false,left},{12,false,left}}},
         {"DX Touch at one-stroke entry", "{8},2V46[4:1],A4,6V82[4:1],8-4[8:1],8,,,",
-            {{1,false,left}}}
+            {{1,false,left}}},
+        {"moderate same-side sweep after slide", "(135){16}1q5[16:3],,,,,,,,8,7,6,5,8,1,2,3,",
+            {{1,false,left},{2,false,left},{3,false,left},{4,false,left}}}
     };
     QVector<PlayerProfile> profiles(4);
     profiles[1] = {8.5,5.5,1.4,3.0,0.8,3.0};
@@ -57,7 +59,7 @@ int main(int argc, char** argv)
     for (const auto& fixture : cases) for (int profile = 0; profile < profiles.size(); ++profile)
         for (int mirrored = 0; mirrored < 2; ++mirrored)
         for (int modified = 0; modified < (fixture.name.startsWith("DX") ? 1 : 2); ++modified) {
-            QString chart = QStringLiteral("(180)") + fixture.chart;
+            QString chart = (fixture.chart.startsWith('(') ? QString{} : QStringLiteral("(180)")) + fixture.chart;
             if (mirrored) chart = transformChartText(chart, ChartTransformOp::MirrorLeftRight);
             if (modified) chart = toggleExForSelection(toggleBreakForSelection(chart));
             BasicParameters p; p.player = profiles.at(profile); p.counterfactualBudget = 0;
