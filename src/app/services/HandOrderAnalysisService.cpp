@@ -107,6 +107,12 @@ void HandOrderAnalysisService::setPlayerProfile(const hand_order::PlayerProfile&
         && old.postureWeight == profile.postureWeight) return;
     auto parameters = parameters_; parameters.player = profile; setParameters(parameters);
 }
+void HandOrderAnalysisService::setMaxWorkUnits(qint64 units)
+{
+    units = qBound(qint64(1000), units, hand_order::BasicParameters::maxAllowedWorkUnits);
+    if (parameters_.maxWorkUnits == units) return;
+    auto parameters = parameters_; parameters.maxWorkUnits = units; setParameters(parameters);
+}
 bool HandOrderAnalysisService::isCurrent(const Request& request) const
 {
     const auto current = workspace_->snapshot();

@@ -678,6 +678,42 @@ AppDialog {
                                 checked: root.preferencesModel.handOrderColorUnresolved
                                 onToggled: root.preferencesModel.handOrderColorUnresolved = checked
                             }
+                            PreferenceCombo {
+                                objectName: "preferencesHandOrderSearchModeCombo"
+                                label: qsTrId("preferences.hand_order_budget.title")
+                                options: root.preferencesModel.handOrderSearchModeOptions
+                                currentValue: root.preferencesModel.handOrderSearchMode
+                                onPicked: function(value) { root.preferencesModel.handOrderSearchMode = value }
+                            }
+                            RowLayout {
+                                visible: root.preferencesModel.handOrderSearchMode === "custom"
+                                Layout.fillWidth: true
+                                Layout.minimumHeight: root.settingsRowHeight
+                                spacing: root.sectionSpacing
+                                Label {
+                                    Layout.preferredWidth: root.settingsLabelWidth
+                                    text: qsTrId("preferences.hand_order_budget.custom_millions")
+                                    wrapMode: Text.WordWrap
+                                }
+                                SpinBox {
+                                    objectName: "preferencesHandOrderSearchBudgetSpinBox"
+                                    Layout.fillWidth: true
+                                    from: 10
+                                    to: 1000
+                                    stepSize: 10
+                                    editable: true
+                                    value: root.preferencesModel.handOrderSearchBudgetMillions
+                                    onValueModified: root.preferencesModel.handOrderSearchBudgetMillions = value
+                                }
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                text: qsTrId("preferences.hand_order_budget.help")
+                                font.family: Theme.uiFont
+                                font.pixelSize: Theme.uiFontSize
+                                color: Theme.colors.text.secondary
+                                wrapMode: Text.WordWrap
+                            }
                         }
 
                         PreferenceGroup {
@@ -686,6 +722,23 @@ AppDialog {
                             Text {
                                 Layout.fillWidth: true
                                 text: qsTrId("preferences.hand_order_player.description")
+                                font.family: Theme.uiFont
+                                font.pixelSize: Theme.uiFontSize
+                                color: Theme.colors.text.secondary
+                                wrapMode: Text.WordWrap
+                            }
+
+                            PreferenceCombo {
+                                objectName: "preferencesHandOrderStyleCombo"
+                                label: qsTrId("preferences.hand_order_style.title")
+                                options: root.preferencesModel.handOrderStyleOptions
+                                currentValue: root.preferencesModel.handOrderStyleToken
+                                onPicked: function(value) { root.preferencesModel.handOrderStyleToken = value }
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: qsTrId("preferences.hand_order_style.help")
                                 font.family: Theme.uiFont
                                 font.pixelSize: Theme.uiFontSize
                                 color: Theme.colors.text.secondary

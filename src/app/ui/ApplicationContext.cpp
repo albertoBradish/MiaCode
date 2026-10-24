@@ -85,6 +85,8 @@ ApplicationContext::ApplicationContext(miacode::ApplicationServices& services,
         profile.techniquePreference = values.value(QStringLiteral("techniquePreference")).toDouble();
         profile.postureWeight = values.value(QStringLiteral("postureWeight")).toDouble();
         handOrderAnalysis_.setPlayerProfile(profile);
+        handOrderAnalysis_.setMaxWorkUnits(
+            qint64(preferencesModel_.handOrderSearchBudgetMillions()) * 1000000);
     };
     syncHandOrderRest();
     connect(&preferencesModel_, &miacode::ui::PreferencesModel::editorChanged,

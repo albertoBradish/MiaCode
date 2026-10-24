@@ -1,6 +1,7 @@
 #include "app/services/PreferenceDocument.h"
 #include "app/ui/preferences/HandOrderPlayerPreferences.h"
 #include "app/ui/preferences/HandOrderSweepPreferences.h"
+#include "app/ui/preferences/HandOrderSearchPreferences.h"
 
 #include <QCoreApplication>
 #include <QJsonObject>
@@ -145,6 +146,7 @@ int main(int argc, char** argv)
     // repositories proving that changes survive a new preferences lifetime.
     namespace player = miacode::ui::hand_order_player_preferences;
     namespace sweep = miacode::ui::hand_order_sweep_preferences;
+    namespace search = miacode::ui::hand_order_search_preferences;
     QTemporaryDir playerDirectory;
     ok &= expect(playerDirectory.isValid(), QStringLiteral("temporary player preferences directory"), err);
     if (playerDirectory.isValid()) {
@@ -154,7 +156,45 @@ int main(int argc, char** argv)
         playerRoot.insert(QStringLiteral("app"), QJsonObject{
             {QStringLiteral("hand_order_return_speed"), 4.25},
             {QStringLiteral("hand_order_player"), QJsonObject{{QStringLiteral("vendor.custom"), 42}}}});
-        ok &= expect(sweep::threshold(playerRoot) == 160 && !sweep::colorUnresolved(playerRoot),
+        ok &= expect(player::styleToken(playerRoot) == QLatin1String("comprehensive")
+                         && search::mode(playerRoot) == QLatin1String("standard")
+                         && search::millions(playerRoot) == 300,
+                     QStringLiteral("new Sticking defaults are comprehensive with a 300 million work budget"), err);
+        QJsonObject presetRoot = playerRoot;
+        ok &= expect(player::applyPreset(&presetRoot, QStringLiteral("hard"))
+                         && player::styleToken(presetRoot) == QLatin1String("hard")
+                         && player::read(presetRoot).value("maxComfortableTapRate").toDouble() == 8.5
+                         && player::applyPreset(&presetRoot, QStringLiteral("pagination"))
+                         && player::applyPreset(&presetRoot, QStringLiteral("decomposition"))
+                         && player::read(presetRoot).value("techniquePreference").toDouble() == -0.9,
+                     QStringLiteral("three alternate style presets write distinct player parameters"), err);
+        ok &= expect(player::set(&presetRoot, QStringLiteral("comfortableMoveSpeed"), 9.0)
+                         && player::styleToken(presetRoot) == QLatin1String("custom")
+                         && player::reset(&presetRoot)
+                         && player::styleToken(presetRoot) == QLatin1String("comprehensive"),
+                     QStringLiteral("manual player adjustments become custom and reset to comprehensive"), err);
+        QJsonObject searchRoot = playerRoot;
+        ok &= expect(search::setMode(&searchRoot, QStringLiteral("low"))
+                         && search::millions(searchRoot) == 50
+                         && search::setMode(&searchRoot, QStringLiteral("high"))
+                         && search::millions(searchRoot) == 600
+                         && search::setMode(&searchRoot, QStringLiteral("custom"))
+                         && search::millions(searchRoot) == 600
+                         && search::setCustomMillions(&searchRoot, 750)
+                         && search::mode(searchRoot) == QLatin1String("custom")
+                         && search::millions(searchRoot) == 750,
+                     QStringLiteral("search budget modes and custom work cap change the effective budget"), err);
+        ok &= expect(repository.replace(searchRoot)
+                         && search::mode(PreferenceDocument::Repository(path).snapshot()) == QLatin1String("custom")
+                         && search::millions(PreferenceDocument::Repository(path).snapshot()) == 750,
+                     QStringLiteral("custom Sticking work budget survives a fresh preference repository"), err);
+        QJsonObject boundedSearch = searchRoot;
+        ok &= expect(search::setCustomMillions(&boundedSearch, 2000)
+                         && search::millions(boundedSearch) == 1000
+                         && search::setCustomMillions(&boundedSearch, -10)
+                         && search::millions(boundedSearch) == 10,
+                     QStringLiteral("custom Sticking work budget stays within its documented bounds"), err);
+        ok &= expect(sweep::threshold(playerRoot) == 160 && sweep::colorUnresolved(playerRoot),
             QStringLiteral("sweep threshold and unresolved-color default are stable"), err);
         ok &= expect(sweep::setThreshold(&playerRoot, 300)
                 && sweep::setColorUnresolved(&playerRoot, true),
@@ -235,11 +275,11 @@ int main(int argc, char** argv)
         PreferenceDocument::Repository resetLifetime(path);
         const auto resetSaved = resetLifetime.snapshot();
         const QVariantMap expectedDefaults{
-            {QStringLiteral("maxComfortableTapRate"), 5.5},
-            {QStringLiteral("comfortableMoveSpeed"), 6.0},
+            {QStringLiteral("maxComfortableTapRate"), 6.5},
+            {QStringLiteral("comfortableMoveSpeed"), 7.0},
             {QStringLiteral("staminaCapacity"), 1.0},
             {QStringLiteral("recoveryHalfLife"), 2.5},
-            {QStringLiteral("techniquePreference"), 0.0},
+            {QStringLiteral("techniquePreference"), -0.2},
             {QStringLiteral("postureWeight"), 4.0},
         };
         ok &= expect(player::read(resetSaved) == expectedDefaults

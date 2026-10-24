@@ -60,6 +60,11 @@ public:
     Q_PROPERTY(int handOrderSweepThreshold READ handOrderSweepThreshold WRITE setHandOrderSweepThreshold NOTIFY editorChanged)
     Q_PROPERTY(bool handOrderColorUnresolved READ handOrderColorUnresolved WRITE setHandOrderColorUnresolved NOTIFY editorChanged)
     Q_PROPERTY(QVariantMap handOrderPlayerProfile READ handOrderPlayerProfile NOTIFY editorChanged)
+    Q_PROPERTY(QVariantList handOrderStyleOptions READ handOrderStyleOptions NOTIFY interfaceChanged)
+    Q_PROPERTY(QString handOrderStyleToken READ handOrderStyleToken WRITE setHandOrderStyleToken NOTIFY editorChanged)
+    Q_PROPERTY(QVariantList handOrderSearchModeOptions READ handOrderSearchModeOptions NOTIFY interfaceChanged)
+    Q_PROPERTY(QString handOrderSearchMode READ handOrderSearchMode WRITE setHandOrderSearchMode NOTIFY editorChanged)
+    Q_PROPERTY(int handOrderSearchBudgetMillions READ handOrderSearchBudgetMillions WRITE setHandOrderSearchBudgetMillions NOTIFY editorChanged)
 
     Q_PROPERTY(QAbstractItemModel* completionDurations READ completionDurations CONSTANT)
     Q_PROPERTY(QAbstractItemModel* completionDivisions READ completionDivisions CONSTANT)
@@ -141,6 +146,14 @@ public:
     bool handOrderColorUnresolved() const;
     void setHandOrderColorUnresolved(bool enabled);
     QVariantMap handOrderPlayerProfile() const;
+    QVariantList handOrderStyleOptions() const;
+    QString handOrderStyleToken() const;
+    void setHandOrderStyleToken(const QString& token);
+    QVariantList handOrderSearchModeOptions() const;
+    QString handOrderSearchMode() const;
+    void setHandOrderSearchMode(const QString& mode);
+    int handOrderSearchBudgetMillions() const;
+    void setHandOrderSearchBudgetMillions(int millions);
     Q_INVOKABLE void setHandOrderPlayerParameter(const QString& name, double value);
     Q_INVOKABLE void resetHandOrderPlayerProfile();
 

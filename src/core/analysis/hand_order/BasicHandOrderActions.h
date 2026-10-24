@@ -9,6 +9,7 @@ struct ScheduledAction {
     bool committed = false, ordinary = false;
     int ordinal = -1;
     double softWeight = 1.0;
+    int touchParseOrder = -1;
 };
 // Drops only points equal to their time-linear interpolation (round-off
 // tolerance); collinearity alone is insufficient when velocity changes.

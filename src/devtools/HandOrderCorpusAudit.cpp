@@ -76,11 +76,12 @@ int main(int argc, char* argv[])
         QString::number(defaults.sweepThreshold)});
     cli.addOption({"input-preference", "0 exterior, 1 screen, 2 mixed.", "mode", "0"});
     cli.addOption({"overwrite-existing", "Permit changing existing annotations in the output copy."});
-    cli.addOption({"tap-rate", "Single hand reference strike limit (hits/s).", "rate", "5.5"});
-    cli.addOption({"move-speed", "Reference movement limit (field radii/s).", "speed", "6"});
+    cli.addOption({"color-unresolved", "Color unresolved notes with an unverified layout fallback."});
+    cli.addOption({"tap-rate", "Single hand reference strike limit (hits/s).", "rate", QString::number(defaults.player.maxComfortableTapRate)});
+    cli.addOption({"move-speed", "Reference movement limit (field radii/s).", "speed", QString::number(defaults.player.comfortableMoveSpeed)});
     cli.addOption({"stamina", "Relative stamina capacity.", "factor", "1"});
     cli.addOption({"recovery", "Load recovery half-life (seconds).", "seconds", "2.5"});
-    cli.addOption({"technique", "-1 decomposition, 0 balanced, +1 repeated strikes.", "preference", "0"});
+    cli.addOption({"technique", "-1 decomposition, 0 balanced, +1 repeated strikes.", "preference", QString::number(defaults.player.techniquePreference)});
     cli.addOption({"posture-weight", "Natural posture weight (0 through 8).", "weight", QString::number(defaults.player.postureWeight)});
     cli.process(app);
     const auto fail = [](const QString& error) {
@@ -119,6 +120,7 @@ int main(int argc, char* argv[])
     parameters.sweepThreshold = int(integer("sweep-threshold",
         miacode::chart::handOrderMinSweepThreshold, miacode::chart::handOrderMaxSweepThreshold));
     parameters.overwriteExisting = cli.isSet("overwrite-existing");
+    parameters.colorUnresolved = cli.isSet("color-unresolved");
     const auto number = [&](const QString& name) {
         bool ok = false;
         const double value = cli.value(name).toDouble(&ok);
@@ -192,6 +194,7 @@ int main(int argc, char* argv[])
             {"return_speed", parameters.returnSpeed}, {"sweep_threshold", parameters.sweepThreshold},
             {"input_preference", parameters.inputPreference},
             {"overwrite_existing", parameters.overwriteExisting},
+            {"color_unresolved", parameters.colorUnresolved},
             {"player", QJsonObject{{"tap_rate", parameters.player.maxComfortableTapRate},
                 {"move_speed", parameters.player.comfortableMoveSpeed}, {"stamina", parameters.player.staminaCapacity},
                 {"recovery", parameters.player.recoveryHalfLife}, {"technique", parameters.player.techniquePreference},

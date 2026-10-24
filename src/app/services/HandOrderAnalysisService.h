@@ -38,6 +38,7 @@ public:
     void setSweepThreshold(int threshold);
     void setColorUnresolved(bool enabled);
     void setPlayerProfile(const hand_order::PlayerProfile& profile);
+    void setMaxWorkUnits(qint64 units);
     bool request(const QString& text, int begin, int end);
     Q_INVOKABLE void cancel();
     Q_INVOKABLE void setBeamWidth(int width);

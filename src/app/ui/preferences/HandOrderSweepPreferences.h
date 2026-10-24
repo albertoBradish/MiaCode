@@ -36,7 +36,7 @@ inline bool setThreshold(QJsonObject* root, int value)
 inline bool colorUnresolved(const QJsonObject& root)
 {
     return root.value(QStringLiteral("app")).toObject()
-        .value(QStringLiteral("hand_order_color_unresolved")).toBool(false);
+        .value(QStringLiteral("hand_order_color_unresolved")).toBool(true);
 }
 
 inline bool setColorUnresolved(QJsonObject* root, bool enabled)

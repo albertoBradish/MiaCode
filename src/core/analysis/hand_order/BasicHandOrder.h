@@ -5,12 +5,12 @@
 #include "core/chart/model/HandOrderSweepThreshold.h"
 
 namespace miacode::hand_order {
-inline constexpr int basicAlgorithmVersion = 13;
+inline constexpr int basicAlgorithmVersion = 14;
 inline constexpr int basicJudgeProfileRevision = 2;
 struct BasicParameters {
     static constexpr double minReturnSpeed = 1.0;
     static constexpr double maxReturnSpeed = 8.0;
-    static constexpr qint64 maxAllowedWorkUnits = 300000000;
+    static constexpr qint64 maxAllowedWorkUnits = 1000000000;
     int version = basicAlgorithmVersion;
     int judgeProfileRevision = basicJudgeProfileRevision;
     int beamWidth = 64;
@@ -22,7 +22,7 @@ struct BasicParameters {
     int sweepThreshold = chart::handOrderDefaultSweepThreshold;
     bool colorUnresolved = false;
     PlayerProfile player;
-    qint64 maxWorkUnits = 200000000;
+    qint64 maxWorkUnits = 300000000;
     bool overwriteExisting = false;
     bool highConfidenceOnly = false;
     // 0: exterior preferred, 1: screen preferred, 2: mixed.

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QString>
+#include <cstdlib>
 #include <utility>
 
 namespace miacode::chart {
@@ -40,6 +41,18 @@ inline bool touchPadsAreAdjacent(const QString& a, const QString& b)
     if ((firstRing == 0 && secondRing == 1) || (firstRing == 2 && secondRing == 3))
         return firstLane == secondLane;
     return secondLane == firstLane || secondLane == ((firstLane + 1) & 7);
+}
+
+// Sequential sensors on the same ring are swipe neighbours even when
+// they do not form a simultaneous Touchgroup.
+inline bool touchPadsCanSweep(const QString& a, const QString& b)
+{
+    if (touchPadsAreAdjacent(a, b)) return true;
+    const int firstRing = touchPadRingIndex(a);
+    if (firstRing != touchPadRingIndex(b)
+        || (firstRing != 0 && firstRing != 2 && firstRing != 3)) return false;
+    const int distance = std::abs(a.at(1).digitValue() - b.at(1).digitValue());
+    return distance == 1 || distance == 7;
 }
 
 } // namespace miacode::chart

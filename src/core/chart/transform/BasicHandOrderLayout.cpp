@@ -194,12 +194,9 @@ bool nearbyTouches(const LayoutHead& first, const LayoutHead& second)
 {
     const QString& a = first.marker->touchPad;
     const QString& b = second.marker->touchPad;
-    const bool adjacentE = a.size() == 2 && b.size() == 2
-        && a.at(0) == QLatin1Char('E') && b.at(0) == QLatin1Char('E')
-        && touchLaneDistance(a, b) == 1;
     return first.marker->type == QStringLiteral("touch")
         && second.marker->type == QStringLiteral("touch")
-        && (adjacentE || chart::touchPadsAreAdjacent(a, b))
+        && chart::touchPadsCanSweep(a, b)
         && touchLaneDistance(a, b) <= 2;
 }
 
@@ -1150,20 +1147,24 @@ void identifyLocalPatterns(QVector<LayoutHead>* heads, QVector<LayoutSustain>* s
     for (int i = 0; i + 1 < order.size(); ++i) {
         auto& first = (*heads)[order.at(i)];
         auto& second = (*heads)[order.at(i + 1)];
-        if (first.patternHand >= 0 || second.patternHand >= 0
-            || !nearbyTouches(first, second) || !eligible(i, i + 2)) continue;
+        if (!nearbyTouches(first, second) || !eligible(i, i + 2)) continue;
         const double gap = second.marker->second - first.marker->second;
         const double pseudoEach = 240.0 / (64.0 * qMax(first.marker->tempoBpm, second.marker->tempoBpm));
         if (gap < -1e-9) continue;
         if (gap < 1e-9 && chart::touchPadsAreAdjacent(first.marker->touchPad, second.marker->touchPad)
             && first.marker->eachGroupId >= 0
             && first.marker->eachGroupId == second.marker->eachGroupId) {
+            if (first.patternHand >= 0 && second.patternHand >= 0
+                && first.patternHand != second.patternHand) continue;
             allowRecalculation(first.token);
             allowRecalculation(second.token);
+            if (first.patternHand < 0) first.patternHand = second.patternHand;
+            if (second.patternHand < 0) second.patternHand = first.patternHand;
             first.touchPairWith = order.at(i + 1);
             second.touchPairWith = order.at(i);
             ++i;
-        } else if (gap >= pseudoEach - 1e-9 && gap <= kTouchSweepGapSeconds + 1e-9) {
+        } else if (first.patternHand < 0 && second.patternHand < 0
+            && gap >= pseudoEach - 1e-9 && gap <= kTouchSweepGapSeconds + 1e-9) {
             const auto preferred = basicLayoutHandForPoint((first.point + second.point) / 2.0);
             const int hand = handIndex(preferred);
             if (hand < 0) continue;

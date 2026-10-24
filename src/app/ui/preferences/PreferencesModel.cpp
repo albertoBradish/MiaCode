@@ -1,6 +1,7 @@
 #include "app/ui/preferences/PreferencesModel.h"
 #include "app/ui/preferences/HandOrderPlayerPreferences.h"
 #include "app/ui/preferences/HandOrderSweepPreferences.h"
+#include "app/ui/preferences/HandOrderSearchPreferences.h"
 
 #include "app/ui/layout/WorkbenchSettings.h"
 #include "app/services/PreferencesStore.h"
@@ -482,6 +483,66 @@ void PreferencesModel::setHandOrderColorUnresolved(bool enabled)
 QVariantMap PreferencesModel::handOrderPlayerProfile() const
 {
     return hand_order_player_preferences::read(PreferenceDocument::loadPreferencesObject());
+}
+
+QVariantList PreferencesModel::handOrderStyleOptions() const
+{
+    return {
+        option(QStringLiteral("comprehensive"), qtTrId("preferences.hand_order_style.comprehensive")),
+        option(QStringLiteral("hard"), qtTrId("preferences.hand_order_style.hard")),
+        option(QStringLiteral("pagination"), qtTrId("preferences.hand_order_style.pagination")),
+        option(QStringLiteral("decomposition"), qtTrId("preferences.hand_order_style.decomposition")),
+        option(QStringLiteral("custom"), qtTrId("preferences.hand_order_style.custom")),
+    };
+}
+
+QString PreferencesModel::handOrderStyleToken() const
+{
+    return hand_order_player_preferences::styleToken(PreferenceDocument::loadPreferencesObject());
+}
+
+void PreferencesModel::setHandOrderStyleToken(const QString& token)
+{
+    QJsonObject root = PreferenceDocument::loadPreferencesObject();
+    if (!hand_order_player_preferences::setStyle(&root, token)) return;
+    PreferenceDocument::savePreferencesObject(root);
+    emit editorChanged();
+}
+
+QVariantList PreferencesModel::handOrderSearchModeOptions() const
+{
+    return {
+        option(QStringLiteral("low"), qtTrId("preferences.hand_order_budget.low")),
+        option(QStringLiteral("standard"), qtTrId("preferences.hand_order_budget.standard")),
+        option(QStringLiteral("high"), qtTrId("preferences.hand_order_budget.high")),
+        option(QStringLiteral("custom"), qtTrId("preferences.hand_order_budget.custom")),
+    };
+}
+
+QString PreferencesModel::handOrderSearchMode() const
+{
+    return hand_order_search_preferences::mode(PreferenceDocument::loadPreferencesObject());
+}
+
+void PreferencesModel::setHandOrderSearchMode(const QString& mode)
+{
+    QJsonObject root = PreferenceDocument::loadPreferencesObject();
+    if (!hand_order_search_preferences::setMode(&root, mode)) return;
+    PreferenceDocument::savePreferencesObject(root);
+    emit editorChanged();
+}
+
+int PreferencesModel::handOrderSearchBudgetMillions() const
+{
+    return hand_order_search_preferences::millions(PreferenceDocument::loadPreferencesObject());
+}
+
+void PreferencesModel::setHandOrderSearchBudgetMillions(int millions)
+{
+    QJsonObject root = PreferenceDocument::loadPreferencesObject();
+    if (!hand_order_search_preferences::setCustomMillions(&root, millions)) return;
+    PreferenceDocument::savePreferencesObject(root);
+    emit editorChanged();
 }
 
 void PreferencesModel::setHandOrderPlayerParameter(const QString& name, double value)

@@ -14,12 +14,12 @@ struct PlayerProfile {
     static constexpr double minRecoveryHalfLife = 0.5, maxRecoveryHalfLife = 10.0;
     static constexpr double minTechniquePreference = -1.0, maxTechniquePreference = 1.0;
     static constexpr double minPostureWeight = 0.0, maxPostureWeight = 8.0;
-    double maxComfortableTapRate = 5.5;
-    double comfortableMoveSpeed = 6.0;
+    double maxComfortableTapRate = 6.5;
+    double comfortableMoveSpeed = 7.0;
     double staminaCapacity = 1.0;
     double recoveryHalfLife = 2.5;
     // Negative favours movement/decomposition; positive favours repeated strikes.
-    double techniquePreference = 0.0;
+    double techniquePreference = -0.2;
     double postureWeight = 4.0;
 };
 

@@ -78,6 +78,24 @@ int main(int argc, char** argv) {
         "automatic hand order favors four-step adjacent-lane hand alternation");
     BasicParameters recompute;
     recompute.overwriteExisting = true;
+    for (int bpm : {100, 180, 240}) {
+        const QString head = QStringLiteral("(%1)").arg(bpm);
+        const QString relay = head + QStringLiteral(
+            "{4}4/8h[2:1],,7h[2:1],,6h[2:1],,5h[4:1],1h[2:1],,,"
+            "{2}2h[2:1],3h[2:1],");
+        const QString expected = head + QStringLiteral(
+            "{4}4~r/8h[2:1]~l,,7h[2:1]~r,,6h[2:1]~l,,5h[4:1]~r,1h[2:1]~l,,,"
+            "{2}2h[2:1]~r,3h[2:1]~l,");
+        expect(applyPatches(relay, solve(relay, 0, -1, recompute)) == expected,
+            "different-key holds meeting at their nominal tails relay hands across BPMs");
+
+        const QString touchSweep = head + QStringLiteral(
+            "{32}E2/D2,A2,D3,A3,D4,A4,,,E8/D8,A7,D7,A6,D6,A5,");
+        const QString touchResult = applyPatches(touchSweep, solve(touchSweep, 0, -1, recompute));
+        expect(touchResult.contains(QStringLiteral("A2~r,D3~r,A3~r,D4~r,A4~r"))
+            && touchResult.contains(QStringLiteral("A7~l,D7~l,A6~l,D6~l,A5~l")),
+            "cross-ring Touch sweeps keep one hand through the moving path across BPMs");
+    }
     for (int bpm : {100, 135, 200}) {
         const QString prefix = QStringLiteral("(%1)").arg(bpm);
         const QString alternating = prefix + QStringLiteral("{16}7,8,7,");

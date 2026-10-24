@@ -56,6 +56,10 @@ int main(int argc, char** argv) {
     source = chart(); service.request(source, 0, 0); settle(service);
     service.setBeamWidth(32);
     expect(!service.canApply(), "parameter revision invalidates previous evidence");
+    service.request(source, 0, source.indexOf(',')); settle(service);
+    expect(service.canApply(), "a new search budget can be changed after a completed preview");
+    service.setMaxWorkUnits(600000000);
+    expect(!service.canApply(), "changing the Sticking work budget invalidates old evidence");
     const int second = source.indexOf("1,");
     service.request(source, 0, source.indexOf(','));
     service.request(source, second, second + 1); settle(service);
