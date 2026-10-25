@@ -172,6 +172,8 @@
             'Start_HandOrder.ps1',
               'HandOrderPackage.marker',
               'README_HAND_ORDER_ZH.md',
+            'acceptance\MANUAL_CHECKLIST_ZH.md',
+            'acceptance\maidata.txt',
             'logs',
             'logs\worker-hwnd',
               'runtime',

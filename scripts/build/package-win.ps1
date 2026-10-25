@@ -321,11 +321,15 @@ function Remove-PackagedDllIfPresent {
 }
 
 $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$workspace = [System.IO.Path]::GetFullPath((Split-Path -Parent $repoRoot))
+if ((Split-Path -Leaf $workspace) -eq 'worktrees') {
+    $workspace = [System.IO.Path]::GetFullPath((Split-Path -Parent $workspace))
+}
 if ($BuildJobs -lt 1 -or $BuildJobs -gt 4) {
     throw "BuildJobs must be between 1 and 4 in this workspace."
 }
 if ([string]::IsNullOrWhiteSpace($BuildDir)) {
-    $BuildDir = Join-Path (Split-Path -Parent $repoRoot) "build\windows_$Arch"
+    $BuildDir = Join-Path $workspace "build\windows_$Arch"
 } else {
     $BuildDir = Resolve-RepoPath -RepoRoot $repoRoot -PathValue $BuildDir
 }
@@ -358,12 +362,11 @@ if ([string]::IsNullOrWhiteSpace($distNamePattern)) {
 if ([string]::IsNullOrWhiteSpace($DistDir)) {
     $channelSegment = if ($packageChannel) { "_$packageChannel" } else { "" }
     $distName = $distNamePattern.Replace("{version}", $version).Replace("{channel}", $channelSegment).Replace("{arch}", $archName)
-    $DistDir = Join-Path (Join-Path (Split-Path -Parent $repoRoot) "dist") $distName
+    $DistDir = Join-Path (Join-Path $workspace "dist") $distName
 } else {
     $DistDir = Resolve-RepoPath -RepoRoot $repoRoot -PathValue $DistDir
 }
 
-$workspace = [System.IO.Path]::GetFullPath((Split-Path -Parent $repoRoot))
 $allowedBuildRoot = [System.IO.Path]::GetFullPath((Join-Path $workspace "build"))
 $allowedDistRoot = [System.IO.Path]::GetFullPath((Join-Path $workspace "dist"))
 if (!$BuildDir.StartsWith($allowedBuildRoot + [System.IO.Path]::DirectorySeparatorChar,
@@ -647,6 +650,12 @@ foreach ($releaseDoc in $releaseDocs) {
     }
     Copy-Item $releaseDocSrc (Join-Path $DistDir $releaseDoc) -Force
 }
+
+$acceptanceSource = Join-Path $repoRoot 'docs\qa\hand_order'
+$acceptanceDir = Join-Path $DistDir 'acceptance'
+New-Item -ItemType Directory -Path $acceptanceDir -Force | Out-Null
+Copy-Item (Join-Path $acceptanceSource 'MANUAL_CHECKLIST_ZH.md') $acceptanceDir -Force
+Copy-Item (Join-Path $acceptanceSource 'maidata.txt') $acceptanceDir -Force
 
 New-Item -ItemType Directory -Path (Join-Path $DistDir 'runtime') -Force | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $DistDir 'exports') -Force | Out-Null

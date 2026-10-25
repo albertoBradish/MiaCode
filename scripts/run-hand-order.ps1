@@ -5,6 +5,9 @@ param(
 )
 
 $workspace = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
+if ((Split-Path -Leaf $workspace) -eq 'worktrees') {
+    $workspace = [System.IO.Path]::GetFullPath((Split-Path -Parent $workspace))
+}
 $runtimeRoot = Join-Path $workspace 'runtime'
 $buildRoot = [System.IO.Path]::GetFullPath((Join-Path $workspace 'build'))
 $distRoot = [System.IO.Path]::GetFullPath((Join-Path $workspace 'dist'))

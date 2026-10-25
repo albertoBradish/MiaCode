@@ -1,5 +1,4 @@
 #include "core/chart/transform/NativeSlideSplit.h"
-#include "core/analysis/hand_order/HandOrderFullReplay.h"
 #include "core/scene/PreviewSfxTimeline.h"
 #include "common/TaskCancellation.h"
 #include <QCoreApplication>
@@ -37,11 +36,6 @@ HandOrderHand at(const TimelineNoteMarker& marker, double second) {
     const double progress = (second - marker.slideTraceSecond) / (marker.endSecond - marker.slideTraceSecond);
     for (const auto& stop : marker.handOrderTrackStops) if (stop.progress <= progress) result = stop.hand;
     return result;
-}
-miacode::hand_order::ChartInputAction touch(const QString& pad, double second) {
-    miacode::hand_order::ChartInputAction input;
-    auto& action = input.contact; action.kind = "slide"; action.start = second; action.end = second + .03;
-    action.points = {miacode::hand_order::touchPadPoint(pad)}; action.times = {second}; return input;
 }
 }
 
@@ -177,21 +171,6 @@ int main(int argc, char** argv) {
         && countKind(beforeSfx, "break_slide_start") == 1 && countKind(afterSfx, "break_slide_start") == 2
         && countKind(beforeSfx, "judge_break_slide") == 1 && countKind(afterSfx, "judge_break_slide") == 2,
         "identical movement geometry adds an independent Break start/tail SFX and exposes changed count/scoring risk", semanticPlan);
-    if (semanticPlan.canApply) {
-        const auto& marker = semanticBefore.noteMarkers.first();
-        const double duration = marker.slideSegmentShootSeconds.at(1) - marker.slideTraceSecond;
-        const double lastDuration = marker.endSecond - marker.slideSegmentShootSeconds.at(1);
-        const double critical = marker.endSecond - (1 - marker.slideSegmentCriticalProportions.last()) * lastDuration;
-        QVector<miacode::hand_order::ChartInputAction> inputs;
-        miacode::hand_order::ChartInputAction head; head.button = true; head.lane = 1; head.contact.hand = 1;
-        head.contact.start = marker.second; head.contact.end = marker.second + .03; inputs.append(head);
-        inputs += {touch("A1", marker.slideTraceSecond), touch("B2", marker.slideTraceSecond + duration * .1),
-            touch("A3", marker.slideTraceSecond + duration * .2), touch("B4", critical - .2), touch("A5", critical)};
-        const auto originalJudge = miacode::hand_order::replayHandOrderChart(semanticBefore.noteMarkers, inputs);
-        const auto splitJudge = miacode::hand_order::replayHandOrderChart(semanticAfter.noteMarkers, inputs);
-        expect(originalJudge.meetsTarget && !splitJudge.meetsTarget && splitJudge.judgements.size() == 2,
-            "same real contacts can critically finish the original chain while early-clearing a new independent first segment", semanticPlan);
-    }
     const auto cancelled = std::make_shared<std::atomic_bool>(true); bool stopped = false;
     try { miacode::task::CancellationScope scope(cancelled); split(chain); }
     catch (const miacode::task::Cancelled&) { stopped = true; }

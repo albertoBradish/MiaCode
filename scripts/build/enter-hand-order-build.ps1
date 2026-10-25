@@ -1,5 +1,8 @@
 # Dot-source this script from PowerShell before cmake --preset hand_order.
 $workspace = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..'))
+if ((Split-Path -Leaf $workspace) -eq 'worktrees') {
+    $workspace = [System.IO.Path]::GetFullPath((Split-Path -Parent $workspace))
+}
 $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
 $vsInstall = & $vswhere -latest -products * -property installationPath | Select-Object -First 1
 if (-not $vsInstall) { throw 'Visual Studio 2022 was not found.' }
