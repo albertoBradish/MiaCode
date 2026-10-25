@@ -16,6 +16,10 @@ Rectangle {
     signal saveWholeDocumentRequested()
     signal undoRequested()
     signal redoRequested()
+    signal handOrderRequested(string command)
+    property var handOrderRows: []
+    property var shortcuts: null
+    property bool handOrderEnabled: false
     signal audioSettingsRequested()
     signal previewSettingsRequested()
     signal unavailableFeatureRequested(string featureName)
@@ -124,6 +128,39 @@ Rectangle {
         spacing: 5
         z: 1
 
+        ToolBarButton {
+            id: handOrderButton
+            objectName: "handOrderButton"
+            iconSource: Qt.resolvedUrl("icons/tools.svg")
+            label: qsTrId("hand_order.title")
+            tooltip: qsTrId("hand_order.selection_scope")
+            active: handOrderMenu.visible
+            enabled: root.handOrderEnabled
+            focusPolicy: Qt.NoFocus
+            onClicked: handOrderMenu.popup(handOrderButton, 0, handOrderButton.height)
+            AppMenu {
+                id: handOrderMenu
+                objectName: "handOrderToolMenu"
+                property string pendingCommand: ""
+                onClosed: {
+                    const command = pendingCommand
+                    pendingCommand = ""
+                    if (command.length > 0) root.handOrderRequested(command)
+                }
+                Repeater {
+                    model: root.handOrderRows
+                    delegate: AppMenuItem {
+                        required property var modelData
+                        objectName: "handOrderTool_" + modelData.id
+                        text: qsTrId(modelData.labelKey)
+                        shortcutText: root.shortcuts && root.shortcuts.revision >= 0
+                            ? root.shortcuts.displayText(modelData.id) : ""
+                        enabled: root.handOrderEnabled
+                        onTriggered: handOrderMenu.pendingCommand = modelData.id
+                    }
+                }
+            }
+        }
         ToolBarButton {
             visible: root.previewSettingsVisible
             iconSource: Qt.resolvedUrl("icons/audio-settings.svg")

@@ -4977,6 +4977,260 @@ Error: %1</source>
         <source>Could not open the system folder picker.</source>
         <translation>システムのフォルダー選択画面を開けませんでした。</translation>
     </message>
+
+<message id="hand_order.title">
+        <source>Hand Order</source>
+        <translation>運指</translation>
+    </message>
+    <message id="hand_order.set_left">
+        <source>Set Selection to Left Hand</source>
+        <translation>選択範囲を左手に設定</translation>
+    </message>
+    <message id="hand_order.set_right">
+        <source>Set Selection to Right Hand</source>
+        <translation>選択範囲を右手に設定</translation>
+    </message>
+    <message id="hand_order.set_either">
+        <source>Set Selection to Either Hand</source>
+        <translation>選択範囲を指定なしに設定</translation>
+    </message>
+    <message id="hand_order.split_annotation">
+        <source>Split Hand-order Intervals</source>
+        <translation>運指区間を分割</translation>
+    </message>
+    <message id="hand_order.selection_scope">
+        <source>Edit complete notes in the source selection, including slide heads and all branches</source>
+        <translation>ソースの選択範囲内の完全なノーツを編集（スライド始点と全分岐を含む）</translation>
+    </message>
+    <message id="hand_order.feedback">
+        <source>Hand order: %1 changed, %2 partial tokens skipped, %3 unsupported, %4 diagnostics (click for details)</source>
+        <translation>運指：%1 件変更、部分トークン %2 件・未対応 %3 件をスキップ、診断 %4 件（詳細を表示）</translation>
+    </message>
+    <message id="hand_order.diagnostic">
+        <source>Line %1, column %2: %3</source>
+        <translation>%1 行 %2 列：%3</translation>
+    </message>
+    <message id="hand_order.intervals">
+        <source>Hand-order Intervals</source>
+        <translation>運指区間</translation>
+    </message>
+    <message id="hand_order.draft_notice">
+        <source>Changes affect the corresponding interval. Assign every track interval, then write them to the chart in one edit. An unspecified head keeps its original skin. Unwritten choices remain in this session for the matching document version and are not saved with the chart.</source>
+        <translation>変更は対応する区間だけに適用されます。全軌道区間に手を指定してから一括で譜面に書き込みます。未指定の始点は元のスキンを使用します。未反映の選択は現在のセッションと文書バージョンに一時保存され、譜面には保存されません。</translation>
+    </message>
+    <message id="hand_order.head_row">
+        <source>%1:%2 · Head</source>
+        <translation>%1:%2 · 始点</translation>
+    </message>
+    <message id="hand_order.track_row">
+        <source>%1:%2 · Branch %3 · %4–%5%</source>
+        <translation>%1:%2 · 分岐 %3 · %4–%5%</translation>
+    </message>
+    <message id="hand_order.unspecified">
+        <source>Unspecified</source>
+        <translation>未指定</translation>
+    </message>
+    <message id="hand_order.left">
+        <source>Left</source>
+        <translation>左手</translation>
+    </message>
+    <message id="hand_order.right">
+        <source>Right</source>
+        <translation>右手</translation>
+    </message>
+    <message id="hand_order.either">
+        <source>Either</source>
+        <translation>任意</translation>
+    </message>
+    <message id="hand_order.apply_intervals">
+        <source>Write to Chart</source>
+        <translation>譜面に反映</translation>
+    </message>
+    <message id="hand_order.applied">
+        <source>Hand-order intervals written; undo restores them in one step.</source>
+        <translation>運指区間を反映しました。1 回の取り消しで元に戻せます。</translation>
+    </message>
+
+
+
+
+
+    <message id="hand_order.wifi_mode_notice">
+        <source>Wifi sectors 1/2 follow the native sides and exchange on reflection. Single mode selects one hand for the whole track; the circled 1 marks explicit single-hand execution. Either still means one selected hand.</source>
+        <translation>Wifi の区画 1/2 はネイティブの両側に対応し、反転で入れ替わります。片手モードは全軌道で同じ片手を選び、丸付き 1 で表示します。左右任意も片手を選ぶ意味です。</translation>
+    </message>
+    <message id="hand_order.wifi_single_row">
+        <source>%1:%2 branch %3 · whole-track single hand</source>
+        <translation>%1:%2 分岐 %3 · 全軌道片手</translation>
+    </message>
+    <message id="hand_order.wifi_sector_row">
+        <source>%1:%2 branch %3 · sector %4 · %5–%6%</source>
+        <translation>%1:%2 分岐 %3 · 区画 %4 · %5–%6%</translation>
+    </message>
+    <message id="hand_order.wifi_legacy">
+        <source>Legacy whole track</source>
+        <translation>従来の全軌道</translation>
+    </message>
+    <message id="hand_order.wifi_split">
+        <source>Two sectors</source>
+        <translation>2 区画</translation>
+    </message>
+    <message id="hand_order.wifi_single">
+        <source>Explicit single hand</source>
+        <translation>明示的な片手</translation>
+    </message>
+    <message id="hand_order.split_native_slide">
+        <source>Split into Independent Slides</source>
+        <translation>独立 slide に分割</translation>
+    </message>
+    <message id="hand_order.native.notice">
+        <source>An applicable plan preserves native geometry and actual motion times, but gives each segment an independent judgement. Counting, scoring (especially Break), Each, track appearance/disappearance, sounds and Muri may change. Review every item. Any unreliable complete slide target blocks the batch; Cancel makes no edit.</source>
+        <translation>適用可能な案はネイティブ形状と実際の移動時刻を保ちますが、各区間が独立判定になります。物量・得点（特に Break）、Each、軌道の出現・消去、音声、Muri は変わる可能性があります。全項目を確認してください。完全選択の slide に変換不能な対象があれば一括適用を禁止し、キャンセルでは編集しません。</translation>
+    </message>
+    <message id="hand_order.native.summary">
+        <source>Prepared %1 · ignored non-slides %2 · partial tokens skipped %3 · unsupported %4</source>
+        <translation>変換案 %1 件・slide 以外を除外 %2 件・部分選択を除外 %3 件・非対応 %4 件</translation>
+    </message>
+    <message id="hand_order.native.blocked">
+        <source>The whole batch is blocked. Close this preview and select convertible chains again.</source>
+        <translation>この一括処理は適用できません。プレビューを閉じ、変換できる連結 slide を選び直してください。</translation>
+    </message>
+    <message id="hand_order.native.stale">
+        <source>The document, timing or parser policy changed. Prepare a new preview.</source>
+        <translation>文書・時刻情報・解析設定が変わりました。プレビューを作り直してください。</translation>
+    </message>
+    <message id="hand_order.native.counts">
+        <source>Tracks %1 → %2 · heads %3 → %4 · %5 additional independent judgement boundaries</source>
+        <translation>軌道 %1 → %2・打てる始点 %3 → %4・独立判定境界を %5 個追加</translation>
+    </message>
+    <message id="hand_order.native.before">
+        <source>Before</source>
+        <translation>変更前</translation>
+    </message>
+    <message id="hand_order.native.after">
+        <source>Proposed result</source>
+        <translation>変更案</translation>
+    </message>
+    <message id="hand_order.native.apply">
+        <source>Apply Entire Prepared Batch</source>
+        <translation>変換案を一括適用</translation>
+    </message>
+    <message id="hand_order.native.status.ready">
+        <source>Prepared draft</source>
+        <translation>変換案</translation>
+    </message>
+    <message id="hand_order.native.status.partial">
+        <source>Skipped partial token</source>
+        <translation>部分選択を除外</translation>
+    </message>
+    <message id="hand_order.native.status.ignored">
+        <source>Ignored non-slide</source>
+        <translation>slide 以外を除外</translation>
+    </message>
+    <message id="hand_order.native.status.unsupported">
+        <source>Blocks this batch</source>
+        <translation>一括適用を禁止</translation>
+    </message>
+    <message id="hand_order.native.reason.empty_selection">
+        <source>Select complete native chains first.</source>
+        <translation>ネイティブの連結 slide を完全に選択してください。</translation>
+    </message>
+    <message id="hand_order.native.reason.partial_token">
+        <source>This token is only partly selected and will stay unchanged.</source>
+        <translation>このトークンは部分選択のため変更しません。</translation>
+    </message>
+    <message id="hand_order.native.reason.non_slide">
+        <source>This ordinary note is not a slide target and will stay unchanged.</source>
+        <translation>通常ノーツは slide 分割の対象ではないため変更しません。</translation>
+    </message>
+    <message id="hand_order.native.reason.native_segments">
+        <source>Draft generated from the existing native segments.</source>
+        <translation>既存のネイティブ区間から独立軌道案を生成しました。</translation>
+    </message>
+    <message id="hand_order.native.reason.invalid_chart">
+        <source>Native syntax errors prevent a reliable conversion.</source>
+        <translation>ネイティブ構文エラーのため安全に変換できません。</translation>
+    </message>
+    <message id="hand_order.native.reason.invalid_annotation">
+        <source>A selected target has an invalid hand annotation.</source>
+        <translation>選択対象の手順注釈が不正です。</translation>
+    </message>
+    <message id="hand_order.native.reason.wifi_not_supported">
+        <source>Wifi paths cannot be split into independent native segments here. Use hand-order interval splitting for colouring.</source>
+        <translation>Wifi の展開経路はネイティブ分割に非対応です。着色には手順区間分割を使ってください。</translation>
+    </message>
+    <message id="hand_order.native.reason.missing_markers">
+        <source>Parsed native objects are missing.</source>
+        <translation>照合する解析済みネイティブ対象がありません。</translation>
+    </message>
+    <message id="hand_order.native.reason.single_segment">
+        <source>This slide has one native segment. Use hand-order interval splitting for colouring.</source>
+        <translation>この slide はネイティブ区間が1つです。着色には手順区間分割を使ってください。</translation>
+    </message>
+    <message id="hand_order.native.reason.invalid_geometry">
+        <source>Native geometry or motion times are missing or invalid.</source>
+        <translation>ネイティブ形状または移動時刻が不足・不正です。</translation>
+    </message>
+    <message id="hand_order.native.reason.unrepresentable_native">
+        <source>The native segment cannot be represented reliably in Simai.</source>
+        <translation>このネイティブ区間を正しい Simai として表現できません。</translation>
+    </message>
+    <message id="hand_order.native.reason.hand_order_unrepresentable">
+        <source>The original hand intervals cannot be mapped reliably to every new segment.</source>
+        <translation>元の手順区間を全ての新しい区間へ確実に写せません。</translation>
+    </message>
+    <message id="hand_order.native.reason.no_chain_selected">
+        <source>No convertible native chain is fully selected.</source>
+        <translation>変換できるネイティブ連結 slide が完全選択されていません。</translation>
+    </message>
+    <message id="hand_order.native.reason.round_trip_invalid">
+        <source>The proposed result failed strict Simai validation.</source>
+        <translation>変換案が Simai の厳密検証に失敗しました。</translation>
+    </message>
+    <message id="hand_order.native.reason.round_trip_mismatch">
+        <source>Reparsing did not preserve geometry, actual motion times or annotations.</source>
+        <translation>再解析で形状・実移動時刻・手順を保持できませんでした。</translation>
+    </message>
+    <message id="hand_order.native.reason.head_count_mismatch">
+        <source>The proposed result would change the real shared-head count.</source>
+        <translation>変換案で共有始点の実数が変わってしまいます。</translation>
+    </message>
+    <message id="hand_order.native.change.independent_judgement_boundaries">
+        <source>Each resulting segment has an independent judgement boundary.</source>
+        <translation>新しい各区間が独立した判定境界を持ちます。</translation>
+    </message>
+    <message id="hand_order.native.change.slide_count_changes">
+        <source>The number of slide track objects increases as shown above.</source>
+        <translation>slide 軌道数は上記の実数どおり増えます。</translation>
+    </message>
+    <message id="hand_order.native.change.availability_may_change">
+        <source>Independent segments may accept input at different times or react differently to early contact.</source>
+        <translation>独立区間の判定開始や早い接触への反応が変わる可能性があります。</translation>
+    </message>
+    <message id="hand_order.native.change.scoring_may_change">
+        <source>Scoring may change; this is not a per-chart score simulation.</source>
+        <translation>得点は変わる可能性があります。ここでは譜面ごとの得点を計算していません。</translation>
+    </message>
+    <message id="hand_order.native.change.each_may_change">
+        <source>Each relationships may change.</source>
+        <translation>Each の関係は変わる可能性があります。</translation>
+    </message>
+    <message id="hand_order.native.change.disappearance_may_change">
+        <source>Track appearance and disappearance may change, including headless-track presentation.</source>
+        <translation>軌道の出現・消去や始点なし軌道の表示は変わる可能性があります。</translation>
+    </message>
+    <message id="hand_order.native.change.sfx_may_change">
+        <source>Sound events may change.</source>
+        <translation>音声イベントは変わる可能性があります。</translation>
+    </message>
+    <message id="hand_order.native.change.muri_may_change">
+        <source>Muri results may change; before/after Muri is not calculated in this preview.</source>
+        <translation>Muri の結果は変わる可能性があります。このプレビューでは前後の Muri を計算していません。</translation>
+    </message>
+    <message id="hand_order.native.change.break_count_scoring_changes">
+        <source>Split native Break segments retain Break, which may change Break counts and scoring.</source>
+        <translation>分割されたネイティブ Break 区間も Break を保つため、Break の物量と得点が変わる可能性があります。</translation>
+    </message>
 </context>
 <context>
     <!-- Qt loads qtbase texts for the system locale; this context keeps the

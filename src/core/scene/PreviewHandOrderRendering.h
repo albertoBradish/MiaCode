@@ -3,6 +3,9 @@
 #include "core/chart/model/TimelineData.h"
 
 #include <QtMath>
+#include <QImage>
+#include <QPainter>
+#include <cmath>
 
 namespace miacode::preview::scene {
 
@@ -16,6 +19,47 @@ inline HandOrderHand previewHandOrderAtProgress(const QVector<HandOrderTrackStop
         hand = stop.hand;
     }
     return hand;
+}
+
+inline HandOrderHand previewWifiHandAtProgress(const TimelineNoteMarker& marker, int sector, qreal progress)
+{
+    if (marker.handOrderWifiMode == HandOrderWifiMode::Split) {
+        if (sector < 0 || sector >= marker.handOrderWifiSectorStops.size()) return HandOrderHand::Unspecified;
+        return previewHandOrderAtProgress(marker.handOrderWifiSectorStops.at(sector), progress);
+    }
+    return previewHandOrderAtProgress(marker.handOrderTrackStops, progress);
+}
+
+inline QPointF previewWifiSectorNormal(const TimelineNoteMarker& marker, int sector)
+{
+    if (marker.wifiLanePoints.size() < 3 || marker.wifiLanePoints.at(0).isEmpty()
+        || marker.wifiLanePoints.at(1).isEmpty()) return {};
+    const auto& centre = marker.wifiLanePoints.at(1);
+    const QPointF direction = centre.constLast() - centre.constFirst();
+    QPointF normal(-direction.y(), direction.x());
+    if (QPointF::dotProduct(normal, marker.wifiLanePoints.at(0).constLast() - centre.constLast()) < 0)
+        normal = -normal;
+    const qreal length = std::hypot(normal.x(), normal.y());
+    return length > 0 ? normal * ((sector == 0 ? 1.0 : -1.0) / length) : QPointF();
+}
+
+// The circled 1 is an explicit execution-mode badge, independent of hand color.
+inline const QImage* previewWifiSingleBadgeImage()
+{
+    static const QImage image = [] {
+        QImage result(36, 36, QImage::Format_ARGB32_Premultiplied);
+        result.fill(Qt::transparent);
+        QPainter painter(&result);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.setPen(QPen(Qt::white, 3.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        painter.setBrush(QColor(24, 24, 24, 230));
+        painter.drawEllipse(QRectF(2, 2, 32, 32));
+        painter.drawLine(QPointF(14, 13), QPointF(18, 10));
+        painter.drawLine(QPointF(18, 10), QPointF(18, 26));
+        painter.drawLine(QPointF(13, 26), QPointF(23, 26));
+        return result;
+    }();
+    return &image;
 }
 
 inline qreal previewSlideMovementProgress(

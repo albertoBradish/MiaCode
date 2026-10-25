@@ -4977,6 +4977,260 @@ Error: %1</translation>
         <source>Could not open the system folder picker.</source>
         <translation>Could not open the system folder picker.</translation>
     </message>
+
+<message id="hand_order.title">
+        <source>Hand Order</source>
+        <translation>Hand Order</translation>
+    </message>
+    <message id="hand_order.set_left">
+        <source>Set Selection to Left Hand</source>
+        <translation>Set Selection to Left Hand</translation>
+    </message>
+    <message id="hand_order.set_right">
+        <source>Set Selection to Right Hand</source>
+        <translation>Set Selection to Right Hand</translation>
+    </message>
+    <message id="hand_order.set_either">
+        <source>Set Selection to Either Hand</source>
+        <translation>Set Selection to Either Hand</translation>
+    </message>
+    <message id="hand_order.split_annotation">
+        <source>Split Hand-order Intervals</source>
+        <translation>Split Hand-order Intervals</translation>
+    </message>
+    <message id="hand_order.selection_scope">
+        <source>Edit complete notes in the source selection, including slide heads and all branches</source>
+        <translation>Edit complete notes in the source selection, including slide heads and all branches</translation>
+    </message>
+    <message id="hand_order.feedback">
+        <source>Hand order: %1 changed, %2 partial tokens skipped, %3 unsupported, %4 diagnostics (click for details)</source>
+        <translation>Hand order: %1 changed, %2 partial tokens skipped, %3 unsupported, %4 diagnostics (click for details)</translation>
+    </message>
+    <message id="hand_order.diagnostic">
+        <source>Line %1, column %2: %3</source>
+        <translation>Line %1, column %2: %3</translation>
+    </message>
+    <message id="hand_order.intervals">
+        <source>Hand-order Intervals</source>
+        <translation>Hand-order Intervals</translation>
+    </message>
+    <message id="hand_order.draft_notice">
+        <source>Changes affect the corresponding interval. Assign every track interval, then write them to the chart in one edit. An unspecified head keeps its original skin. Unwritten choices remain in this session for the matching document version and are not saved with the chart.</source>
+        <translation>Changes affect the corresponding interval. Assign every track interval, then write them to the chart in one edit. An unspecified head keeps its original skin. Unwritten choices remain in this session for the matching document version and are not saved with the chart.</translation>
+    </message>
+    <message id="hand_order.head_row">
+        <source>%1:%2 · Head</source>
+        <translation>%1:%2 · Head</translation>
+    </message>
+    <message id="hand_order.track_row">
+        <source>%1:%2 · Branch %3 · %4–%5%</source>
+        <translation>%1:%2 · Branch %3 · %4–%5%</translation>
+    </message>
+    <message id="hand_order.unspecified">
+        <source>Unspecified</source>
+        <translation>Unspecified</translation>
+    </message>
+    <message id="hand_order.left">
+        <source>Left</source>
+        <translation>Left</translation>
+    </message>
+    <message id="hand_order.right">
+        <source>Right</source>
+        <translation>Right</translation>
+    </message>
+    <message id="hand_order.either">
+        <source>Either</source>
+        <translation>Either</translation>
+    </message>
+    <message id="hand_order.apply_intervals">
+        <source>Write to Chart</source>
+        <translation>Write to Chart</translation>
+    </message>
+    <message id="hand_order.applied">
+        <source>Hand-order intervals written; undo restores them in one step.</source>
+        <translation>Hand-order intervals written; undo restores them in one step.</translation>
+    </message>
+
+
+
+
+
+    <message id="hand_order.wifi_mode_notice">
+        <source>Wifi sectors 1/2 follow the native sides and exchange on reflection. Single mode selects one hand for the whole track; the circled 1 marks explicit single-hand execution. Either still means one selected hand.</source>
+        <translation>Wifi sectors 1/2 follow the native sides and exchange on reflection. Single mode selects one hand for the whole track; the circled 1 marks explicit single-hand execution. Either still means one selected hand.</translation>
+    </message>
+    <message id="hand_order.wifi_single_row">
+        <source>%1:%2 branch %3 · whole-track single hand</source>
+        <translation>%1:%2 branch %3 · whole-track single hand</translation>
+    </message>
+    <message id="hand_order.wifi_sector_row">
+        <source>%1:%2 branch %3 · sector %4 · %5–%6%</source>
+        <translation>%1:%2 branch %3 · sector %4 · %5–%6%</translation>
+    </message>
+    <message id="hand_order.wifi_legacy">
+        <source>Legacy whole track</source>
+        <translation>Legacy whole track</translation>
+    </message>
+    <message id="hand_order.wifi_split">
+        <source>Two sectors</source>
+        <translation>Two sectors</translation>
+    </message>
+    <message id="hand_order.wifi_single">
+        <source>Explicit single hand</source>
+        <translation>Explicit single hand</translation>
+    </message>
+    <message id="hand_order.split_native_slide">
+        <source>Split into Independent Slides</source>
+        <translation>Split into Independent Slides</translation>
+    </message>
+    <message id="hand_order.native.notice">
+        <source>An applicable plan preserves native geometry and actual motion times, but gives each segment an independent judgement. Counting, scoring (especially Break), Each, track appearance/disappearance, sounds and Muri may change. Review every item. Any unreliable complete slide target blocks the batch; Cancel makes no edit.</source>
+        <translation>An applicable plan preserves native geometry and actual motion times, but gives each segment an independent judgement. Counting, scoring (especially Break), Each, track appearance/disappearance, sounds and Muri may change. Review every item. Any unreliable complete slide target blocks the batch; Cancel makes no edit.</translation>
+    </message>
+    <message id="hand_order.native.summary">
+        <source>Prepared %1 · ignored non-slides %2 · partial tokens skipped %3 · unsupported %4</source>
+        <translation>Prepared %1 · ignored non-slides %2 · partial tokens skipped %3 · unsupported %4</translation>
+    </message>
+    <message id="hand_order.native.blocked">
+        <source>The whole batch is blocked. Close this preview and select convertible chains again.</source>
+        <translation>The whole batch is blocked. Close this preview and select convertible chains again.</translation>
+    </message>
+    <message id="hand_order.native.stale">
+        <source>The document, timing or parser policy changed. Prepare a new preview.</source>
+        <translation>The document, timing or parser policy changed. Prepare a new preview.</translation>
+    </message>
+    <message id="hand_order.native.counts">
+        <source>Tracks %1 → %2 · heads %3 → %4 · %5 additional independent judgement boundaries</source>
+        <translation>Tracks %1 → %2 · heads %3 → %4 · %5 additional independent judgement boundaries</translation>
+    </message>
+    <message id="hand_order.native.before">
+        <source>Before</source>
+        <translation>Before</translation>
+    </message>
+    <message id="hand_order.native.after">
+        <source>Proposed result</source>
+        <translation>Proposed result</translation>
+    </message>
+    <message id="hand_order.native.apply">
+        <source>Apply Entire Prepared Batch</source>
+        <translation>Apply Entire Prepared Batch</translation>
+    </message>
+    <message id="hand_order.native.status.ready">
+        <source>Prepared draft</source>
+        <translation>Prepared draft</translation>
+    </message>
+    <message id="hand_order.native.status.partial">
+        <source>Skipped partial token</source>
+        <translation>Skipped partial token</translation>
+    </message>
+    <message id="hand_order.native.status.ignored">
+        <source>Ignored non-slide</source>
+        <translation>Ignored non-slide</translation>
+    </message>
+    <message id="hand_order.native.status.unsupported">
+        <source>Blocks this batch</source>
+        <translation>Blocks this batch</translation>
+    </message>
+    <message id="hand_order.native.reason.empty_selection">
+        <source>Select complete native chains first.</source>
+        <translation>Select complete native chains first.</translation>
+    </message>
+    <message id="hand_order.native.reason.partial_token">
+        <source>This token is only partly selected and will stay unchanged.</source>
+        <translation>This token is only partly selected and will stay unchanged.</translation>
+    </message>
+    <message id="hand_order.native.reason.non_slide">
+        <source>This ordinary note is not a slide target and will stay unchanged.</source>
+        <translation>This ordinary note is not a slide target and will stay unchanged.</translation>
+    </message>
+    <message id="hand_order.native.reason.native_segments">
+        <source>Draft generated from the existing native segments.</source>
+        <translation>Draft generated from the existing native segments.</translation>
+    </message>
+    <message id="hand_order.native.reason.invalid_chart">
+        <source>Native syntax errors prevent a reliable conversion.</source>
+        <translation>Native syntax errors prevent a reliable conversion.</translation>
+    </message>
+    <message id="hand_order.native.reason.invalid_annotation">
+        <source>A selected target has an invalid hand annotation.</source>
+        <translation>A selected target has an invalid hand annotation.</translation>
+    </message>
+    <message id="hand_order.native.reason.wifi_not_supported">
+        <source>Wifi paths cannot be split into independent native segments here. Use hand-order interval splitting for colouring.</source>
+        <translation>Wifi paths cannot be split into independent native segments here. Use hand-order interval splitting for colouring.</translation>
+    </message>
+    <message id="hand_order.native.reason.missing_markers">
+        <source>Parsed native objects are missing.</source>
+        <translation>Parsed native objects are missing.</translation>
+    </message>
+    <message id="hand_order.native.reason.single_segment">
+        <source>This slide has one native segment. Use hand-order interval splitting for colouring.</source>
+        <translation>This slide has one native segment. Use hand-order interval splitting for colouring.</translation>
+    </message>
+    <message id="hand_order.native.reason.invalid_geometry">
+        <source>Native geometry or motion times are missing or invalid.</source>
+        <translation>Native geometry or motion times are missing or invalid.</translation>
+    </message>
+    <message id="hand_order.native.reason.unrepresentable_native">
+        <source>The native segment cannot be represented reliably in Simai.</source>
+        <translation>The native segment cannot be represented reliably in Simai.</translation>
+    </message>
+    <message id="hand_order.native.reason.hand_order_unrepresentable">
+        <source>The original hand intervals cannot be mapped reliably to every new segment.</source>
+        <translation>The original hand intervals cannot be mapped reliably to every new segment.</translation>
+    </message>
+    <message id="hand_order.native.reason.no_chain_selected">
+        <source>No convertible native chain is fully selected.</source>
+        <translation>No convertible native chain is fully selected.</translation>
+    </message>
+    <message id="hand_order.native.reason.round_trip_invalid">
+        <source>The proposed result failed strict Simai validation.</source>
+        <translation>The proposed result failed strict Simai validation.</translation>
+    </message>
+    <message id="hand_order.native.reason.round_trip_mismatch">
+        <source>Reparsing did not preserve geometry, actual motion times or annotations.</source>
+        <translation>Reparsing did not preserve geometry, actual motion times or annotations.</translation>
+    </message>
+    <message id="hand_order.native.reason.head_count_mismatch">
+        <source>The proposed result would change the real shared-head count.</source>
+        <translation>The proposed result would change the real shared-head count.</translation>
+    </message>
+    <message id="hand_order.native.change.independent_judgement_boundaries">
+        <source>Each resulting segment has an independent judgement boundary.</source>
+        <translation>Each resulting segment has an independent judgement boundary.</translation>
+    </message>
+    <message id="hand_order.native.change.slide_count_changes">
+        <source>The number of slide track objects increases as shown above.</source>
+        <translation>The number of slide track objects increases as shown above.</translation>
+    </message>
+    <message id="hand_order.native.change.availability_may_change">
+        <source>Independent segments may accept input at different times or react differently to early contact.</source>
+        <translation>Independent segments may accept input at different times or react differently to early contact.</translation>
+    </message>
+    <message id="hand_order.native.change.scoring_may_change">
+        <source>Scoring may change; this is not a per-chart score simulation.</source>
+        <translation>Scoring may change; this is not a per-chart score simulation.</translation>
+    </message>
+    <message id="hand_order.native.change.each_may_change">
+        <source>Each relationships may change.</source>
+        <translation>Each relationships may change.</translation>
+    </message>
+    <message id="hand_order.native.change.disappearance_may_change">
+        <source>Track appearance and disappearance may change, including headless-track presentation.</source>
+        <translation>Track appearance and disappearance may change, including headless-track presentation.</translation>
+    </message>
+    <message id="hand_order.native.change.sfx_may_change">
+        <source>Sound events may change.</source>
+        <translation>Sound events may change.</translation>
+    </message>
+    <message id="hand_order.native.change.muri_may_change">
+        <source>Muri results may change; before/after Muri is not calculated in this preview.</source>
+        <translation>Muri results may change; before/after Muri is not calculated in this preview.</translation>
+    </message>
+    <message id="hand_order.native.change.break_count_scoring_changes">
+        <source>Split native Break segments retain Break, which may change Break counts and scoring.</source>
+        <translation>Split native Break segments retain Break, which may change Break counts and scoring.</translation>
+    </message>
 </context>
 <context>
     <!-- Qt loads qtbase texts for the system locale; this context keeps the

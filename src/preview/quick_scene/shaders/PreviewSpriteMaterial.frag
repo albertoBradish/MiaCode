@@ -6,6 +6,7 @@ layout(location = 2) in float vWave;
 layout(location = 3) in float vAbsWave;
 layout(location = 4) in float vEffect;
 layout(location = 5) in float vHandOrderHand;
+layout(location = 6) in float vHandOrderClipDistance;
 
 layout(location = 0) out vec4 fragColor;
 
@@ -33,6 +34,7 @@ vec4 sampleFootprintAverage(sampler2D tex, vec2 uv)
 
 void main()
 {
+    if (vHandOrderClipDistance < 0.0) discard;
     if (vOpacity <= 0.0) {
         fragColor = vec4(0.0);
         return;

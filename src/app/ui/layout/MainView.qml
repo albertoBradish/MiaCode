@@ -378,6 +378,10 @@ Item {
                 windowChrome: root.applicationContext.windowChrome
                 integratedInTitleBar: root.platform.nativeMenuBar
                 titleBarLeadingInset: titleBar.leadingInset
+                shortcuts: root.shortcutModel
+                handOrderRows: root.documentSession.handOrderMenu()
+                handOrderEnabled: menuCommands.canTransform && !root.shortcutModel.captureActive
+                onHandOrderRequested: command => root.applyChartTransform(command)
                 previewSettingsVisible: !splitView.previewDetached
                 sidebarActive: root.compact
                                ? state.compactPanel === "sidebar"
@@ -425,6 +429,7 @@ Item {
                 documentSession: root.documentSession
                 analysisSession: root.analysisSession
                 preferences: root.preferences
+                shortcuts: root.shortcutModel
                 previewSession: root.previewSession
                 previewSettings: root.applicationContext.previewSettings
                 commands: root.commands

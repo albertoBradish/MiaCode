@@ -16,6 +16,8 @@ MenuBar {
     property bool editorCommandsEnabled: true
     property bool chartCommandsEnabled: true
     property bool toolCommandsEnabled: true
+    property bool normalizationEnabled: true
+    property bool handOrderKeyboardEnabled: false
 
     property MainMenu menuDefinitions: MainMenu {
         visible: false
@@ -31,6 +33,7 @@ MenuBar {
         chartCommandsEnabled: root.chartCommandsEnabled
         toolCommandsEnabled: root.toolCommandsEnabled
         nativeMenuMode: true
+        handOrderKeyboardEnabled: root.handOrderKeyboardEnabled
     }
 
     property Action aboutApplicationAction: Action {

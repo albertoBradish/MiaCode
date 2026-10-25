@@ -236,6 +236,9 @@ public:
     // the menubar's 调整 menu and the editor's context menu build from this, so
     // neither carries its own copy of the operation list or its labels.
     Q_INVOKABLE QVariantList chartTransformMenu() const;
+    Q_INVOKABLE QVariantList handOrderMenu() const;
+    miacode::simai::SimaiTimingMetadata chartTimingMetadata() const;
+    miacode::ChartWorkspaceSnapshot chartWorkspaceSnapshot() const;
     Q_INVOKABLE QString chartTransformMoreLabel() const;
 
     // Stored normalize options, as the same map normalizeChartSelection takes.

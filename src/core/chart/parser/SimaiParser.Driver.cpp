@@ -782,7 +782,11 @@ SimaiParseResult parseInternal(
         const int parsedTokenColumn = tokenColumn;
         const int parsedTokenEndCol = tokenColumn + token.size() - 1;
         const int noteCountBefore = state.result.noteMarkers.size();
+        const int errorsBefore = state.result.errors.size();
         parseToken(&state, token, lineNumber, tokenColumn, &currentGroup);
+        state.result.sourceTokens.append({lineNumber, tokenColumn, int(token.size()),
+            noteCountBefore, int(state.result.noteMarkers.size()) - noteCountBefore,
+            state.result.errors.size() == errorsBefore});
         if (state.result.noteMarkers.size() > noteCountBefore) {
             warnMissingExplicitSubdivision(&state);
             pendingLineEndNoteCol = parsedTokenColumn;

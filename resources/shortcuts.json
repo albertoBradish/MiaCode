@@ -5,6 +5,7 @@
     "Users may copy this file next to MiaCode.exe as shortcuts.json and override action/shortcut sequences without rebuilding."
   ],
   "editable": [
+    "hand_order.set_left", "hand_order.set_right", "hand_order.set_either", "hand_order.split_annotation", "hand_order.split_native_slide",
     "transform.mirror_lr", "transform.mirror_lr_swap_hands", "transform.mirror_ud",
     "transform.mirror_ud_swap_hands", "transform.rotate_180",
     "transform.rotate_ccw_45", "transform.rotate_cw_45", "transform.subdivision_up",
@@ -16,6 +17,46 @@
     "ui.zoom_out", "ui.zoom_in", "ui.zoom_reset", "editor.overwrite_mode"
   ],
   "actions": {
+    "hand_order.set_left": {
+          "label_key": "hand_order.set_left",
+          "label_zh": "选中内容设为左手",
+          "label_en": "Set Selection to Left Hand",
+          "default": "Alt+W",
+          "context": "window",
+          "owner": "EditorController"
+    },
+    "hand_order.set_right": {
+          "label_key": "hand_order.set_right",
+          "label_zh": "选中内容设为右手",
+          "label_en": "Set Selection to Right Hand",
+          "default": "Alt+E",
+          "context": "window",
+          "owner": "EditorController"
+    },
+    "hand_order.set_either": {
+          "label_key": "hand_order.set_either",
+          "label_zh": "选中内容设为无色/任选",
+          "label_en": "Set Selection to Either Hand",
+          "default": "Alt+Y",
+          "context": "window",
+          "owner": "EditorController"
+    },
+    "hand_order.split_annotation": {
+          "label_key": "hand_order.split_annotation",
+          "label_zh": "拆分手序区间",
+          "label_en": "Split Hand-order Intervals",
+          "default": "Alt+T",
+          "context": "window",
+          "owner": "EditorController"
+    },
+    "hand_order.split_native_slide": {
+      "label_key": "hand_order.split_native_slide",
+      "label_zh": "拆成独立 slide",
+      "label_en": "Split into Independent Slides",
+      "default": "Ctrl+Alt+5",
+      "context": "window",
+      "owner": "EditorController"
+    },
     "file.quit": {
       "label_key": "shortcut.file.quit",
       "label_zh": "退出",

@@ -92,6 +92,11 @@ int main(int argc, char** argv)
                QStringLiteral("Stop or Play stops active or pending startup states (%1)").arg(flags), out, &failed);
     }
     const QStringList boundIds = miacode::ui::shortcutCommandIds();
+    const QString nativeSplitId = QStringLiteral("hand_order.split_native_slide");
+    expect(boundIds.contains(nativeSplitId)
+        && miacode::ui::ShortcutRegistry::instance().defaultShortcutText(nativeSplitId) == QStringLiteral("Ctrl+Alt+5")
+        && miacode::ui::ShortcutRegistry::instance().defaultShortcutText(QStringLiteral("hand_order.split_annotation")) == QStringLiteral("Alt+T"),
+        QStringLiteral("native split and hand-order interval split have separate configurable default commands"), out, &failed);
 
     // A declared command can intentionally have no default binding. Identity,
     // rather than a nonempty sequence, determines whether it is configurable.
@@ -148,7 +153,8 @@ int main(int argc, char** argv)
     // is a command with no configurable binding.
     QSet<QString> registryTransformIds;
     for (const auto& definition : miacode::ui::ShortcutRegistry::instance().editableShortcuts()) {
-        if (definition.id.startsWith(QStringLiteral("transform."))) {
+        if (definition.id.startsWith(QStringLiteral("transform."))
+            || definition.id.startsWith(QStringLiteral("hand_order."))) {
             registryTransformIds.insert(definition.id);
         }
     }
@@ -250,6 +256,10 @@ import QtQuick.Controls
 import "file:MIACODE_CHROME_DIR" as Chrome
 Window {
     width: 320; height: 200; visible: true
+    id: shortcutWindow
+    property int hands: 0
+    property int nativeSplits: 0
+    property bool handAllowed: true
     property int starts: 0
     property int toggles: 0
     property bool playbackAllowed: false
@@ -272,23 +282,31 @@ Window {
     }
     QtObject {
         id: bindings
+        objectName: "shortcutFixture"
         property int revision: 1
+        property bool captureActive: false
+        property string handKey: "Alt+W"
+        property string nativeKey: "Ctrl+Alt+5"
         property string cKey: "Ctrl+Shift+C"
         property string xKey: "Ctrl+Shift+X"
         function sequence(id, fallback) {
+            if (id === "hand_order.set_left") return handKey
+            if (id === "hand_order.split_native_slide") return nativeKey
             if (id === "preview.stop_or_play") return cKey
             if (id === "preview.play_pause_global") return xKey
             return ""
         }
     }
-    QtObject { id: commandSource; function shortcutCommandIds() { return [] } }
+    QtObject { id: commandSource; function shortcutCommandIds() { return ["hand_order.set_left", "hand_order.split_native_slide"] } }
     TextInput { anchors.fill: parent; focus: true }
     Chrome.ShortcutBindings {
         shortcuts: bindings; commands: commandSource; previewSession: preview
-        chartCommandsEnabled: false
+        chartCommandsEnabled: true
+        handOrderCommandsEnabled: shortcutWindow.handAllowed
+        onChartTransformRequested: id => { if (id === "hand_order.split_native_slide") shortcutWindow.nativeSplits++; else shortcutWindow.hands++ }
         playbackCommandsEnabled: playbackAllowed
     }
-    function rebind() { bindings.cKey = "Ctrl+Alt+J"; bindings.xKey = "Ctrl+Alt+K"; bindings.revision++ }
+    function rebind() { bindings.handKey = "Ctrl+Alt+4"; bindings.nativeKey = "Ctrl+Alt+6"; bindings.cKey = "Ctrl+Alt+J"; bindings.xKey = "Ctrl+Alt+K"; bindings.revision++ }
 }
 )QML").replace("MIACODE_CHROME_DIR", MIACODE_SOURCE_ROOT "/src/app/ui/chrome"), QUrl());
         QScopedPointer<QObject> object(component.create());
@@ -344,6 +362,12 @@ Window {
             press(Qt::Key_X, Qt::ControlModifier | Qt::ShiftModifier);
             expect(window->property("starts").toInt() == 1 && window->property("toggles").toInt() == 1,
                    QStringLiteral("both preview commands fire with editor focus and no chart commands"), out, &failed);
+            press(Qt::Key_W, Qt::AltModifier);
+            expect(window->property("hands").toInt() == 1,
+                   QStringLiteral("hand-order command fires once with source editor focus"), out, &failed);
+            press(Qt::Key_5, Qt::ControlModifier | Qt::AltModifier);
+            expect(window->property("nativeSplits").toInt() == 1,
+                   QStringLiteral("native slide split dispatches once with editor focus"), out, &failed);
             QMetaObject::invokeMethod(window, "rebind");
             QCoreApplication::processEvents();
             press(Qt::Key_C, Qt::ControlModifier | Qt::ShiftModifier);
@@ -352,6 +376,26 @@ Window {
             press(Qt::Key_K, Qt::ControlModifier | Qt::AltModifier);
             expect(window->property("starts").toInt() == 2 && window->property("toggles").toInt() == 2,
                    QStringLiteral("preview bindings follow revised sequences and release their previous keys"), out, &failed);
+            press(Qt::Key_W, Qt::AltModifier);
+            press(Qt::Key_4, Qt::ControlModifier | Qt::AltModifier);
+            expect(window->property("hands").toInt() == 2,
+                   QStringLiteral("hand-order rebinding releases the previous key and fires once"), out, &failed);
+            press(Qt::Key_5, Qt::ControlModifier | Qt::AltModifier);
+            press(Qt::Key_6, Qt::ControlModifier | Qt::AltModifier);
+            expect(window->property("nativeSplits").toInt() == 2,
+                   QStringLiteral("native split rebinding releases the old key and retains a single dispatch"), out, &failed);
+            window->setProperty("handAllowed", false);
+            press(Qt::Key_4, Qt::ControlModifier | Qt::AltModifier);
+            press(Qt::Key_6, Qt::ControlModifier | Qt::AltModifier);
+            expect(window->property("hands").toInt() == 2 && window->property("nativeSplits").toInt() == 2,
+                   QStringLiteral("empty selection or non-editor focus disables both annotation and native slide editing"), out, &failed);
+            window->setProperty("handAllowed", true);
+            window->findChild<QObject*>("shortcutFixture")->setProperty("captureActive", true);
+            press(Qt::Key_4, Qt::ControlModifier | Qt::AltModifier);
+            press(Qt::Key_6, Qt::ControlModifier | Qt::AltModifier);
+            expect(window->property("hands").toInt() == 2 && window->property("nativeSplits").toInt() == 2,
+                   QStringLiteral("shortcut preference capture cannot trigger either chart-editing command"), out, &failed);
+            window->findChild<QObject*>("shortcutFixture")->setProperty("captureActive", false);
         }
     }
 

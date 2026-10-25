@@ -35,6 +35,8 @@ ApplicationWindow {
         editorCommandsEnabled: mainView.editorCommandsAvailable
         chartCommandsEnabled: mainView.chartEditorActive
         toolCommandsEnabled: mainView.documentSession.hasDocument
+        normalizationEnabled: mainView.pages.activePageId !== "export"
+        handOrderKeyboardEnabled: window.sourceEditorFocused && !window.applicationContext.shortcuts.captureActive
     }
 
     menuBar: window.platform.nativeMenuBar ? window.nativeSystemMenu : null
@@ -213,6 +215,7 @@ ApplicationWindow {
         previewSession: window.applicationContext.preview
         commandsEnabled: !mainView.beginnerGuideActive
         chartCommandsEnabled: mainView.chartEditorActive
+        handOrderCommandsEnabled: mainView.mainMenuCommands.canTransform && window.sourceEditorFocused
         playbackCommandsEnabled: window.playbackCommandsEnabled
         menuOwnsChartTransformShortcuts: window.platform.nativeMenuBar
         menuOwnsPreviewRateShortcuts: window.platform.nativeMenuBar

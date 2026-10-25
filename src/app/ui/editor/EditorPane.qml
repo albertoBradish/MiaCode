@@ -12,6 +12,7 @@ Item {
     required property var editorController
     required property var editorSync
     required property var analysisSession
+    property var shortcuts: null
     required property var preferences
     required property var latency
     required property var previewSession
@@ -394,6 +395,7 @@ Item {
         syncController: root.editorSync
         analysisSession: root.analysisSession
         preferences: root.preferences
+        shortcuts: root.shortcuts
         onNormalizeChartRequested: root.pages.openNormalizeWholeChart()
         onCompletionSettingsRequested: function(group) { root.completionSettingsRequested(group) }
     }

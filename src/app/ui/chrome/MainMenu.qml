@@ -25,6 +25,7 @@ Item {
     property bool chartCommandsEnabled: true
     property bool toolCommandsEnabled: true
     property bool nativeMenuMode: false
+    property bool handOrderKeyboardEnabled: false
     // Re-read each time the menu opens rather than kept live: the list only
     // changes when a document is opened, and a menu nobody is looking at has no
     // reason to hold a copy.
@@ -577,6 +578,29 @@ Item {
                                  && root.commands.canTransform
                         onTriggered: root.commands.chartTransformRequested(
                                          transformItem.modelData.id)
+                    }
+                }
+            }
+
+            AppMenu {
+                title: qsTrId("hand_order.title")
+                enabled: root.commandsEnabled && root.chartCommandsEnabled
+                    && !root.shortcuts.captureActive
+                Repeater {
+                    model: root.documentSession.handOrderMenu()
+                    delegate: AppMenuItem {
+                        id: handOrderItem
+                        required property var modelData
+                        action: AppMenuAction {
+                            text: qsTrId(handOrderItem.modelData.labelKey)
+                            shortcut: root.nativeMenuMode && root.handOrderKeyboardEnabled && root.shortcuts.revision >= 0
+                                ? root.shortcuts.sequence(handOrderItem.modelData.id) : ""
+                            shortcutText: root.shortcuts.displayText(handOrderItem.modelData.id)
+                            enabled: root.commandsEnabled && root.chartCommandsEnabled
+                                && (handOrderItem.modelData.requiresSelection === false || root.commands.canTransform)
+                                && !root.shortcuts.captureActive
+                            onTriggered: root.commands.chartTransformRequested(handOrderItem.modelData.id)
+                        }
                     }
                 }
             }

@@ -119,6 +119,9 @@ public:
     Q_INVOKABLE void exportSelectionRange();
     Q_INVOKABLE bool applyNormalization(const QVariantMap& options);
     Q_INVOKABLE bool applyChartTransform(const QString& operation);
+    Q_INVOKABLE bool applyHandOrderIntervals();
+    Q_INVOKABLE bool prepareNativeSlideSplit();
+    Q_INVOKABLE bool applyNativeSlideSplit();
     Q_INVOKABLE bool createBookmarkAtLine(int line, const QString& title);
     Q_INVOKABLE bool renameBookmarkAtLine(int line, const QString& title);
     Q_INVOKABLE bool deleteBookmarkAtLine(int line);
@@ -149,6 +152,7 @@ protected:
     void wheelEvent(QWheelEvent* event) override;
     void inputMethodEvent(QInputMethodEvent* event) override;
 private:
+    NativeSlideSplitContext nativeSlideSplitContext() const;
     enum OverviewProjectionPart {
         OverviewMarkersDirty = 0x01,
         OverviewCurrentLineDirty = 0x02,

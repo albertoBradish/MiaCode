@@ -328,6 +328,25 @@ QString transformChartText(const QString& input, ChartTransformOp op, int* chang
     const auto transformToken = [&](const QString& token) {
         const auto annotation = miacode::hand_order::splitToken(token);
         QString suffix = annotation.suffix;
+        if (isMirrorOp(op)) {
+            // Native Wifi lane order reverses under either reflection. Rotate
+            // keeps local sectors; reflecting only the geometry must exchange them.
+            int from = 0;
+            while ((from = suffix.indexOf(QStringLiteral("=split:"), from)) >= 0) {
+                const int start = from + 7;
+                int end = suffix.indexOf(QLatin1Char(';'), start);
+                if (end < 0) end = suffix.indexOf(QLatin1Char(']'), start);
+                if (end < 0) break;
+                const QString value = suffix.mid(start, end - start);
+                const int separator = value.indexOf(QLatin1Char('&'));
+                if (separator >= 0 && separator == value.lastIndexOf(QLatin1Char('&'))) {
+                    suffix.replace(start, value.size(), value.mid(separator + 1)
+                        + QLatin1Char('&') + value.left(separator));
+                    ++changed;
+                }
+                from = end;
+            }
+        }
         if (isMirrorOp(op) && handPolicy == HandOrderMirrorPolicy::SwapLeftRight) {
             for (int i = 1; i < suffix.size(); ++i) {
                 const QChar previous = suffix.at(i - 1);

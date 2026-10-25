@@ -10,3 +10,6 @@
 - [Net 接口](specs/net/NET_API_CONTRACT_ZH.md)、[配置](specs/net/NET_CONFIGURATION_ZH.md)
 - [调试开关](ops/DEBUG_INDEX.md)、[日志排障](ops/OPERATION_LOG_PATTERNS_SPEC.md)
 - [发布](ops/RELEASE_CHECKLIST.md)
+
+- [手序手动工具（阶段 A）](specs/chart/HAND_ORDER_MANUAL_TOOLS_SPEC_ZH.md)：命令、区间编辑与会话临时状态契约。
+- [拆成独立 slide](specs/chart/NATIVE_SLIDE_SPLIT_SPEC_ZH.md)：原生链段结构拆分、差异预览、原子应用与身份拒绝。

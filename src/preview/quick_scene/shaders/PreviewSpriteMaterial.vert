@@ -5,6 +5,7 @@ layout(location = 1) in vec2 aTexCoord;
 layout(location = 2) in float aOpacity;
 layout(location = 3) in float aEffect;
 layout(location = 4) in float aHandOrderHand;
+layout(location = 5) in float aHandOrderClipDistance;
 
 layout(location = 0) out vec2 vTexCoord;
 layout(location = 1) out float vOpacity;
@@ -12,6 +13,7 @@ layout(location = 2) out float vWave;
 layout(location = 3) out float vAbsWave;
 layout(location = 4) out float vEffect;
 layout(location = 5) out float vHandOrderHand;
+layout(location = 6) out float vHandOrderClipDistance;
 
 layout(std140, binding = 0) uniform buf {
     mat4 qt_Matrix;
@@ -29,5 +31,6 @@ void main()
     vAbsWave = absWave;
     vEffect = aEffect + effect * 0.0;
     vHandOrderHand = aHandOrderHand;
+    vHandOrderClipDistance = aHandOrderClipDistance;
     gl_Position = qt_Matrix * vec4(aPosition, 0.0, 1.0);
 }

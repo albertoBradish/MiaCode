@@ -824,6 +824,48 @@ bool verifyWifiHandOrderColorsWholeTrackAndAllStars(QTextStream& err)
             return false;
         }
     }
+    state.render.showHandOrderAnnotations = true;
+    state.playheadSeconds = marker.slideTraceSecond;
+    marker.handOrderWifiMode = HandOrderWifiMode::Split;
+    marker.handOrderTrackStops.clear();
+    marker.handOrderWifiSectorStops = {{{0.0, HandOrderHand::Left}, {0.5, HandOrderHand::Right}},
+        {{0.0, HandOrderHand::Right}, {0.75, HandOrderHand::Left}}};
+    state.noteMarkers = {marker};
+    const auto sectorsTrack = track();
+    const auto sectorsMotion = motion();
+    if (!require(sectorsTrack.size() == 8 && sectorsMotion.size() == 4
+        && sectorsMotion.at(0).handOrderHand == HandOrderHand::Left
+        && sectorsMotion.at(3).handOrderHand == HandOrderHand::Right
+        && !sectorsMotion.at(1).handOrderClipNormal.isNull()
+        && sectorsMotion.at(1).handOrderClipNormal == -sectorsMotion.at(2).handOrderClipNormal,
+        QStringLiteral("Wifi independent sectors color both native sides and split the common centre star"), err)) return false;
+    for (int i = 0; i < sectorsTrack.size(); i += 2) {
+        if (!require(sectorsTrack.at(i).center == sectorsTrack.at(i + 1).center
+            && sectorsTrack.at(i).width == sectorsTrack.at(i + 1).width
+            && !sectorsTrack.at(i).handOrderClipNormal.isNull()
+            && sectorsTrack.at(i).handOrderClipNormal == -sectorsTrack.at(i + 1).handOrderClipNormal,
+            QStringLiteral("Wifi arrow halves preserve original geometry and use complementary native half-planes"), err)) return false;
+    }
+    state.playheadSeconds = 0.75;
+    const auto changedMotion = motion();
+    if (!require(changedMotion.at(0).handOrderHand == HandOrderHand::Right
+        && changedMotion.at(3).handOrderHand == HandOrderHand::Right,
+        QStringLiteral("one Wifi sector handoff changes only its own interval at the exact boundary"), err)) return false;
+    state.render.showHandOrderAnnotations = false;
+    if (!require(track().size() == 2 && motion().size() == 3
+        && motion().at(1).handOrderClipNormal.isNull(),
+        QStringLiteral("hidden sector annotations restore the original complete sprites"), err)) return false;
+    state.render.showHandOrderAnnotations = true;
+    marker.handOrderWifiMode = HandOrderWifiMode::Single;
+    marker.handOrderWifiSectorStops.clear();
+    marker.handOrderTrackStops = {{0.0, HandOrderHand::Left}, {0.5, HandOrderHand::Left}};
+    state.noteMarkers = {marker};
+    const auto singleMotion = motion();
+    int badges = 0;
+    for (const auto& sprite : singleMotion)
+        badges += sprite.image == miacode::preview::scene::previewWifiSingleBadgeImage();
+    if (!require(singleMotion.size() == 4 && badges == 1 && track().size() == 2,
+        QStringLiteral("explicit single-hand Wifi has a circled-one badge independent of its common hand color"), err)) return false;
     return true;
 }
 

@@ -12,12 +12,15 @@ Rectangle {
     required property var syncController
     required property var analysisSession
     property var preferences: null
+    property var shortcuts: null
     readonly property bool overviewRulerEnabled: preferences ? preferences.editorOverviewRulerEnabled : false
     property bool navigationVisible: false
     onNavigationVisibleChanged: {
         if (!navigationVisible) {
             editorContextMenu.close()
             bookmarkMenu.close()
+            handOrderIntervals.close()
+            nativeSlideSplitDialog.close()
         }
     }
     property int pendingBookmarkLine: -1
@@ -128,7 +131,18 @@ Rectangle {
     function jumpToLine(line) { sourceArea.jumpToLine(line) }
     function openFindReplace() { findReplaceBar.show() }
     function exportSelectionRange() { sourceArea.exportSelectionRange() }
-    function applyChartTransform(operation) { return sourceArea.applyChartTransform(operation) }
+    function applyChartTransform(operation) {
+        sourceArea.forceActiveFocus()
+        if (operation === "hand_order.split_native_slide") {
+            const prepared = sourceArea.prepareNativeSlideSplit()
+            if (prepared) nativeSlideSplitDialog.open()
+            return prepared
+        }
+        const applied = sourceArea.applyChartTransform(operation)
+        if (operation === "hand_order.split_annotation" && editorController.handOrderSplitAvailable)
+            handOrderIntervals.open()
+        return applied
+    }
     function applyNormalization(options) { return sourceArea.applyNormalization(options) }
     function selectionDescription() {
         if (sourceArea.selectionStart === sourceArea.selectionEnd)
@@ -302,6 +316,8 @@ Rectangle {
             if (normalize)
                 action("qml.normalize_whole_chart", "normalize")
             if (transform)
+                rows.push({ kind: "handOrder", labelKey: "hand_order.title", operation: "" })
+            if (transform)
                 rows.push({ kind: "submenu", labelKey: "action.transform.more", operation: "" })
             menuEntries.clear()
             for (const row of rows)
@@ -345,6 +361,25 @@ Rectangle {
                 DelegateChoice {
                     roleValue: "separator"
                     delegate: AppMenuSeparator {}
+                }
+                DelegateChoice {
+                    roleValue: "handOrder"
+                    delegate: AppMenu {
+                        id: contextHandOrderMenu
+                        title: qsTrId("hand_order.title")
+                        Instantiator {
+                            model: root.documentSession.handOrderMenu().filter(row => row.requiresSelection !== false)
+                            delegate: AppMenuItem {
+                                required property var modelData
+                                text: qsTrId(modelData.labelKey)
+                                shortcutText: root.shortcuts && root.shortcuts.revision >= 0
+                                    ? root.shortcuts.displayText(modelData.id) : ""
+                                onTriggered: editorContextMenu.triggerOperation(modelData.id)
+                            }
+                            onObjectAdded: (index, item) => contextHandOrderMenu.insertItem(index, item)
+                            onObjectRemoved: (index, item) => contextHandOrderMenu.removeItem(item)
+                        }
+                    }
                 }
                 DelegateChoice {
                     roleValue: "submenu"
@@ -574,7 +609,7 @@ Rectangle {
         id: horizontalBar
         anchors.left: sourceArea.left
         anchors.right: verticalBar.left
-        anchors.bottom: parent.bottom
+        anchors.bottom: handOrderFeedback.top
         orientation: Qt.Horizontal
         visible: !sourceArea.autoWrap && sourceArea.horizontal_scroll_max > 0
         height: visible ? implicitHeight : 0
@@ -584,6 +619,43 @@ Rectangle {
         size: sourceArea.horizontal_scroll_page / Math.max(1, sourceArea.horizontal_scroll_max + sourceArea.horizontal_scroll_page)
         position: sourceArea.horizontal_scroll_value / Math.max(1, sourceArea.horizontal_scroll_max + sourceArea.horizontal_scroll_page)
         onPositionChanged: if (pressed) sourceArea.scrollHorizontal(Math.round(position * (sourceArea.horizontal_scroll_max + sourceArea.horizontal_scroll_page)))
+    }
+    AppButton {
+        id: handOrderFeedback
+        objectName: "handOrderFeedback"
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        height: visible ? implicitHeight : 0
+        visible: root.editorController.handOrderFeedback.length > 0
+        text: root.editorController.handOrderFeedback.split("\n")[0]
+        focusPolicy: Qt.NoFocus
+        onClicked: handOrderDetails.open()
+    }
+    AppDialog {
+        id: handOrderDetails
+        title: qsTrId("hand_order.title")
+        body: Label {
+            text: root.editorController.handOrderFeedback
+            wrapMode: Text.Wrap
+            color: Theme.colors.text.primary
+        }
+        footer: DialogFooter {
+            cancelText: qsTrId("action.close")
+            onRejected: handOrderDetails.close()
+        }
+    }
+    HandOrderIntervalsDialog {
+        id: handOrderIntervals
+        controller: root.editorController
+        applyEdit: () => sourceArea.applyHandOrderIntervals()
+        onEditingFinished: sourceArea.forceActiveFocus()
+    }
+    NativeSlideSplitDialog {
+        id: nativeSlideSplitDialog
+        controller: root.editorController
+        applyEdit: () => sourceArea.applyNativeSlideSplit()
+        onEditingFinished: sourceArea.forceActiveFocus()
     }
     CompletionPopup {
         id: completionPopup

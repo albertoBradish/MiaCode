@@ -5,6 +5,8 @@
 #include "editor/TouchPadAuthoringEdit.h"
 
 #include <QtGlobal>
+#include <QCryptographicHash>
+#include <algorithm>
 
 namespace miacode::ui {
 namespace {
@@ -311,4 +313,393 @@ miacode::editor::SimaiTextEditResult EditorController::touchPadAuthoring(
     return result;
 }
 
+} // namespace miacode::ui
+
+namespace miacode::ui {
+namespace {
+QString draftKey(const QString& scope, const QString& text)
+{
+    return scope + QLatin1Char(':') + QString::fromLatin1(
+        QCryptographicHash::hash(text.toUtf8(), QCryptographicHash::Sha256).toHex());
+}
+miacode::editor::SimaiTextEditResult selectionTransaction(
+    const QString& text, int anchor, int position, const QString& replacement)
+{
+    auto result = untouched(text, anchor, position);
+    result.consumed = true;
+    const int begin = qBound(0, qMin(anchor, position), int(text.size()));
+    const int end = qBound(begin, qMax(anchor, position), int(text.size()));
+    if (replacement == text.mid(begin, end - begin)) return result;
+    auto& tx = result.transaction;
+    tx.hasEdit = true;
+    tx.replacementStart = begin;
+    tx.replacementEnd = end;
+    tx.replacementText = replacement;
+    tx.anchor = anchor <= position ? begin : begin + replacement.size();
+    tx.position = anchor <= position ? begin + replacement.size() : begin;
+    return result;
+}
+}
+
+void EditorController::retranslate()
+{
+    emit handOrderChanged();
+    emit nativeSlideSplitChanged();
+}
+
+void EditorController::activateHandOrderDocument(const QString& scope, const QString& text)
+{
+    const QString key = draftKey(scope, text);
+    if (key == handOrderKey_) return;
+    if (handOrderScope_ != scope) handOrderFeedback_.clear();
+    handOrderSplitAvailable_ = false;
+    handOrderScope_ = scope;
+    handOrderText_ = text;
+    handOrderKey_ = key;
+    emit handOrderChanged();
+}
+
+void EditorController::rememberHandOrderDraft(const QString& text,
+    const QVector<miacode::chart_transform::HandOrderTokenEdit>& tokens,
+    const QVector<miacode::chart_transform::HandOrderEditPlan::Patch>& patches)
+{
+    const QString key = draftKey(handOrderScope_, text);
+    auto merged = handOrderDrafts_.value(key);
+    if (key != handOrderKey_ && !handOrderDrafts_.contains(key)) {
+        for (auto previous : handOrderDrafts_.value(handOrderKey_)) {
+            int delta = 0;
+            bool replaced = false;
+            for (const auto& patch : patches) {
+                if (patch.start < previous.end && patch.end > previous.start) { replaced = true; break; }
+                if (patch.end <= previous.start) delta += patch.text.size() - (patch.end - patch.start);
+            }
+            if (!replaced) {
+                previous.start += delta;
+                previous.end += delta;
+                merged.append(previous);
+            }
+        }
+    }
+    QVector<int> visible;
+    for (const auto& token : tokens) {
+        const auto existing = std::find_if(merged.begin(), merged.end(), [&](const auto& other) {
+            return other.start == token.start && other.baseToken == token.baseToken;
+        });
+        if (existing == merged.end()) merged.append(token);
+        else *existing = token;
+        visible.append(token.start);
+    }
+    std::sort(merged.begin(), merged.end(), [](const auto& a, const auto& b) { return a.start < b.start; });
+    for (auto& token : merged) {
+        token.line = text.left(token.start).count(QLatin1Char('\n')) + 1;
+        token.col = token.start - (token.start == 0 ? -1 : text.lastIndexOf(QLatin1Char('\n'), token.start - 1));
+    }
+    handOrderDrafts_.insert(key, merged);
+    handOrderVisibleStarts_.insert(key, visible);
+    handOrderDraftOrder_.removeAll(key);
+    handOrderDraftOrder_.append(key);
+    // Session-only drafts follow exact document versions, including undo/redo.
+    while (handOrderDraftOrder_.size() > 64) {
+        const auto oldest = handOrderDraftOrder_.takeFirst();
+        handOrderDrafts_.remove(oldest);
+        handOrderVisibleStarts_.remove(oldest);
+    }
+    activateHandOrderDocument(handOrderScope_, text);
+}
+
+miacode::editor::SimaiTextEditResult EditorController::handOrderCommand(
+    const QString& text, int anchor, int position, const QString& command,
+    const miacode::simai::SimaiTimingMetadata& metadata)
+{
+    activateHandOrderDocument(handOrderScope_, text);
+    const int begin = qBound(0, qMin(anchor, position), int(text.size()));
+    const int end = qBound(begin, qMax(anchor, position), int(text.size()));
+    if (begin == end) return untouched(text, anchor, position);
+    namespace transform = miacode::chart_transform;
+    const bool split = command == QStringLiteral("hand_order.split_annotation");
+    HandOrderHand hand = HandOrderHand::Unspecified;
+    if (command == QStringLiteral("hand_order.set_left")) hand = HandOrderHand::Left;
+    else if (command == QStringLiteral("hand_order.set_right")) hand = HandOrderHand::Right;
+    else if (command == QStringLiteral("hand_order.set_either")) hand = HandOrderHand::Either;
+    if (!split && hand == HandOrderHand::Unspecified) return untouched(text, anchor, position);
+    auto plan = split ? transform::splitHandOrderInSelection(text, begin, end, metadata)
+        : transform::setHandOrderInSelection(text, begin, end, hand, metadata);
+    const auto result = selectionTransaction(text, anchor, position, plan.replacement);
+    if (split && !plan.intervals.isEmpty()) {
+        // Reopening an unchanged source version restores interval choices.
+        const auto old = handOrderDrafts_.value(draftKey(handOrderScope_,
+            text.left(begin) + plan.replacement + text.mid(end)));
+        for (auto& token : plan.intervals) {
+            for (const auto& previous : old) {
+                if (token.start == previous.start && token.baseToken == previous.baseToken
+                    && token.tracks.size() == previous.tracks.size()) {
+                    token = previous;
+                    break;
+                }
+            }
+        }
+        rememberHandOrderDraft(text.left(begin) + plan.replacement + text.mid(end), plan.intervals, plan.patches);
+    }
+    handOrderSplitAvailable_ = split && !plan.intervals.isEmpty();
+    handOrderFeedback_ = miacode::localizedText("hand_order.feedback").arg(plan.changed).arg(plan.partial)
+        .arg(plan.unsupported).arg(plan.diagnostics.size());
+    for (const auto& diagnostic : plan.diagnostics)
+        handOrderFeedback_ = handOrderFeedback_ + QStringLiteral("\n") + miacode::localizedText("hand_order.diagnostic")
+            .arg(diagnostic.line).arg(diagnostic.col).arg(diagnostic.message);
+    emit handOrderChanged();
+    return result;
+}
+
+QVariantList EditorController::handOrderRows() const
+{
+    QVariantList rows;
+    const auto tokens = handOrderDrafts_.value(handOrderKey_);
+    for (int tokenIndex = 0; tokenIndex < tokens.size(); ++tokenIndex) {
+        const auto& token = tokens.at(tokenIndex);
+        if (!handOrderVisibleStarts_.value(handOrderKey_).contains(token.start)) continue;
+        const auto append = [&](int branch, int sector, int stop, double begin, double end, HandOrderHand hand) {
+            rows.append(QVariantMap{{QStringLiteral("token"), tokenIndex},
+                {QStringLiteral("line"), token.line}, {QStringLiteral("col"), token.col},
+                {QStringLiteral("branch"), branch}, {QStringLiteral("stop"), stop},
+                {QStringLiteral("sector"), sector},
+                {QStringLiteral("wifi"), branch >= 0 && token.wifiBranches.value(branch)},
+                {QStringLiteral("wifiMode"), int(token.wifiModes.value(branch, HandOrderWifiMode::Legacy))},
+                {QStringLiteral("begin"), begin}, {QStringLiteral("end"), end},
+                {QStringLiteral("hand"), int(hand)}});
+        };
+        if (token.hasHead) append(-1, -1, -1, 0, 0, token.head);
+        for (int branch = 0; branch < token.tracks.size(); ++branch) {
+            const auto mode = token.wifiModes.value(branch, HandOrderWifiMode::Legacy);
+            if (mode == HandOrderWifiMode::Single) {
+                append(branch, -1, 0, 0, 1, token.tracks.at(branch).value(0).hand);
+                continue;
+            }
+            const int count = mode == HandOrderWifiMode::Split ? 2 : 1;
+            for (int sector = 0; sector < count; ++sector) {
+              const auto stops = mode == HandOrderWifiMode::Split
+                  ? token.wifiSectors.value(branch).value(sector) : token.tracks.at(branch);
+              for (int stop = 0; stop < stops.size(); ++stop)
+                append(branch, mode == HandOrderWifiMode::Split ? sector : -1, stop, stops.at(stop).progress,
+                    stop + 1 < stops.size() ? stops.at(stop + 1).progress : 1.0, stops.at(stop).hand);
+            }
+        }
+    }
+    return rows;
+}
+
+void EditorController::setHandOrderInterval(int row, int hand)
+{
+    const auto rows = handOrderRows();
+    if (row < 0 || row >= rows.size() || hand < 0 || hand > 3) return;
+    const auto data = rows.at(row).toMap();
+    auto& token = handOrderDrafts_[handOrderKey_][data.value(QStringLiteral("token")).toInt()];
+    const int branch = data.value(QStringLiteral("branch")).toInt();
+    if (branch < 0) token.head = HandOrderHand(hand);
+    else if (token.wifiModes.value(branch, HandOrderWifiMode::Legacy) == HandOrderWifiMode::Single) {
+        // The single-mode row edits the whole track, never one interval.
+        for (auto& stop : token.tracks[branch]) stop.hand = HandOrderHand(hand);
+    } else if (data.value(QStringLiteral("sector")).toInt() >= 0) {
+        token.wifiSectors[branch][data.value(QStringLiteral("sector")).toInt()]
+            [data.value(QStringLiteral("stop")).toInt()].hand = HandOrderHand(hand);
+    } else token.tracks[branch][data.value(QStringLiteral("stop")).toInt()].hand = HandOrderHand(hand);
+    emit handOrderChanged();
+}
+
+void EditorController::setHandOrderWifiMode(int row, int mode)
+{
+    const auto rows = handOrderRows();
+    if (row < 0 || row >= rows.size() || mode < 0 || mode > 2) return;
+    const auto data = rows.at(row).toMap();
+    const int branch = data.value(QStringLiteral("branch")).toInt();
+    auto& token = handOrderDrafts_[handOrderKey_][data.value(QStringLiteral("token")).toInt()];
+    if (branch < 0 || !token.wifiBranches.value(branch)) return;
+    const auto previous = token.wifiModes.value(branch, HandOrderWifiMode::Legacy);
+    if (int(previous) == mode) return;
+    token.wifiModes.resize(token.tracks.size());
+    token.wifiSectors.resize(token.tracks.size());
+    auto stops = previous == HandOrderWifiMode::Split ? token.wifiSectors.at(branch).value(0) : token.tracks.at(branch);
+    if (stops.isEmpty()) stops.append({0.0, HandOrderHand::Unspecified});
+    if (mode == int(HandOrderWifiMode::Split)) {
+        token.wifiSectors[branch] = {stops, stops};
+        token.tracks[branch].clear();
+    } else {
+        if (mode == int(HandOrderWifiMode::Single)) {
+            // Explicit mode changes require a fresh whole-track choice when
+            // the old intervals or the other sector disagree.
+            auto chosen = stops.constFirst().hand;
+            for (const auto& stop : stops) if (stop.hand != chosen) chosen = HandOrderHand::Unspecified;
+            if (previous == HandOrderWifiMode::Split)
+                for (const auto& sector : token.wifiSectors.at(branch))
+                    for (const auto& stop : sector) if (stop.hand != chosen) chosen = HandOrderHand::Unspecified;
+            for (auto& stop : stops) stop.hand = chosen;
+        }
+        token.tracks[branch] = stops;
+        token.wifiSectors[branch].clear();
+    }
+    token.wifiModes[branch] = HandOrderWifiMode(mode);
+    emit handOrderChanged();
+}
+
+bool EditorController::handOrderCanApply() const
+{
+    bool changed = false;
+    const auto tokens = handOrderDrafts_.value(handOrderKey_);
+    for (const auto& token : tokens) {
+        if (!handOrderVisibleStarts_.value(handOrderKey_).contains(token.start)) continue;
+        if (!miacode::chart_transform::handOrderTokenComplete(token)) return false;
+        changed |= handOrderText_.mid(token.start, token.end - token.start)
+            != token.baseToken + miacode::chart_transform::handOrderSuffix(token);
+    }
+    return changed;
+}
+
+miacode::editor::SimaiTextEditResult EditorController::applyHandOrderIntervals(const QString& text)
+{
+    if (text != handOrderText_ || !handOrderCanApply()) return untouched(text, 0, 0);
+    auto tokens = handOrderDrafts_.value(handOrderKey_);
+    const auto visible = handOrderVisibleStarts_.value(handOrderKey_);
+    tokens.removeIf([&](const auto& token) { return !visible.contains(token.start); });
+    const int begin = tokens.constFirst().start;
+    const int end = tokens.constLast().end;
+    QString replacement = text.mid(begin, end - begin);
+    int delta = 0;
+    QVector<miacode::chart_transform::HandOrderEditPlan::Patch> patches;
+    for (auto& token : tokens) {
+        const QString encoded = token.baseToken + miacode::chart_transform::handOrderSuffix(token);
+        patches.append({token.start, token.end, encoded});
+        replacement.replace(token.start - begin + delta, token.end - token.start, encoded);
+        const int oldLength = token.end - token.start;
+        token.start += delta;
+        token.end = token.start + encoded.size();
+        delta += encoded.size() - oldLength;
+    }
+    auto result = selectionTransaction(text, begin, end, replacement);
+    const QString resultingText = text.left(begin) + replacement + text.mid(end);
+    const auto originalErrors = SimaiParser::validateSyntax(text).annotationErrors;
+    const auto writtenErrors = SimaiParser::validateSyntax(resultingText).annotationErrors;
+    if (writtenErrors.size() > originalErrors.size()) {
+        handOrderFeedback_ = miacode::localizedText("hand_order.diagnostic").arg(writtenErrors.first().line)
+            .arg(writtenErrors.first().col).arg(writtenErrors.first().message);
+        emit handOrderChanged();
+        return untouched(text, begin, end);
+    }
+    rememberHandOrderDraft(resultingText, tokens, patches);
+    handOrderFeedback_ = miacode::localizedText("hand_order.applied");
+    emit handOrderChanged();
+    return result;
+}
+} // namespace miacode::ui
+
+namespace miacode::ui {
+namespace {
+bool sameNativeSplitContext(const NativeSlideSplitContext& a, const NativeSlideSplitContext& b)
+{
+    return a.scope == b.scope && a.chartText == b.chartText && a.timing == b.timing
+        && a.workspace.hasDocument == b.workspace.hasDocument
+        && a.workspace.revision == b.workspace.revision
+        && a.workspace.documentOpenGeneration == b.workspace.documentOpenGeneration
+        && a.workspace.activeDifficultyId == b.workspace.activeDifficultyId
+        && a.workspace.filePath == b.workspace.filePath
+        && a.workspace.sourceText == b.workspace.sourceText
+        && a.workspace.origin == b.workspace.origin;
+}
+QString nativeSplitLabel(const char* prefix, const QString& code)
+{
+    if (code.isEmpty()) return {};
+    const QByteArray key = QByteArray(prefix) + code.toUtf8();
+    const QString translated = qtTrId(key.constData());
+    return translated == QString::fromUtf8(key) ? code : translated;
+}
+}
+void EditorController::updateNativeSlideSplitContext(const NativeSlideSplitContext& context)
+{
+    if (sameNativeSplitContext(nativeSlideSplitContext_, context)) return;
+    nativeSlideSplitContext_ = context;
+    if (nativeSlideSplitAvailable_) {
+        nativeSlideSplitStale_ = true;
+        emit nativeSlideSplitChanged();
+    }
+}
+bool EditorController::prepareNativeSlideSplit(const NativeSlideSplitContext& context, int anchor, int position)
+{
+    updateNativeSlideSplitContext(context);
+    cancelNativeSlideSplit();
+    if (!context.workspace.hasDocument || context.workspace.activeDifficultyId <= 0 || context.scope.isEmpty()) return false;
+    const auto document = SimaiDocument::fromText(context.workspace.sourceText);
+    const auto* difficulty = document.difficulty(context.workspace.activeDifficultyId);
+    if (!difficulty || difficulty->chart != context.chartText || miacode::simai::buildTimingMetadata(document) != context.timing) return false;
+    nativeSlideSplitBegin_ = qBound(0, qMin(anchor, position), int(context.chartText.size()));
+    nativeSlideSplitEnd_ = qBound(nativeSlideSplitBegin_, qMax(anchor, position), int(context.chartText.size()));
+    if (nativeSlideSplitBegin_ == nativeSlideSplitEnd_) return false;
+    preparedNativeSlideSplitContext_ = context;
+    nativeSlideSplitAllowNegativeHs_ = SimaiParser::allowNegativeHsEnabled();
+    nativeSlideSplitPlan_ = miacode::chart_transform::planNativeSlideSplit(context.chartText,
+        nativeSlideSplitBegin_, nativeSlideSplitEnd_, context.timing);
+    nativeSlideSplitAvailable_ = true; nativeSlideSplitStale_ = false;
+    emit nativeSlideSplitChanged();
+    return true;
+}
+bool EditorController::nativeSlideSplitCanApply() const
+{
+    return nativeSlideSplitAvailable_ && !nativeSlideSplitStale_ && nativeSlideSplitPlan_.canApply
+        && nativeSlideSplitAllowNegativeHs_ == SimaiParser::allowNegativeHsEnabled()
+        && sameNativeSplitContext(nativeSlideSplitContext_, preparedNativeSlideSplitContext_);
+}
+QString EditorController::nativeSlideSplitMessage() const
+{
+    if (!nativeSlideSplitAvailable_) return {};
+    if (nativeSlideSplitStale_) return qtTrId("hand_order.native.stale");
+    const auto& plan = nativeSlideSplitPlan_;
+    QString message = qtTrId("hand_order.native.summary").arg(plan.changed).arg(plan.ignored).arg(plan.partial).arg(plan.unsupported);
+    if (!plan.canApply) message += QLatin1Char(10) + qtTrId("hand_order.native.blocked");
+    for (const auto& code : plan.blockers) message += QLatin1Char(10) + nativeSplitLabel("hand_order.native.reason.", code);
+    for (const auto& diagnostic : plan.diagnostics) message += QLatin1Char(10) + qtTrId("hand_order.diagnostic")
+        .arg(diagnostic.line).arg(diagnostic.col).arg(diagnostic.message);
+    return message;
+}
+QVariantList EditorController::nativeSlideSplitRows() const
+{
+    QVariantList rows;
+    for (const auto& item : nativeSlideSplitPlan_.items) {
+        QStringList changes;
+        for (const auto& change : item.changes) changes.append(nativeSplitLabel("hand_order.native.change.", change));
+        rows.append(QVariantMap{{"line", item.line}, {"col", item.col}, {"before", item.before}, {"after", item.after},
+            {"status", item.status}, {"statusText", nativeSplitLabel("hand_order.native.status.", item.status)},
+            {"reason", nativeSplitLabel("hand_order.native.reason.", item.reason)}, {"changes", changes.join(QLatin1Char(10))},
+            {"beforeTracks", item.beforeTracks}, {"afterTracks", item.afterTracks},
+            {"beforeHeads", item.beforeHeads}, {"afterHeads", item.afterHeads},
+            {"counts", qtTrId("hand_order.native.counts").arg(item.beforeTracks).arg(item.afterTracks)
+                .arg(item.beforeHeads).arg(item.afterHeads).arg(qMax(0, item.afterTracks - item.beforeTracks))}});
+    }
+    return rows;
+}
+miacode::editor::SimaiTextEditResult EditorController::applyNativeSlideSplit(const NativeSlideSplitContext& context)
+{
+    updateNativeSlideSplitContext(context);
+    if (nativeSlideSplitAllowNegativeHs_ != SimaiParser::allowNegativeHsEnabled()) {
+        nativeSlideSplitStale_ = true; emit nativeSlideSplitChanged();
+    }
+    if (!nativeSlideSplitCanApply()) return untouched(context.chartText, nativeSlideSplitBegin_, nativeSlideSplitEnd_);
+    const auto fresh = miacode::chart_transform::planNativeSlideSplit(context.chartText,
+        nativeSlideSplitBegin_, nativeSlideSplitEnd_, context.timing);
+    bool samePlan = fresh.canApply && fresh.replacement == nativeSlideSplitPlan_.replacement
+        && fresh.patches.size() == nativeSlideSplitPlan_.patches.size();
+    for (int i = 0; samePlan && i < fresh.patches.size(); ++i) {
+        const auto& a = fresh.patches.at(i); const auto& b = nativeSlideSplitPlan_.patches.at(i);
+        samePlan = a.start == b.start && a.end == b.end && a.text == b.text;
+    }
+    if (!samePlan) {
+        nativeSlideSplitStale_ = true; emit nativeSlideSplitChanged();
+        return untouched(context.chartText, nativeSlideSplitBegin_, nativeSlideSplitEnd_);
+    }
+    const auto result = selectionTransaction(context.chartText, nativeSlideSplitBegin_, nativeSlideSplitEnd_, nativeSlideSplitPlan_.replacement);
+    nativeSlideSplitPlan_.canApply = false; nativeSlideSplitAvailable_ = false;
+    emit nativeSlideSplitChanged();
+    return result;
+}
+void EditorController::cancelNativeSlideSplit()
+{
+    nativeSlideSplitAvailable_ = false; nativeSlideSplitStale_ = false; nativeSlideSplitPlan_ = {};
+    emit nativeSlideSplitChanged();
+}
 } // namespace miacode::ui

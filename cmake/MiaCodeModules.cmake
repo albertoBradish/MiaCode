@@ -79,6 +79,10 @@ miacode_add_module(miacode_chart
         src/core/chart/transform/ChartBatchTransform.Subdivision.cpp
         src/core/chart/transform/ChartBatchTransform.Transform.cpp
         src/core/chart/transform/ChartBatchTransform.h
+        src/core/chart/transform/HandOrderEdit.cpp
+        src/core/chart/transform/HandOrderEdit.h
+        src/core/chart/transform/NativeSlideSplit.cpp
+        src/core/chart/transform/NativeSlideSplit.h
         src/core/chart/transform/ChartNormalization.cpp
         src/core/chart/transform/ChartNormalization.h
         src/core/chart/transform/ChartNormalizationSegmentPolicy.cpp
@@ -455,6 +459,7 @@ if(MIACODE_PREVIEW_MULTIMEDIA)
 endif()
 # qmltyperegistrar includes QML_ELEMENT headers by file name only.
 target_include_directories(miacode_preview_quick PRIVATE src/preview/quick_scene)
+target_include_directories(miacode_preview_quick PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
 target_link_libraries(miacode_preview_quick PRIVATE Qt6::QuickPrivate)
 if (WIN32)
     target_link_libraries(miacode_preview_quick PRIVATE

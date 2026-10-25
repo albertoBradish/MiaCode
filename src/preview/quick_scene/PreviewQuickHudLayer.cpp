@@ -1,4 +1,5 @@
 #include "preview/quick_scene/PreviewQuickHudLayer.h"
+#include "AppVersion.h"
 
 #include "common/DebugLog.h"
 #include "common/DebugOptions.h"
@@ -802,6 +803,18 @@ void PreviewQuickHudLayer::paint(QPainter* painter)
     }
     miacode::preview::hud::paintPreviewHudOverlay(
         *painter, *state, canvasSize, layerFlags_, graphicsInfo_, textColor_, shadowColor_, informationLayoutCache_.get());
+    if (!canvasSize.isEmpty()) {
+        QPainterStateGuard attributionState(painter);
+        QFont font = painter->font();
+        font.setPixelSize(qMax(8, qRound(canvasSize.height() * 0.016)));
+        painter->setFont(font);
+        painter->setPen(QColor(255, 255, 255, 150));
+        const QRectF footer(0.0, canvasSize.height() * 0.95,
+            canvasSize.width(), canvasSize.height() * 0.05);
+        painter->drawText(footer, Qt::AlignHCenter | Qt::AlignVCenter,
+            QStringLiteral("由@albertoBradish 开发的Miacode手序扩展生成，版本%1")
+                .arg(QString::fromLatin1(MIACODE_VERSION_STRING)));
+    }
     appendHudPaintDiag(
         QStringLiteral("paint_exit"),
         [&] {

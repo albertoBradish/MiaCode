@@ -31,6 +31,7 @@ struct PreviewQuickSpriteVertex {
     float opacity = 1.0f;
     float effect = 0.0f;
     float handOrderHand = 0.0f;
+    float handOrderClipDistance = 1.0f;
 };
 
 struct OrderedRunScratch {
@@ -50,9 +51,10 @@ const QSGGeometry::AttributeSet& previewQuickSpriteVertexAttributes()
         QSGGeometry::Attribute::create(2, 1, QSGGeometry::FloatType),
         QSGGeometry::Attribute::create(3, 1, QSGGeometry::FloatType),
         QSGGeometry::Attribute::create(4, 1, QSGGeometry::FloatType),
+        QSGGeometry::Attribute::create(5, 1, QSGGeometry::FloatType),
     };
     static QSGGeometry::AttributeSet attributeSet = {
-        5,
+        6,
         static_cast<int>(sizeof(PreviewQuickSpriteVertex)),
         attributes
     };
@@ -118,13 +120,17 @@ void writeSpriteVertices(
     const float opacity = static_cast<float>(sprite.opacity);
     const float effect = static_cast<float>(sprite.effect);
     const float handOrderHand = static_cast<float>(sprite.handOrderHand);
+    const auto distance = [&sprite](const QPointF& point) {
+        return sprite.handOrderClipNormal.isNull() ? 1.0f : static_cast<float>(QPointF::dotProduct(
+            point - sprite.handOrderClipOrigin, sprite.handOrderClipNormal));
+    };
 
-    vertices[baseIndex + 0] = {static_cast<float>(topLeft.x()), static_cast<float>(topLeft.y()), leftU, topV, opacity, effect, handOrderHand};
-    vertices[baseIndex + 1] = {static_cast<float>(topRight.x()), static_cast<float>(topRight.y()), rightU, topV, opacity, effect, handOrderHand};
-    vertices[baseIndex + 2] = {static_cast<float>(bottomLeft.x()), static_cast<float>(bottomLeft.y()), leftU, bottomV, opacity, effect, handOrderHand};
-    vertices[baseIndex + 3] = {static_cast<float>(topRight.x()), static_cast<float>(topRight.y()), rightU, topV, opacity, effect, handOrderHand};
-    vertices[baseIndex + 4] = {static_cast<float>(bottomRight.x()), static_cast<float>(bottomRight.y()), rightU, bottomV, opacity, effect, handOrderHand};
-    vertices[baseIndex + 5] = {static_cast<float>(bottomLeft.x()), static_cast<float>(bottomLeft.y()), leftU, bottomV, opacity, effect, handOrderHand};
+    vertices[baseIndex + 0] = {static_cast<float>(topLeft.x()), static_cast<float>(topLeft.y()), leftU, topV, opacity, effect, handOrderHand, distance(topLeft)};
+    vertices[baseIndex + 1] = {static_cast<float>(topRight.x()), static_cast<float>(topRight.y()), rightU, topV, opacity, effect, handOrderHand, distance(topRight)};
+    vertices[baseIndex + 2] = {static_cast<float>(bottomLeft.x()), static_cast<float>(bottomLeft.y()), leftU, bottomV, opacity, effect, handOrderHand, distance(bottomLeft)};
+    vertices[baseIndex + 3] = {static_cast<float>(topRight.x()), static_cast<float>(topRight.y()), rightU, topV, opacity, effect, handOrderHand, distance(topRight)};
+    vertices[baseIndex + 4] = {static_cast<float>(bottomRight.x()), static_cast<float>(bottomRight.y()), rightU, bottomV, opacity, effect, handOrderHand, distance(bottomRight)};
+    vertices[baseIndex + 5] = {static_cast<float>(bottomLeft.x()), static_cast<float>(bottomLeft.y()), leftU, bottomV, opacity, effect, handOrderHand, distance(bottomLeft)};
 }
 
 class PreviewQuickSpriteBatchRootNode final : public QSGNode

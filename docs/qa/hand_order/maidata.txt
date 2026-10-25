@@ -1,0 +1,12 @@
+&title=HandOrder Synthetic Acceptance
+&artist=Synthetic fixture - no real chart
+&des=Hand-order acceptance
+&first=0
+&lv_3=1
+&inote_3=(120){4}6,1,,,,E
+&lv_4=2
+&inote_4=(120){4}1-3-7[2:1],,,,,E
+&lv_5=3
+&inote_5=(120){4}1-3-7[2:1]~[head=l;track=0:l|0.25:r|0.75:l],,,,,E
+&lv_6=4
+&inote_6=(120){4}1w5[2:1],,,,,E

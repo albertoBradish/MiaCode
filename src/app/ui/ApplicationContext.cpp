@@ -1,6 +1,7 @@
 #include "app/ui/ApplicationContext.h"
 
 #include "app/services/update/UpdateService.h"
+#include "app/ui/preferences/LocaleService.h"
 
 namespace miacode::ui {
 ApplicationContext::ApplicationContext(miacode::ApplicationServices& services,
@@ -34,6 +35,8 @@ ApplicationContext::ApplicationContext(miacode::ApplicationServices& services,
     , netUpload_(services.netService(), services.uiRequests(), this)
     , lifecycle_(services.editorPageRouterSlot(), this)
 {
+    connect(&miacode::LocaleService::instance(), &miacode::LocaleService::languageChanged,
+            &editor_, &EditorController::retranslate);
     net_.setHost(&document_, &services.uiRequests());
     if (auto* netService = services.netService()) {
         netService->setDocumentSnapshotHandler([this] { return document_.documentIdentity(); });

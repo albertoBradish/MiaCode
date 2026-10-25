@@ -257,10 +257,6 @@ PreviewSlideMotionLayerState buildPreviewSlideMotionLayerState(
             );
         }
 
-        const HandOrderHand wifiHand = state.render.showHandOrderAnnotations
-            ? previewHandOrderAtProgress(marker.handOrderTrackStops, proportion)
-            : HandOrderHand::Unspecified;
-
         for (int laneIndex = 0; laneIndex < marker.wifiLanePoints.size(); ++laneIndex) {
             const QVector<QPointF>& points = marker.wifiLanePoints[laneIndex];
             const QVector<double>& angles = marker.wifiLaneAngles.value(laneIndex);
@@ -271,16 +267,33 @@ PreviewSlideMotionLayerState buildPreviewSlideMotionLayerState(
             const qreal angle = waiting
                 ? (angles.isEmpty() ? 0.0 : angles.constFirst())
                 : interpolateAngle(angles, proportion);
-            appendSprite(
-                renderImage,
-                logicalPoint,
-                mirroredStarAngleDegrees(angle),
-                imageScale,
-                imageOpacity,
-                effect,
-                cacheable,
-                wifiHand
-            );
+            const bool split = state.render.showHandOrderAnnotations && marker.handOrderWifiMode == HandOrderWifiMode::Split;
+            const int firstSector = laneIndex == 2 ? 1 : 0;
+            const int lastSector = split && laneIndex == 1 ? 1 : firstSector;
+            for (int sector = firstSector; sector <= lastSector; ++sector) {
+                const HandOrderHand wifiHand = state.render.showHandOrderAnnotations
+                    ? previewWifiHandAtProgress(marker, sector, proportion) : HandOrderHand::Unspecified;
+                appendSprite(
+                    renderImage,
+                    logicalPoint,
+                    mirroredStarAngleDegrees(angle),
+                    imageScale,
+                    imageOpacity,
+                    effect,
+                    cacheable,
+                    wifiHand
+                );
+                if (split && laneIndex == 1) {
+                    auto& sprite = layerState.sprites.last();
+                    sprite.handOrderClipOrigin = sprite.center;
+                    sprite.handOrderClipNormal = previewWifiSectorNormal(marker, sector);
+                }
+            }
+            if (state.render.showHandOrderAnnotations && marker.handOrderWifiMode == HandOrderWifiMode::Single
+                && laneIndex == 1) {
+                appendSprite(previewWifiSingleBadgeImage(), logicalPoint + QPointF(0, -24), 0.0,
+                    1.0, imageOpacity, PreviewAnimatedSpriteEffect::None, true, HandOrderHand::Unspecified);
+            }
         }
     }
 
