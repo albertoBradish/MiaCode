@@ -317,6 +317,8 @@ Rectangle {
             }
             if (normalize)
                 action("qml.normalize_whole_chart", "normalize")
+            if (normalize && !transform)
+                action("hand_order.bisect_annotation", "hand_order.bisect_annotation")
             if (transform)
                 rows.push({ kind: "handOrder", labelKey: "hand_order.title", operation: "" })
             if (transform)
@@ -372,7 +374,7 @@ Rectangle {
                         id: contextHandOrderMenu
                         title: qsTrId("hand_order.title")
                         Instantiator {
-                            model: root.documentSession.handOrderMenu().filter(row => row.requiresSelection !== false)
+                            model: root.documentSession.handOrderMenu().filter(row => row.requiresSelection !== false || row.id === "hand_order.bisect_annotation")
                             delegate: AppMenuItem {
                                 required property var modelData
                                 text: qsTrId(modelData.labelKey)

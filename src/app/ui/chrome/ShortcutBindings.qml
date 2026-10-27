@@ -26,6 +26,7 @@ Item {
     property bool menuOwnsChartTransformShortcuts: false
     property bool menuOwnsPreviewRateShortcuts: false
     property bool handOrderCommandsEnabled: false
+    property bool handOrderCaretCommandsEnabled: false
 
     // A transform acts on the editor's selection, which only the editor knows.
     // Routing it through the backend meant reading a hidden widget's cursor
@@ -42,7 +43,9 @@ Item {
                 ? root.shortcuts.sequence(modelData)
                 : ""
             enabled: root.commandsEnabled && !root.shortcuts.captureActive
-                     && (!modelData.startsWith("hand_order.") || root.handOrderCommandsEnabled)
+                     && (!modelData.startsWith("hand_order.")
+                         || (modelData === "hand_order.bisect_annotation"
+                             ? root.handOrderCaretCommandsEnabled : root.handOrderCommandsEnabled))
                      && root.chartCommandsEnabled
                      && !root.menuOwnsChartTransformShortcuts
                      && sequence !== ""

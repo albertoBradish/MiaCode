@@ -93,6 +93,10 @@ int main(int argc, char** argv)
     }
     const QStringList boundIds = miacode::ui::shortcutCommandIds();
     const QString nativeSplitId = QStringLiteral("hand_order.split_native_slide");
+    bool bisectionSupportsCaret = false;
+    for (const auto& spec : miacode::ui::handOrderCommandSpecs())
+        if (spec.id == QStringLiteral("hand_order.bisect_annotation")) bisectionSupportsCaret = !spec.requiresSelection;
+    expect(bisectionSupportsCaret, QStringLiteral("bisection command is available at the current Slide without a selection"), out, &failed);
     expect(boundIds.contains(QStringLiteral("hand_order.bisect_annotation"))
         && miacode::ui::ShortcutRegistry::instance().defaultShortcutText(QStringLiteral("hand_order.bisect_annotation")) == QStringLiteral("Alt+C")
         && boundIds.contains(QStringLiteral("hand_order.swap_hands"))
@@ -312,6 +316,7 @@ Window {
         shortcuts: bindings; commands: commandSource; previewSession: preview
         chartCommandsEnabled: true
         handOrderCommandsEnabled: shortcutWindow.handAllowed
+        handOrderCaretCommandsEnabled: true
         onChartTransformRequested: id => { if (id === "hand_order.split_native_slide") shortcutWindow.nativeSplits++; else shortcutWindow.hands++ }
         playbackCommandsEnabled: playbackAllowed
     }
@@ -385,8 +390,9 @@ Window {
             window->setProperty("handAllowed", false);
             press(Qt::Key_C, Qt::AltModifier);
             press(Qt::Key_Q, Qt::AltModifier);
-            expect(window->property("hands").toInt() == 1,
-                   QStringLiteral("bisection and swap are disabled without selection eligibility"), out, &failed);
+            expect(window->property("hands").toInt() == 2,
+                   QStringLiteral("caret bisection stays enabled without selection while hand swap stays disabled"), out, &failed);
+            window->setProperty("hands", 1);
             window->setProperty("handAllowed", true);
             QMetaObject::invokeMethod(window, "rebind");
             QCoreApplication::processEvents();

@@ -216,6 +216,7 @@ ApplicationWindow {
         commandsEnabled: !mainView.beginnerGuideActive
         chartCommandsEnabled: mainView.chartEditorActive
         handOrderCommandsEnabled: mainView.mainMenuCommands.canTransform && window.sourceEditorFocused
+        handOrderCaretCommandsEnabled: mainView.editorCommandsAvailable && window.sourceEditorFocused
         playbackCommandsEnabled: window.playbackCommandsEnabled
         menuOwnsChartTransformShortcuts: window.platform.nativeMenuBar
         menuOwnsPreviewRateShortcuts: window.platform.nativeMenuBar

@@ -20,6 +20,7 @@ Rectangle {
     property var handOrderRows: []
     property var shortcuts: null
     property bool handOrderEnabled: false
+    property bool handOrderSelectionAvailable: false
     signal audioSettingsRequested()
     signal previewSettingsRequested()
     signal unavailableFeatureRequested(string featureName)
@@ -156,6 +157,7 @@ Rectangle {
                         shortcutText: root.shortcuts && root.shortcuts.revision >= 0
                             ? root.shortcuts.displayText(modelData.id) : ""
                         enabled: root.handOrderEnabled
+                            && (modelData.requiresSelection === false || root.handOrderSelectionAvailable)
                         onTriggered: handOrderMenu.pendingCommand = modelData.id
                     }
                 }

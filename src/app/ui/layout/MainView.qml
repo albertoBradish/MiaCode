@@ -382,7 +382,8 @@ Item {
                 titleBarLeadingInset: titleBar.leadingInset
                 shortcuts: root.shortcutModel
                 handOrderRows: root.documentSession.handOrderMenu()
-                handOrderEnabled: menuCommands.canTransform && !root.shortcutModel.captureActive
+                handOrderEnabled: root.editorCommandsAvailable && !root.shortcutModel.captureActive
+                handOrderSelectionAvailable: menuCommands.canTransform
                 onHandOrderRequested: command => root.applyChartTransform(command)
                 previewSettingsVisible: !splitView.previewDetached
                 sidebarActive: root.compact

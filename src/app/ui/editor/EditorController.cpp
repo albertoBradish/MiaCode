@@ -322,6 +322,31 @@ QString draftKey(const QString& scope, const QString& text)
     return scope + QLatin1Char(':') + QString::fromLatin1(
         QCryptographicHash::hash(text.toUtf8(), QCryptographicHash::Sha256).toHex());
 }
+QPair<int, int> slideTokenAtCaret(const QString& text, int caret,
+    const miacode::simai::SimaiTimingMetadata& metadata)
+{
+    const auto parsed = SimaiParser::validateSyntax(text, metadata);
+    QVector<const TimelineNoteMarker*> byParseOrder(parsed.noteMarkers.size(), nullptr);
+    for (const auto& marker : parsed.noteMarkers)
+        if (marker.parseOrder >= 0 && marker.parseOrder < byParseOrder.size()) byParseOrder[marker.parseOrder] = &marker;
+    QVector<int> lineStarts{0};
+    for (int i = 0; i < text.size(); ++i)
+        if (text.at(i) == QLatin1Char('\n')) lineStarts.append(i + 1);
+    for (const auto& source : parsed.sourceTokens) {
+        const int start = lineStarts.at(source.line - 1) + source.col - 1;
+        const int finish = start + source.length;
+        // Native source spans include the full hand-order suffix. Delimiters
+        // and whitespace do not borrow a neighboring Slide; EOF is its end.
+        if (caret < start || (caret >= finish && !(caret == finish && caret == text.size()))) continue;
+        if (!source.nativeValid || source.markerCount == 0) return {-1, -1};
+        for (int branch = 0; branch < source.markerCount; ++branch) {
+            const auto* marker = byParseOrder.value(source.firstParseOrder + branch);
+            if (!marker || marker->type != QStringLiteral("slide")) return {-1, -1};
+        }
+        return {start, finish};
+    }
+    return {-1, -1};
+}
 miacode::editor::SimaiTextEditResult selectionTransaction(
     const QString& text, int anchor, int position, const QString& replacement)
 {
@@ -412,12 +437,19 @@ miacode::editor::SimaiTextEditResult EditorController::handOrderCommand(
     const miacode::simai::SimaiTimingMetadata& metadata)
 {
     activateHandOrderDocument(handOrderScope_, text);
-    const int begin = qBound(0, qMin(anchor, position), int(text.size()));
-    const int end = qBound(begin, qMax(anchor, position), int(text.size()));
+    int begin = qBound(0, qMin(anchor, position), int(text.size()));
+    int end = qBound(begin, qMax(anchor, position), int(text.size()));
+    const bool bisect = command == QStringLiteral("hand_order.bisect_annotation");
+    const bool bisectAtCaret = bisect && begin == end;
+    if (bisectAtCaret) {
+        const auto token = slideTokenAtCaret(text, begin, metadata);
+        if (token.first < 0) return untouched(text, anchor, position);
+        begin = token.first;
+        end = token.second;
+    }
     if (begin == end) return untouched(text, anchor, position);
     namespace transform = miacode::chart_transform;
     const bool split = command == QStringLiteral("hand_order.split_annotation");
-    const bool bisect = command == QStringLiteral("hand_order.bisect_annotation");
     const bool swap = command == QStringLiteral("hand_order.swap_hands");
     HandOrderHand hand = HandOrderHand::Unspecified;
     if (command == QStringLiteral("hand_order.set_left")) hand = HandOrderHand::Left;
@@ -428,7 +460,8 @@ miacode::editor::SimaiTextEditResult EditorController::handOrderCommand(
         : bisect ? transform::bisectHandOrderInSelection(text, begin, end, metadata)
         : swap ? transform::swapHandOrderInSelection(text, begin, end, metadata)
         : transform::setHandOrderInSelection(text, begin, end, hand, metadata);
-    const auto result = selectionTransaction(text, anchor, position, plan.replacement);
+    const auto result = selectionTransaction(text, bisectAtCaret ? begin : anchor,
+        bisectAtCaret ? end : position, plan.replacement);
     if (split && !plan.intervals.isEmpty()) {
         // Reopening an unchanged source version restores interval choices.
         const auto old = handOrderDrafts_.value(draftKey(handOrderScope_,
