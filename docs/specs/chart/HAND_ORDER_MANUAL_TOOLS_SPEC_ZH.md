@@ -50,7 +50,7 @@
 ## 阶段 A 历史验收入口与边界
 
 - `hand_order_edit_spec`：完整/部分选区、数字簇、UTF-16、CRLF、注释、分支、1+3 秒链边界、同色节点、幂等性、非法输入、极小/近 1 进度以及原生语义投影。
-- `hand_order_tools_spec`：真实 EditorController 事务、Scintilla 一次撤销、会话版本恢复，真实区间面板与工具栏的离屏加载、键盘选择及鼠标写入/菜单触发。该小型宿主复用原生 Scintilla 编辑能力，不等同于启动主 GUI 验收。
+- `hand_order_tools_spec`：真实 EditorController 二分与交换事务、Scintilla 一次撤销、重复二分、反向选区、UTF-16 光标定位及邻近 token 保护。该小型宿主复用原生 Scintilla 编辑能力，不等同于启动主 GUI 验收。
 - `qml_shortcut_binding_spec`：注册表与执行表一致、实际 QML 触发、重绑、禁用及录制焦点。
 - `shortcut_preference_persistence_spec`：七条默认绑定、改绑和重新创建注册表后的持久化。
 
