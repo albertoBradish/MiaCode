@@ -127,10 +127,10 @@ int main(int argc, char** argv)
         && customMarker.handOrderTrackStops.at(3).hand == HandOrderHand::Either
         && std::abs(customMarker.handOrderTrackStops.at(3).progress - 0.55) < 1e-12,
         "existing unequal intervals are individually bisected while preserving their hands");
-    const QString swapSource = "(120){4}12~l/3~m/1-5[4:1]~[head=r;track=0:l|0.123456789012345:r]"
+    const QString swapSource = "(120){4}12/3~m/4~l/1-5[4:1]~[head=r;track=0:l|0.123456789012345:r]"
         "/8w4[4:1]~[track=split:0:l|0.5:m&0:r],\r\n|| ~l 中文 😀\r\nE";
     const auto swapped = swapHandOrderInSelection(swapSource, 0, swapSource.size());
-    expect(swapped.diagnostics.isEmpty() && swapped.replacement.contains("12~r/3~m")
+    expect(swapped.diagnostics.isEmpty() && swapped.replacement.contains("12/3~m/4~r")
         && swapped.replacement.contains("head=l;track=0:r|0.123456789012345:l")
         && swapped.replacement.contains("track=split:0:r|0.5:m&0:l")
         && sameNative(swapSource, swapped.replacement)
