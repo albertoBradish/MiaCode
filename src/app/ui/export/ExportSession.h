@@ -60,6 +60,8 @@ class ExportSession final : public QObject, public miacode::ExportPagePort
     Q_PROPERTY(int handOrderModeIndex READ handOrderModeIndex WRITE setHandOrderModeIndex NOTIFY videoChanged)
     Q_PROPERTY(QVariantList handOrderModeOptions READ handOrderModeOptions NOTIFY localeLabelsChanged)
     Q_PROPERTY(bool clockCountEnabled READ clockCountEnabled WRITE setClockCountEnabled NOTIFY videoChanged)
+    Q_PROPERTY(bool showMeasureLines READ showMeasureLines WRITE setShowMeasureLines NOTIFY videoChanged)
+    Q_PROPERTY(bool showJudgementSkeleton READ showJudgementSkeleton WRITE setShowJudgementSkeleton NOTIFY videoChanged)
 
     // Shared portable font library for the intro difficulty card. File selection
     // remains QML-native through UiRequestService; no Widgets surface is used.
@@ -154,6 +156,10 @@ public:
     int handOrderModeIndex() const { return static_cast<int>(task_.handOrderExportMode); }
     QVariantList handOrderModeOptions() const;
     bool clockCountEnabled() const { return task_.clockCountEnabled; }
+    bool showMeasureLines() const { return task_.showMeasureLines; }
+    bool showJudgementSkeleton() const { return task_.showJudgementSkeleton; }
+    void setShowMeasureLines(bool value);
+    void setShowJudgementSkeleton(bool value);
 
     QVariantList fontLibraryOptions() const;
 

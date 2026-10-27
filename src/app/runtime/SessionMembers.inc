@@ -421,6 +421,10 @@
         bool previewShowDebugInfo_ = false;
         bool previewShowTimestamp_ = true;
         bool previewShowHandOrderAnnotations_ = true;
+        bool previewShowMeasureLines_ = false;
+        bool previewShowJudgementSkeleton_ = false;
+        int previewMeasureLineMode_ = 0;
+        int previewMeasureLineCustomBeats_ = 4;
         bool previewShowObjectStatsHud_ = false;
         bool exportShowObjectStatsHud_ = false;
         bool previewShowChartInfoHud_ = false;

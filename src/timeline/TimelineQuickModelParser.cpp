@@ -829,6 +829,9 @@ bool TimelineQuickModel::parseNoteToken(
         const int firstNote = lineState->render.notes.size();
         const bool parsed = parseNoteToken(lineState, state, parts.baseToken, lineNumber, column, groupIndices);
         if (!parsed || lineState->render.notes.size() == firstNote) return parsed;
+        // Selection covers the original annotated token, including its suffix.
+        for (int i = firstNote; i < lineState->render.notes.size(); ++i)
+            lineState->render.notes[i].sourceLength = annotatedToken.size();
         const auto& first = lineState->render.notes.at(firstNote);
         const bool isSlide = first.kind == TimelineRenderNoteKind::Slide || first.kind == TimelineRenderNoteKind::Wifi;
         const auto annotation = miacode::hand_order::parseAnnotation(annotatedToken, isSlide);
@@ -857,7 +860,8 @@ bool TimelineQuickModel::parseNoteToken(
     const QString& token = annotatedToken;
 
     const double lineBaseSecond = lineState->render.startSecond;
-    const auto appendNote = [lineState, state, groupIndices, lineBaseSecond](TimelineRenderNote note) {
+    const auto appendNote = [lineState, state, groupIndices, lineBaseSecond, &token](TimelineRenderNote note) {
+        note.sourceLength = token.size();
         note.hsMultiplier = state->hsMultiplier;
         const int noteIndex = lineState->render.notes.size();
         lineState->render.notes.append(note);
@@ -966,6 +970,7 @@ bool TimelineQuickModel::parseNoteToken(
             const QString prefix = token.left(1) + modifierState.rawModifiers;
             const QChar startLane = token.at(0);
             const QStringList branches = core.split(QLatin1Char('*'), Qt::KeepEmptyParts);
+            const int firstBranchNote = lineState->render.notes.size();
             for (int branchIndex = 0; branchIndex < branches.size(); ++branchIndex) {
                 const QString& branchRaw = branches.at(branchIndex);
                 QString branch = branchRaw;
@@ -984,6 +989,8 @@ bool TimelineQuickModel::parseNoteToken(
                     lineState->render.notes[i].slideBranchIndex = branchIndex;
                 }
             }
+            for (int index = firstBranchNote; index < lineState->render.notes.size(); ++index)
+                lineState->render.notes[index].sourceLength = token.size();
             return true;
         }
         if (slideCoreHasDisallowedModifiers(core)) {

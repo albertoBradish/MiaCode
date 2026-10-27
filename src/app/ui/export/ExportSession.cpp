@@ -1301,6 +1301,22 @@ void ExportSession::setHandOrderModeIndex(int index)
 }
 
 
+void ExportSession::setShowMeasureLines(bool value)
+{
+    if (task_.showMeasureLines == value) return;
+    task_.showMeasureLines = value;
+    emit videoChanged();
+    applyLivePreviewSettings();
+}
+
+void ExportSession::setShowJudgementSkeleton(bool value)
+{
+    if (task_.showJudgementSkeleton == value) return;
+    task_.showJudgementSkeleton = value;
+    emit videoChanged();
+    applyLivePreviewSettings();
+}
+
 void ExportSession::setClockCountEnabled(bool value)
 {
     task_.clockCountEnabled = value;

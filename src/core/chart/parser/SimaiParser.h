@@ -30,6 +30,7 @@ struct SimaiParseResult {
     QVector<SimaiMessage> annotationErrors;
     QVector<SimaiMessage> warnings;
     QVector<double> measureLineSeconds;
+    QVector<double> textLineStartSeconds;
     QVector<TimelineBeatMarker> beatMarkers;
     QVector<TimelineNoteMarker> noteMarkers;
     QVector<SimaiSourceToken> sourceTokens;

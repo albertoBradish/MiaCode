@@ -131,6 +131,7 @@ Rectangle {
     function jumpToLine(line) { sourceArea.jumpToLine(line) }
     function openFindReplace() { findReplaceBar.show() }
     function exportSelectionRange() { sourceArea.exportSelectionRange() }
+    function playSelection() { syncController.playSelection() }
     function applyChartTransform(operation) {
         sourceArea.forceActiveFocus()
         if (operation === "hand_order.split_native_slide") {
@@ -298,6 +299,7 @@ Rectangle {
             action("action.copy", "copy")
             action("action.paste", "paste")
             separator()
+            action("action.play_selection", "play_selection")
             action("net.select_all", "select_all")
             action("qml.find_and_replace", "find")
             if (selected || normalize)
@@ -335,6 +337,7 @@ Rectangle {
             case "select_all": root.selectAll(); break
             case "find": root.openFindReplace(); break
             case "export": root.exportSelectionRange(); break
+            case "play_selection": root.playSelection(); break
             case "normalize": root.normalizeChartRequested(); break
             default: root.applyChartTransform(operation); break
             }
@@ -352,7 +355,8 @@ Rectangle {
                         required property string labelKey
                         required property string operation
                         text: qsTrId(labelKey)
-                        enabled: operation === "cut" ? root.canCut
+                        enabled: operation === "play_selection" ? root.syncController.canPlaySelection
+                            : operation === "cut" ? root.canCut
                             : operation === "copy" ? root.canCopy
                             : operation === "paste" ? root.canPaste : true
                         onTriggered: editorContextMenu.triggerOperation(operation)

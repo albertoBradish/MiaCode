@@ -5231,6 +5231,34 @@ Error: %1</translation>
         <source>Split native Break segments retain Break, which may change Break counts and scoring.</source>
         <translation>Split native Break segments retain Break, which may change Break counts and scoring.</translation>
     </message>
+    <message id="action.play_selection">
+        <source>Play Selection</source>
+        <translation>Play Selection</translation>
+    </message>
+    <message id="preview.canvas.show_measure_lines">
+        <source>Show Measure Lines</source>
+        <translation>Show Measure Lines</translation>
+    </message>
+    <message id="preview.canvas.show_judgement_skeleton">
+        <source>Show Judgement Skeleton</source>
+        <translation>Show Judgement Skeleton</translation>
+    </message>
+    <message id="preview.canvas.measure_mode">
+        <source>Measure Line Mode</source>
+        <translation>Measure Line Mode</translation>
+    </message>
+    <message id="preview.canvas.measure_chart_clock">
+        <source>Chart clock_count (default 4 beats)</source>
+        <translation>Chart clock_count (default 4 beats)</translation>
+    </message>
+    <message id="preview.canvas.measure_custom_beats">
+        <source>Custom beats per measure</source>
+        <translation>Custom beats per measure</translation>
+    </message>
+    <message id="preview.canvas.measure_text_lines">
+        <source>Text line starts</source>
+        <translation>Text line starts</translation>
+    </message>
 </context>
 <context>
     <!-- Qt loads qtbase texts for the system locale; this context keeps the
