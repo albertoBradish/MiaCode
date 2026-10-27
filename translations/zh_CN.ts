@@ -4998,6 +4998,14 @@ Error: %1</source>
         <source>Split Hand-order Intervals</source>
         <translation>拆分手序区间</translation>
     </message>
+    <message id="hand_order.bisect_annotation">
+        <source>Bisect Sticking Intervals</source>
+        <translation>一键二分 Sticking 区间</translation>
+    </message>
+    <message id="hand_order.swap_hands">
+        <source>Swap Left and Right Hands in Selection</source>
+        <translation>交换选中内容左右手</translation>
+    </message>
     <message id="hand_order.selection_scope">
         <source>Edit complete notes in the source selection, including slide heads and all branches</source>
         <translation>对源文本选区中的完整音符操作；整条 slide 的头与全部分支一并修改</translation>

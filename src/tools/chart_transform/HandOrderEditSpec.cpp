@@ -102,6 +102,50 @@ int main(int argc, char** argv)
         "invalid timing directives block split and produce diagnostics");
     expect(setHandOrderInSelection(source, 5, 5, HandOrderHand::Left).changed == 0,
         "empty selection has no edit");
+    const QString halvesSource = "(120){4}1-3-7[1:1]~r/8-4[4:1],";
+    expect(bisectHandOrderInSelection(halvesSource, 5, 5).changed == 0
+        && swapHandOrderInSelection(halvesSource, 5, 5).changed == 0,
+        "direct bisection and hand swap are inert at a caret without selection");
+    const auto halves = bisectHandOrderInSelection(halvesSource, 0, halvesSource.size());
+    expect(halves.diagnostics.isEmpty() && halves.changed == 2
+        && halves.replacement.contains("head=r;track=0:l|0.5:r")
+        && halves.replacement.contains("8-4[4:1]~[track=0:l|0.5:r]")
+        && sameNative(halvesSource, halves.replacement),
+        "one-key bisection assigns L/R at half of total movement and retains existing head");
+    const auto quarters = bisectHandOrderInSelection(halves.replacement, 0, halves.replacement.size());
+    expect(quarters.diagnostics.isEmpty() && quarters.changed == 2
+        && quarters.replacement.contains("head=r;track=0:l|0.25:l|0.5:r|0.75:r"),
+        "repeated bisection inserts inherited same-color nodes without changing default hands");
+    const auto eighths = bisectHandOrderInSelection(quarters.replacement, 0, quarters.replacement.size());
+    expect(SimaiParser::parseForTimeline(eighths.replacement).noteMarkers.first().handOrderTrackStops.size() == 8,
+        "subsequent bisection keeps every same-color editing boundary");
+    const QString customIntervals = "1-5[4:1]~[head=m;track=0:r|0.3:m|0.8:l],";
+    const auto customHalves = bisectHandOrderInSelection(customIntervals, 0, customIntervals.size());
+    const auto customMarker = SimaiParser::parseForTimeline(customHalves.replacement).noteMarkers.first();
+    expect(customMarker.handOrderHead == HandOrderHand::Either && customMarker.handOrderTrackStops.size() == 6
+        && customMarker.handOrderTrackStops.at(1).hand == HandOrderHand::Right
+        && customMarker.handOrderTrackStops.at(3).hand == HandOrderHand::Either
+        && std::abs(customMarker.handOrderTrackStops.at(3).progress - 0.55) < 1e-12,
+        "existing unequal intervals are individually bisected while preserving their hands");
+    const QString swapSource = "(120){4}12~l/3~m/1-5[4:1]~[head=r;track=0:l|0.123456789012345:r]"
+        "/8w4[4:1]~[track=split:0:l|0.5:m&0:r],\r\n|| ~l 中文 😀\r\nE";
+    const auto swapped = swapHandOrderInSelection(swapSource, 0, swapSource.size());
+    expect(swapped.diagnostics.isEmpty() && swapped.replacement.contains("12~r/3~m")
+        && swapped.replacement.contains("head=l;track=0:r|0.123456789012345:l")
+        && swapped.replacement.contains("track=split:0:r|0.5:m&0:l")
+        && sameNative(swapSource, swapped.replacement)
+        && swapHandOrderInSelection(swapped.replacement, 0, swapped.replacement.size()).replacement == swapSource,
+        "selection hand swap is an exact involution across heads, branches, Wifi, clusters and comments");
+    const auto swapPartial = swapHandOrderInSelection(partial, 2, partial.size() - 1);
+    expect(swapPartial.partial == 1 && swapPartial.changed == 0 && swapPartial.replacement == "5[4:1]~l/2",
+        "hand swap leaves incomplete tokens and unannotated notes untouched");
+    const auto bisectPartial = bisectHandOrderInSelection(partial, 2, partial.size() - 1);
+    expect(bisectPartial.partial == 1 && bisectPartial.changed == 0 && bisectPartial.unsupported == 1,
+        "direct bisection skips a partially selected Slide and does not annotate other note types");
+    const QString bisectWifi = "1w5[4:1]~[track=single:0:l],";
+    expect(bisectHandOrderInSelection(bisectWifi, 0, bisectWifi.size()).unsupported == 1
+        && bisectHandOrderInSelection(bisectWifi, 0, bisectWifi.size()).replacement == bisectWifi,
+        "one-key Slide bisection leaves explicit Wifi modes intact");
     const QString wifiSplit = "(120){4}1w5[4:1]~[head=m;track=split:0:l|0.5:r&0:r|0.75:l],";
     const auto wifi = SimaiParser::validateSyntax(wifiSplit);
     expect(wifi.annotationErrors.isEmpty() && wifi.noteMarkers.size() == 1

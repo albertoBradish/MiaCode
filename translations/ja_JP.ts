@@ -4998,6 +4998,14 @@ Error: %1</source>
         <source>Split Hand-order Intervals</source>
         <translation>運指区間を分割</translation>
     </message>
+    <message id="hand_order.bisect_annotation">
+        <source>Bisect Sticking Intervals</source>
+        <translation>Sticking 区間を二等分</translation>
+    </message>
+    <message id="hand_order.swap_hands">
+        <source>Swap Left and Right Hands in Selection</source>
+        <translation>選択範囲の左右の手を入れ替え</translation>
+    </message>
     <message id="hand_order.selection_scope">
         <source>Edit complete notes in the source selection, including slide heads and all branches</source>
         <translation>ソースの選択範囲内の完全なノーツを編集（スライド始点と全分岐を含む）</translation>

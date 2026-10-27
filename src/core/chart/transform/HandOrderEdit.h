@@ -37,5 +37,10 @@ HandOrderEditPlan setHandOrderInSelection(const QString& text, int begin, int en
     const miacode::simai::SimaiTimingMetadata& metadata = {});
 HandOrderEditPlan splitHandOrderInSelection(const QString& text, int begin, int end,
     const miacode::simai::SimaiTimingMetadata& metadata = {});
+// The first bisection assigns L/R. Further bisections retain each interval's hand.
+HandOrderEditPlan bisectHandOrderInSelection(const QString& text, int begin, int end,
+    const miacode::simai::SimaiTimingMetadata& metadata = {});
+HandOrderEditPlan swapHandOrderInSelection(const QString& text, int begin, int end,
+    const miacode::simai::SimaiTimingMetadata& metadata = {});
 
 } // namespace miacode::chart_transform

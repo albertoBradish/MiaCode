@@ -93,6 +93,11 @@ int main(int argc, char** argv)
     }
     const QStringList boundIds = miacode::ui::shortcutCommandIds();
     const QString nativeSplitId = QStringLiteral("hand_order.split_native_slide");
+    expect(boundIds.contains(QStringLiteral("hand_order.bisect_annotation"))
+        && miacode::ui::ShortcutRegistry::instance().defaultShortcutText(QStringLiteral("hand_order.bisect_annotation")) == QStringLiteral("Alt+C")
+        && boundIds.contains(QStringLiteral("hand_order.swap_hands"))
+        && miacode::ui::ShortcutRegistry::instance().defaultShortcutText(QStringLiteral("hand_order.swap_hands")) == QStringLiteral("Alt+Q"),
+        QStringLiteral("direct bisection and hand swap have dedicated configurable shortcuts"), out, &failed);
     expect(boundIds.contains(nativeSplitId)
         && miacode::ui::ShortcutRegistry::instance().defaultShortcutText(nativeSplitId) == QStringLiteral("Ctrl+Alt+5")
         && miacode::ui::ShortcutRegistry::instance().defaultShortcutText(QStringLiteral("hand_order.split_annotation")) == QStringLiteral("Alt+T"),
@@ -287,17 +292,21 @@ Window {
         property bool captureActive: false
         property string handKey: "Alt+W"
         property string nativeKey: "Ctrl+Alt+5"
+        property string bisectKey: "Alt+C"
+        property string swapKey: "Alt+Q"
         property string cKey: "Ctrl+Shift+C"
         property string xKey: "Ctrl+Shift+X"
         function sequence(id, fallback) {
             if (id === "hand_order.set_left") return handKey
             if (id === "hand_order.split_native_slide") return nativeKey
+            if (id === "hand_order.bisect_annotation") return bisectKey
+            if (id === "hand_order.swap_hands") return swapKey
             if (id === "preview.stop_or_play") return cKey
             if (id === "preview.play_pause_global") return xKey
             return ""
         }
     }
-    QtObject { id: commandSource; function shortcutCommandIds() { return ["hand_order.set_left", "hand_order.split_native_slide"] } }
+    QtObject { id: commandSource; function shortcutCommandIds() { return ["hand_order.set_left", "hand_order.split_native_slide", "hand_order.bisect_annotation", "hand_order.swap_hands"] } }
     TextInput { anchors.fill: parent; focus: true }
     Chrome.ShortcutBindings {
         shortcuts: bindings; commands: commandSource; previewSession: preview
@@ -365,9 +374,20 @@ Window {
             press(Qt::Key_W, Qt::AltModifier);
             expect(window->property("hands").toInt() == 1,
                    QStringLiteral("hand-order command fires once with source editor focus"), out, &failed);
+            press(Qt::Key_C, Qt::AltModifier);
+            press(Qt::Key_Q, Qt::AltModifier);
+            expect(window->property("hands").toInt() == 3,
+                   QStringLiteral("Alt+C bisection and Alt+Q swap each dispatch exactly once"), out, &failed);
+            window->setProperty("hands", 1);
             press(Qt::Key_5, Qt::ControlModifier | Qt::AltModifier);
             expect(window->property("nativeSplits").toInt() == 1,
                    QStringLiteral("native slide split dispatches once with editor focus"), out, &failed);
+            window->setProperty("handAllowed", false);
+            press(Qt::Key_C, Qt::AltModifier);
+            press(Qt::Key_Q, Qt::AltModifier);
+            expect(window->property("hands").toInt() == 1,
+                   QStringLiteral("bisection and swap are disabled without selection eligibility"), out, &failed);
+            window->setProperty("handAllowed", true);
             QMetaObject::invokeMethod(window, "rebind");
             QCoreApplication::processEvents();
             press(Qt::Key_C, Qt::ControlModifier | Qt::ShiftModifier);
@@ -391,6 +411,8 @@ Window {
                    QStringLiteral("empty selection or non-editor focus disables both annotation and native slide editing"), out, &failed);
             window->setProperty("handAllowed", true);
             window->findChild<QObject*>("shortcutFixture")->setProperty("captureActive", true);
+            press(Qt::Key_C, Qt::AltModifier);
+            press(Qt::Key_Q, Qt::AltModifier);
             press(Qt::Key_4, Qt::ControlModifier | Qt::AltModifier);
             press(Qt::Key_6, Qt::ControlModifier | Qt::AltModifier);
             expect(window->property("hands").toInt() == 2 && window->property("nativeSplits").toInt() == 2,

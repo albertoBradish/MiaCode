@@ -39,9 +39,10 @@ int main(int argc, char** argv)
     using namespace miacode::preference_json_file;
     const QString handPath = temporary.filePath(QStringLiteral("hand-order-shortcuts.json"));
     const QStringList handIds{QStringLiteral("hand_order.set_left"), QStringLiteral("hand_order.set_right"),
-        QStringLiteral("hand_order.set_either"), QStringLiteral("hand_order.split_annotation"), QStringLiteral("hand_order.split_native_slide")};
+        QStringLiteral("hand_order.set_either"), QStringLiteral("hand_order.split_annotation"), QStringLiteral("hand_order.split_native_slide"),
+        QStringLiteral("hand_order.bisect_annotation"), QStringLiteral("hand_order.swap_hands")};
     const QStringList handDefaults{QStringLiteral("Alt+W"), QStringLiteral("Alt+E"),
-        QStringLiteral("Alt+Y"), QStringLiteral("Alt+T"), QStringLiteral("Ctrl+Alt+5")};
+        QStringLiteral("Alt+Y"), QStringLiteral("Alt+T"), QStringLiteral("Ctrl+Alt+5"), QStringLiteral("Alt+C"), QStringLiteral("Alt+Q")};
     ShortcutRegistry handRegistry(handPath);
     ShortcutModel handModel(handRegistry);
     for (int index = 0; index < handIds.size(); ++index) {

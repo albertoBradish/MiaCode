@@ -11,6 +11,8 @@ inline QVector<HandOrderCommandSpec> handOrderCommandSpecs()
         {QStringLiteral("hand_order.set_right"), QStringLiteral("hand_order.set_right")},
         {QStringLiteral("hand_order.set_either"), QStringLiteral("hand_order.set_either")},
         {QStringLiteral("hand_order.split_annotation"), QStringLiteral("hand_order.split_annotation")},
+        {QStringLiteral("hand_order.bisect_annotation"), QStringLiteral("hand_order.bisect_annotation")},
+        {QStringLiteral("hand_order.swap_hands"), QStringLiteral("hand_order.swap_hands")},
         {QStringLiteral("hand_order.split_native_slide"), QStringLiteral("hand_order.split_native_slide")}};
 }
 } // namespace miacode::ui

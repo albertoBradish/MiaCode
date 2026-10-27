@@ -8,6 +8,8 @@
 
 namespace miacode::chart_transform {
 namespace {
+enum class EditMode { Assign, Split, Bisect, Swap };
+
 QChar handGlyph(HandOrderHand hand)
 {
     switch (hand) {
@@ -37,15 +39,17 @@ QString progressText(double progress)
 }
 
 HandOrderEditPlan planSelection(const QString& text, int begin, int end,
-                               HandOrderHand hand, bool split, const miacode::simai::SimaiTimingMetadata& metadata)
+                               HandOrderHand hand, EditMode mode, const miacode::simai::SimaiTimingMetadata& metadata)
 {
+    const bool split = mode == EditMode::Split;
+    const bool bisect = mode == EditMode::Bisect;
     HandOrderEditPlan plan;
     begin = qBound(0, begin, int(text.size()));
     end = qBound(begin, end, int(text.size()));
     plan.replacement = text.mid(begin, end - begin);
     if (begin == end) return plan;
     const auto parsed = SimaiParser::validateSyntax(text, metadata);
-    if (split && !parsed.errors.isEmpty()) {
+    if ((split || bisect) && !parsed.errors.isEmpty()) {
         // Native errors can invalidate downstream BPM/duration interpretation.
         plan.diagnostics = parsed.errors;
         return plan;
@@ -82,7 +86,17 @@ HandOrderEditPlan planSelection(const QString& text, int begin, int end,
         const auto parts = hand_order::splitToken(original);
         QString replacement;
         HandOrderTokenEdit token;
-        if (!split) {
+        if (mode == EditMode::Swap) {
+            replacement = original;
+            // The suffix is already validated. Only hand values follow these
+            // delimiters, so spelling, progress precision and modes stay exact.
+            for (int i = parts.suffixOffset + 1; parts.suffixOffset >= 0 && i < replacement.size(); ++i) {
+                const QChar previous = replacement.at(i - 1);
+                if (previous != QLatin1Char('~') && previous != QLatin1Char('=') && previous != QLatin1Char(':')) continue;
+                if (replacement.at(i) == QLatin1Char('l')) replacement[i] = QLatin1Char('r');
+                else if (replacement.at(i) == QLatin1Char('r')) replacement[i] = QLatin1Char('l');
+            }
+        } else if (mode == EditMode::Assign) {
             bool explicitWifi = false;
             token.baseToken = parts.baseToken;
             for (int i = 0; i < source.markerCount; ++i) {
@@ -128,6 +142,7 @@ HandOrderEditPlan planSelection(const QString& text, int begin, int end,
                     supported = false;
                     break;
                 }
+                if (bisect && marker.type != QStringLiteral("slide")) { supported = false; break; }
                 if (marker.slideBranchIndex != token.tracks.size()) { supported = false; break; }
                 token.hasHead = token.hasHead || marker.hasHeadStar;
                 token.head = marker.handOrderHead;
@@ -155,7 +170,24 @@ HandOrderEditPlan planSelection(const QString& text, int begin, int end,
                     }
                   }
                 };
-                if (marker.handOrderWifiMode == HandOrderWifiMode::Split) {
+                if (bisect) {
+                    if (stops.size() < 2) {
+                        stops = {{0.0, HandOrderHand::Left}, {0.5, HandOrderHand::Right}};
+                    } else {
+                        const auto previous = stops;
+                        for (int stop = 0; stop < previous.size(); ++stop) {
+                            const double first = previous.at(stop).progress;
+                            const double last = stop + 1 < previous.size() ? previous.at(stop + 1).progress : 1.0;
+                            const double middle = first + (last - first) * 0.5;
+                            // A representable midpoint is required for tiny intervals.
+                            if (middle > first && middle < last) {
+                                const auto at = std::lower_bound(stops.begin(), stops.end(), middle,
+                                    [](const auto& node, double value) { return node.progress < value; });
+                                stops.insert(at, {middle, previous.at(stop).hand});
+                            }
+                        }
+                    }
+                } else if (marker.handOrderWifiMode == HandOrderWifiMode::Split) {
                     for (auto& sector : sectors) insertBoundaries(sector);
                 } else {
                     insertBoundaries(stops);
@@ -166,7 +198,7 @@ HandOrderEditPlan planSelection(const QString& text, int begin, int end,
                 token.wifiBranches.append(marker.type == QStringLiteral("wifi"));
             }
             if (!supported || token.tracks.isEmpty()) { ++plan.unsupported; continue; }
-            replacement = parts.suffix.isEmpty() ? original : token.baseToken + handOrderSuffix(token);
+            replacement = parts.suffix.isEmpty() && !bisect ? original : token.baseToken + handOrderSuffix(token);
         }
         if (replacement != original) {
             plan.replacement.replace(start - begin + delta, source.length, replacement);
@@ -278,11 +310,21 @@ HandOrderEditPlan setHandOrderInSelection(const QString& text, int begin, int en
     const miacode::simai::SimaiTimingMetadata& metadata)
 {
     if (hand == HandOrderHand::Unspecified) return {};
-    return planSelection(text, begin, end, hand, false, metadata);
+    return planSelection(text, begin, end, hand, EditMode::Assign, metadata);
 }
 HandOrderEditPlan splitHandOrderInSelection(const QString& text, int begin, int end,
     const miacode::simai::SimaiTimingMetadata& metadata)
 {
-    return planSelection(text, begin, end, HandOrderHand::Unspecified, true, metadata);
+    return planSelection(text, begin, end, HandOrderHand::Unspecified, EditMode::Split, metadata);
+}
+HandOrderEditPlan bisectHandOrderInSelection(const QString& text, int begin, int end,
+    const miacode::simai::SimaiTimingMetadata& metadata)
+{
+    return planSelection(text, begin, end, HandOrderHand::Unspecified, EditMode::Bisect, metadata);
+}
+HandOrderEditPlan swapHandOrderInSelection(const QString& text, int begin, int end,
+    const miacode::simai::SimaiTimingMetadata& metadata)
+{
+    return planSelection(text, begin, end, HandOrderHand::Unspecified, EditMode::Swap, metadata);
 }
 } // namespace miacode::chart_transform

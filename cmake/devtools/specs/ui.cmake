@@ -11,6 +11,15 @@ miacode_add_dev_tool(qml_scintilla_editor_spec TEST
         third_party/ScintillaQuick/src/render
 )
 set_tests_properties(qml_scintilla_editor_spec PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+miacode_add_dev_tool(hand_order_tools_spec TEST
+    SOURCES src/tools/ui/HandOrderToolsSpec.cpp
+        src/app/ui/editor/EditorController.cpp
+        src/app/ui/editor/EditorController.h
+    LIBS miacode_editor_core ScintillaQuick::ScintillaQuick Qt6::Quick
+    INCLUDES src
+)
+set_tests_properties(hand_order_tools_spec PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 target_compile_definitions(qml_scintilla_editor_spec PRIVATE
     "MIACODE_QML_SPEC_IMPORT_ROOT=\"${MIACODE_QML_SPEC_IMPORT_ROOT}\""
     "MIACODE_SOURCE_ROOT=\"${CMAKE_CURRENT_SOURCE_DIR}\"")

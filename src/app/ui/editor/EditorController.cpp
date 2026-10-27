@@ -417,12 +417,16 @@ miacode::editor::SimaiTextEditResult EditorController::handOrderCommand(
     if (begin == end) return untouched(text, anchor, position);
     namespace transform = miacode::chart_transform;
     const bool split = command == QStringLiteral("hand_order.split_annotation");
+    const bool bisect = command == QStringLiteral("hand_order.bisect_annotation");
+    const bool swap = command == QStringLiteral("hand_order.swap_hands");
     HandOrderHand hand = HandOrderHand::Unspecified;
     if (command == QStringLiteral("hand_order.set_left")) hand = HandOrderHand::Left;
     else if (command == QStringLiteral("hand_order.set_right")) hand = HandOrderHand::Right;
     else if (command == QStringLiteral("hand_order.set_either")) hand = HandOrderHand::Either;
-    if (!split && hand == HandOrderHand::Unspecified) return untouched(text, anchor, position);
+    if (!split && !bisect && !swap && hand == HandOrderHand::Unspecified) return untouched(text, anchor, position);
     auto plan = split ? transform::splitHandOrderInSelection(text, begin, end, metadata)
+        : bisect ? transform::bisectHandOrderInSelection(text, begin, end, metadata)
+        : swap ? transform::swapHandOrderInSelection(text, begin, end, metadata)
         : transform::setHandOrderInSelection(text, begin, end, hand, metadata);
     const auto result = selectionTransaction(text, anchor, position, plan.replacement);
     if (split && !plan.intervals.isEmpty()) {

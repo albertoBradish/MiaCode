@@ -4998,6 +4998,14 @@ Error: %1</translation>
         <source>Split Hand-order Intervals</source>
         <translation>Split Hand-order Intervals</translation>
     </message>
+    <message id="hand_order.bisect_annotation">
+        <source>Bisect Sticking Intervals</source>
+        <translation>Bisect Sticking Intervals</translation>
+    </message>
+    <message id="hand_order.swap_hands">
+        <source>Swap Left and Right Hands in Selection</source>
+        <translation>Swap Left and Right Hands in Selection</translation>
+    </message>
     <message id="hand_order.selection_scope">
         <source>Edit complete notes in the source selection, including slide heads and all branches</source>
         <translation>Edit complete notes in the source selection, including slide heads and all branches</translation>

@@ -5,7 +5,7 @@
     "Users may copy this file next to MiaCode.exe as shortcuts.json and override action/shortcut sequences without rebuilding."
   ],
   "editable": [
-    "hand_order.set_left", "hand_order.set_right", "hand_order.set_either", "hand_order.split_annotation", "hand_order.split_native_slide",
+    "hand_order.set_left", "hand_order.set_right", "hand_order.set_either", "hand_order.split_annotation", "hand_order.bisect_annotation", "hand_order.swap_hands", "hand_order.split_native_slide",
     "transform.mirror_lr", "transform.mirror_lr_swap_hands", "transform.mirror_ud",
     "transform.mirror_ud_swap_hands", "transform.rotate_180",
     "transform.rotate_ccw_45", "transform.rotate_cw_45", "transform.subdivision_up",
@@ -48,6 +48,22 @@
           "default": "Alt+T",
           "context": "window",
           "owner": "EditorController"
+    },
+    "hand_order.bisect_annotation": {
+      "label_key": "hand_order.bisect_annotation",
+      "label_zh": "一键二分手序区间",
+      "label_en": "Bisect Sticking Intervals",
+      "default": "Alt+C",
+      "context": "window",
+      "owner": "EditorController"
+    },
+    "hand_order.swap_hands": {
+      "label_key": "hand_order.swap_hands",
+      "label_zh": "交换选中内容左右手",
+      "label_en": "Swap Left and Right Hands in Selection",
+      "default": "Alt+Q",
+      "context": "window",
+      "owner": "EditorController"
     },
     "hand_order.split_native_slide": {
       "label_key": "hand_order.split_native_slide",
