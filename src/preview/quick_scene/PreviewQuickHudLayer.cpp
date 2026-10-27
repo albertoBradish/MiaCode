@@ -808,11 +808,12 @@ void PreviewQuickHudLayer::paint(QPainter* painter)
         QFont font = painter->font();
         font.setPixelSize(qMax(8, qRound(canvasSize.height() * 0.016)));
         painter->setFont(font);
-        painter->setPen(QColor(255, 255, 255, 150));
+        painter->setOpacity(0.5);
+        painter->setPen(Qt::white);
         const QRectF footer(0.0, canvasSize.height() * 0.95,
             canvasSize.width(), canvasSize.height() * 0.05);
         painter->drawText(footer, Qt::AlignHCenter | Qt::AlignVCenter,
-            QStringLiteral("由@albertoBradish 开发的Miacode手序扩展生成，版本%1")
+            QStringLiteral("由@albertoBradish 开发的Miacode手序拓展拆解并渲染，V%1")
                 .arg(QString::fromLatin1(MIACODE_VERSION_STRING)));
     }
     appendHudPaintDiag(
