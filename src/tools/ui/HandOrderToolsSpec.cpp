@@ -93,7 +93,8 @@ int main(int argc, char** argv)
         expect(!host.controller.handOrderCommand(caretSource, caret, caret, "hand_order.bisect_annotation").transaction.hasEdit,
             "blank, non-Slide, delimiter and comment carets do not edit a neighboring Slide");
     }
-    const QString eofSlide = "1-5[4:1]~r";
+    const QString eofSlide = "(120){4}2,1-5[4:1]~r";
+    expect(SimaiParser::validateSyntax(eofSlide).errors.isEmpty(), "EOF Slide fixture has valid native beat separators");
     expect(host.controller.handOrderCommand(eofSlide, eofSlide.size(), eofSlide.size(), "hand_order.bisect_annotation").transaction.hasEdit,
         "caret at the end of a final Slide token can bisect that token");
     const QString swapSource = "(120){4}1~l/2~r/3~m/1-5[4:1]~[head=r;track=0:l|0.5:r],";
