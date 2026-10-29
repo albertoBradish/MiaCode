@@ -32,6 +32,9 @@ struct PreviewQuickSpriteVertex {
     float effect = 0.0f;
     float handOrderHand = 0.0f;
     float handOrderClipDistance = 1.0f;
+    float brightness = 1.0f;
+    float unrevealedBrightness = 1.0f;
+    float revealDistance = 0.0f;
 };
 
 struct OrderedRunScratch {
@@ -52,9 +55,12 @@ const QSGGeometry::AttributeSet& previewQuickSpriteVertexAttributes()
         QSGGeometry::Attribute::create(3, 1, QSGGeometry::FloatType),
         QSGGeometry::Attribute::create(4, 1, QSGGeometry::FloatType),
         QSGGeometry::Attribute::create(5, 1, QSGGeometry::FloatType),
+        QSGGeometry::Attribute::create(6, 1, QSGGeometry::FloatType),
+        QSGGeometry::Attribute::create(7, 1, QSGGeometry::FloatType),
+        QSGGeometry::Attribute::create(8, 1, QSGGeometry::FloatType),
     };
     static QSGGeometry::AttributeSet attributeSet = {
-        6,
+        9,
         static_cast<int>(sizeof(PreviewQuickSpriteVertex)),
         attributes
     };
@@ -135,6 +141,13 @@ void writeSpriteVertices(
     vertices[baseIndex + 3] = {static_cast<float>(topRight.x()), static_cast<float>(topRight.y()), rightU, topV, opacity, effect, handOrderHand, distance(topRight)};
     vertices[baseIndex + 4] = {static_cast<float>(bottomRight.x()), static_cast<float>(bottomRight.y()), rightU, bottomV, opacity, effect, handOrderHand, distance(bottomRight)};
     vertices[baseIndex + 5] = {static_cast<float>(bottomLeft.x()), static_cast<float>(bottomLeft.y()), leftU, bottomV, opacity, effect, handOrderHand, distance(bottomLeft)};
+    for (int index = 0; index < 6; ++index) {
+        auto& vertex = vertices[baseIndex + index];
+        vertex.brightness = static_cast<float>(sprite.brightness);
+        vertex.unrevealedBrightness = static_cast<float>(sprite.unrevealedBrightness);
+        vertex.revealDistance = static_cast<float>(sprite.revealOffset
+            + QPointF::dotProduct(QPointF(vertex.x, vertex.y) - sprite.center, sprite.revealDirection));
+    }
 }
 
 class PreviewQuickSpriteBatchRootNode final : public QSGNode

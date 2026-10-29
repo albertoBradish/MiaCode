@@ -22,6 +22,8 @@
 #include "core/video/PreviewRenderSettings.h"
 #include "core/chart/model/TimelineData.h"
 
+namespace miacode::slide_judge { class LaunchBeatIndex; }
+
 namespace miacode::preview::scene {
 
 struct PreviewSkinAssets {
@@ -238,6 +240,9 @@ struct PreviewRenderState {
     bool showDebugInfo = false;
     bool showMeasureLines = false;
     bool showJudgementSkeleton = false;
+    bool showSlideJudgementTiming = false;
+    bool slideTimingFromLaunchBeat = false;
+    bool slideTimingEarlyPerfectFromHead = false;
     bool showTimestamp = true;
     bool showObjectStatsHud = false;
     bool showChartInfoHud = false;
@@ -252,6 +257,9 @@ struct PreviewRenderState {
 struct PreviewFrameState {
     PreviewHudFontSettings hudFontSettings;
     QVector<TimelineNoteMarker> noteMarkers;
+    // Export may crop render markers before a future launch cue. Preserve its
+    // immutable full-chart lookup independently of the visible marker range.
+    std::shared_ptr<const miacode::slide_judge::LaunchBeatIndex> slideTimingLaunchBeats;
     QVector<double> measureLineSeconds;
     // Editor-only transient projection; never written into chart/render settings.
     QSet<quint64> selectedNoteLocations;

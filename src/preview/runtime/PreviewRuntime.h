@@ -164,6 +164,9 @@ public:
     void setNoteMarkers(const QVector<TimelineNoteMarker>& notes);
     void setVisualAidChartTiming(const SimaiParseResult& parsed, int clockCount, double firstSeconds);
     void setVisualAidSettings(bool measureLines, bool skeleton, int mode, int customBeats);
+    void setSlideJudgementTiming(bool enabled);
+    void setSlideTimingFromLaunchBeat(bool enabled);
+    void setSlideTimingEarlyPerfectFromHead(bool enabled);
     void setSelectedNoteLocations(const QSet<quint64>& locations) {
         if (frameState_.selectedNoteLocations == locations) return;
         frameState_.selectedNoteLocations = locations;

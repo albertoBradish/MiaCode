@@ -654,6 +654,27 @@ void PreviewRuntime::setVisualAidChartTiming(const SimaiParseResult& parsed, int
         visualAidMode_, visualAidCustomBeats_);
 }
 
+void PreviewRuntime::setSlideTimingFromLaunchBeat(bool enabled)
+{
+    if (frameState_.render.slideTimingFromLaunchBeat == enabled) return;
+    frameState_.render.slideTimingFromLaunchBeat = enabled;
+    update();
+}
+
+void PreviewRuntime::setSlideTimingEarlyPerfectFromHead(bool enabled)
+{
+    if (frameState_.render.slideTimingEarlyPerfectFromHead == enabled) return;
+    frameState_.render.slideTimingEarlyPerfectFromHead = enabled;
+    update();
+}
+
+void PreviewRuntime::setSlideJudgementTiming(bool enabled)
+{
+    if (frameState_.render.showSlideJudgementTiming == enabled) return;
+    frameState_.render.showSlideJudgementTiming = enabled;
+    update();
+}
+
 void PreviewRuntime::setVisualAidSettings(bool measureLines, bool skeleton, int mode, int customBeats)
 {
     frameState_.render.showMeasureLines = measureLines;

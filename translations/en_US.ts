@@ -5356,4 +5356,19 @@ Error: %1</translation>
 
 
 
+<context>
+    <name>HandOrderSlideTiming</name>
+    <message id="preview.canvas.slide_timing_from_launch_beat">
+        <source>Start on a matching launch beat</source>
+        <translation>Start on a matching launch beat</translation>
+    </message>
+    <message id="preview.canvas.slide_timing_early_perfect_from_head">
+        <source>Fully bright from star head when Perfect starts before launch beat</source>
+        <translation>Fully bright from star head when Perfect starts before launch beat</translation>
+    </message>
+    <message id="preview.canvas.show_slide_judgement_timing">
+        <source>Show Slide Judgement Timing</source>
+        <translation>Show Slide Judgement Timing</translation>
+    </message>
+</context>
 </TS>

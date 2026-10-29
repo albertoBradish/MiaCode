@@ -56,6 +56,9 @@ struct VideoExportSnapshot {
     bool showHandOrderAnnotations = true;
     bool showMeasureLines = false;
     bool showJudgementSkeleton = false;
+    bool showSlideJudgementTiming = false;
+    bool slideTimingFromLaunchBeat = false;
+    bool slideTimingEarlyPerfectFromHead = false;
     int measureLineMode = 0;
     int measureLineCustomBeats = 4;
     bool showObjectStatsHud = false;

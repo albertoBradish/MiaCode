@@ -8,10 +8,12 @@
 #include "core/scene/PreviewSceneMath.h"
 #include "core/scene/PreviewSkinSelectors.h"
 #include "core/scene/PreviewTrackShared.h"
+#include "core/scene/PreviewSlideTiming.h"
 
 #include <QHash>
 
 #include <algorithm>
+#include <optional>
 
 namespace {
 
@@ -174,6 +176,11 @@ PreviewTrackLayerState buildPreviewTrackLayerState(
             : PreviewAnimatedSpriteEffect::None;
     };
 
+    // Brightness decorates the native visible sprites. All existing erasure,
+    // runtime completion and tail handling stay in the original draw walk.
+    const PreviewSlideTimingGeometry* timingGeometry = nullptr;
+    std::optional<miacode::slide_judge::LaunchBeatIndex> fallbackLaunchBeats;
+
     const auto appendSlideArea = [&](const TimelineNoteMarker& marker,
                                      int segmentIndex,
                                      int areaIndex,
@@ -215,6 +222,10 @@ PreviewTrackLayerState buildPreviewTrackLayerState(
                 hand = previewHandOrderAtProgress(marker.handOrderTrackStops, progress);
             }
             appendSprite(image, points[pointIndex], -rotations.value(pointIndex), opacity, effect, cacheable, hand);
+            if (timingGeometry != nullptr)
+                applyPreviewSlideTimingBrightness(&layerState.sprites.last(), *timingGeometry,
+                    timingGeometry->slideArrows[segmentIndex][areaIndex][pointIndex],
+                    state.playheadSeconds, canvasScale);
         }
     };
 
@@ -258,12 +269,18 @@ PreviewTrackLayerState buildPreviewTrackLayerState(
                         sprite.handOrderClipOrigin = mapLogicalPointToRect(
                             QPointF(kLogicalCanvasCenter + origin.x(), kLogicalCanvasCenter + origin.y()), playfieldRect);
                         sprite.handOrderClipNormal = previewWifiSectorNormal(marker, sector);
+                        if (timingGeometry != nullptr)
+                            applyPreviewSlideTimingBrightness(&sprite, *timingGeometry,
+                                timingGeometry->wifiArrows[areaIndex][pointIndex], state.playheadSeconds, canvasScale);
                     }
                     continue;
                 }
                 hand = previewWifiHandAtProgress(marker, 0, progress);
             }
             appendSprite(baseImage, points[pointIndex], -rotations.value(pointIndex), opacity, effect, true, hand);
+            if (timingGeometry != nullptr)
+                applyPreviewSlideTimingBrightness(&layerState.sprites.last(), *timingGeometry,
+                    timingGeometry->wifiArrows[areaIndex][pointIndex], state.playheadSeconds, canvasScale);
         }
     };
 
@@ -274,6 +291,32 @@ PreviewTrackLayerState buildPreviewTrackLayerState(
         const TimelineNoteMarker& marker = usesPreparedDrawOrder
             ? markers.markerForPreparedIndex(preparedIndex)
             : markers.markerAt(markerViewIndex);
+        PreviewSlideTimingGeometry uncachedTiming;
+        timingGeometry = nullptr;
+        if (state.render.showSlideJudgementTiming
+            && (marker.type == QLatin1String("slide") || marker.type == QLatin1String("wifi"))) {
+            if (!state.muriRenderOptions.showSlideTracks) continue;
+            const auto trackTiming = markerTrackTiming(marker.hsMultiplier);
+            if (state.playheadSeconds < marker.second - trackTiming.appearLeadInSeconds
+                || state.playheadSeconds >= marker.endSecond) continue;
+            const auto* entry = markers.preparedEntry(preparedIndex);
+            timingGeometry = entry && entry->slideTimingGeometry
+                ? entry->slideTimingGeometry.get() : nullptr;
+            if (timingGeometry == nullptr) {
+                const auto* launchIndex=state.render.slideTimingFromLaunchBeat
+                    ? state.slideTimingLaunchBeats.get() : nullptr;
+                if (state.render.slideTimingFromLaunchBeat && launchIndex==nullptr) {
+                    if (!fallbackLaunchBeats) fallbackLaunchBeats.emplace(state.noteMarkers);
+                    launchIndex=&*fallbackLaunchBeats;
+                }
+                uncachedTiming = buildPreviewSlideTimingGeometry(marker,launchIndex,state.render.slideTimingEarlyPerfectFromHead);
+                timingGeometry = &uncachedTiming;
+            }
+            if (!timingGeometry->isValid()) {
+                ++layerState.missingSlideTimingCount;
+                continue;
+            }
+        }
         if (marker.type == QLatin1String("slide")) {
             if (!state.muriRenderOptions.showSlideTracks) {
                 continue;

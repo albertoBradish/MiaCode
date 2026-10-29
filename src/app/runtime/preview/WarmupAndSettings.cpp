@@ -486,6 +486,9 @@ QVariantMap Session::previewRenderSettings() const
         {QStringLiteral("showHandOrderAnnotations"), state_.previewShowHandOrderAnnotations_},
         {QStringLiteral("showMeasureLines"), state_.previewShowMeasureLines_},
         {QStringLiteral("showJudgementSkeleton"), state_.previewShowJudgementSkeleton_},
+        {QStringLiteral("showSlideJudgementTiming"), state_.previewShowSlideJudgementTiming_},
+        {QStringLiteral("slideTimingFromLaunchBeat"), state_.previewSlideTimingFromLaunchBeat_},
+        {QStringLiteral("slideTimingEarlyPerfectFromHead"), state_.previewSlideTimingEarlyPerfectFromHead_},
         {QStringLiteral("measureLineMode"), state_.previewMeasureLineMode_},
         {QStringLiteral("measureLineCustomBeats"), state_.previewMeasureLineCustomBeats_},
         {QStringLiteral("touchPadAuthoringShortcut"), state_.previewTouchPadAuthoringShortcutEnabled_},
@@ -564,6 +567,15 @@ void Session::setPreviewRenderSetting(const QString& key, const QVariant& value)
             state_.timeline_.timelineQuickStateBridge_->setShowHandOrderAnnotations(
                 state_.previewShowHandOrderAnnotations_);
         }
+    } else if (key == QLatin1String("slideTimingFromLaunchBeat")) {
+        state_.previewSlideTimingFromLaunchBeat_ = value.toBool();
+        if (canvas != nullptr) canvas->setSlideTimingFromLaunchBeat(state_.previewSlideTimingFromLaunchBeat_);
+    } else if (key == QLatin1String("slideTimingEarlyPerfectFromHead")) {
+        state_.previewSlideTimingEarlyPerfectFromHead_ = value.toBool();
+        if (canvas != nullptr) canvas->setSlideTimingEarlyPerfectFromHead(state_.previewSlideTimingEarlyPerfectFromHead_);
+    } else if (key == QLatin1String("showSlideJudgementTiming")) {
+        state_.previewShowSlideJudgementTiming_ = value.toBool();
+        if (canvas != nullptr) canvas->setSlideJudgementTiming(state_.previewShowSlideJudgementTiming_);
     } else if (key == QLatin1String("showMeasureLines") || key == QLatin1String("showJudgementSkeleton")
                || key == QLatin1String("measureLineMode") || key == QLatin1String("measureLineCustomBeats")) {
         if (key == QLatin1String("showMeasureLines")) state_.previewShowMeasureLines_ = value.toBool();

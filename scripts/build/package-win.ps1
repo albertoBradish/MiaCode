@@ -675,6 +675,10 @@ if (Test-Path $ffmpegSrc) {
 }
 
 # Required package contents come from the toolchain data file.
+$slideTimingDocs = Join-Path $DistDir 'docs/specs/preview'
+New-Item -ItemType Directory -Path $slideTimingDocs -Force | Out-Null
+Copy-Item -LiteralPath (Join-Path $repoRoot 'docs/specs/preview/SLIDE_JUDGEMENT_TIMING_ZH.md') -Destination $slideTimingDocs
+
 $archiveFormats = $toolchainData.Package.ArchiveFormats
 if (!$archiveFormats -or $archiveFormats.Count -eq 0) {
     $archiveFormats = @("7z")

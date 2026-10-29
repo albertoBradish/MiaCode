@@ -1309,6 +1309,31 @@ void ExportSession::setShowMeasureLines(bool value)
     applyLivePreviewSettings();
 }
 
+void ExportSession::setSlideTimingFromLaunchBeat(bool value)
+{
+    if (task_.slideTimingFromLaunchBeat == value) return;
+    task_.slideTimingFromLaunchBeat = value;
+    emit videoChanged();
+    applyLivePreviewSettings();
+}
+
+void ExportSession::setSlideTimingEarlyPerfectFromHead(bool value)
+{
+    if (task_.slideTimingEarlyPerfectFromHead == value) return;
+    task_.slideTimingEarlyPerfectFromHead = value;
+    emit videoChanged();
+    applyLivePreviewSettings();
+}
+
+
+void ExportSession::setShowSlideJudgementTiming(bool value)
+{
+    if (task_.showSlideJudgementTiming == value) return;
+    task_.showSlideJudgementTiming = value;
+    emit videoChanged();
+    applyLivePreviewSettings();
+}
+
 void ExportSession::setShowJudgementSkeleton(bool value)
 {
     if (task_.showJudgementSkeleton == value) return;

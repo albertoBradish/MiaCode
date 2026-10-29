@@ -623,6 +623,27 @@ Rectangle {
                                 onToggled: if (root.session) root.session.showJudgementSkeleton = checked
                             }
                             AppSwitch {
+                                objectName: "exportShowSlideJudgementTimingSwitch"
+                                text: qsTrId("preview.canvas.show_slide_judgement_timing")
+                                checked: root.session ? root.session.showSlideJudgementTiming : false
+                                onToggled: if (root.session) root.session.showSlideJudgementTiming = checked
+                            }
+                            AppSwitch {
+                                objectName: "exportSlideTimingFromLaunchBeatSwitch"
+                                text: qsTrId("preview.canvas.slide_timing_from_launch_beat")
+                                enabled: root.session ? root.session.showSlideJudgementTiming : false
+                                checked: root.session ? root.session.slideTimingFromLaunchBeat : false
+                                onToggled: if (root.session) root.session.slideTimingFromLaunchBeat = checked
+                            }
+                            AppSwitch {
+                                objectName: "exportSlideTimingEarlyPerfectFromHeadSwitch"
+                                Layout.leftMargin: 2 * Theme.panelPadding
+                                text: qsTrId("preview.canvas.slide_timing_early_perfect_from_head")
+                                enabled: root.session ? root.session.showSlideJudgementTiming && root.session.slideTimingFromLaunchBeat : false
+                                checked: root.session ? root.session.slideTimingEarlyPerfectFromHead : false
+                                onToggled: if (root.session) root.session.slideTimingEarlyPerfectFromHead = checked
+                            }
+                            AppSwitch {
                                 text: qsTrId("qml.enable_clock_count")
                                 checked: root.session ? root.session.clockCountEnabled : false
                                 onToggled: if (root.session) root.session.clockCountEnabled = checked

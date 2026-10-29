@@ -528,6 +528,9 @@ bool miacode::runtime::VideoExportHost::buildVideoExportSnapshot(
     built.showHandOrderAnnotations = requestedTask.showHandOrderAnnotations;
     built.showMeasureLines = requestedTask.showMeasureLines;
     built.showJudgementSkeleton = requestedTask.showJudgementSkeleton;
+    built.showSlideJudgementTiming = requestedTask.showSlideJudgementTiming;
+    built.slideTimingFromLaunchBeat = requestedTask.slideTimingFromLaunchBeat;
+    built.slideTimingEarlyPerfectFromHead = requestedTask.slideTimingEarlyPerfectFromHead;
     built.measureLineMode = requestedTask.measureLineMode;
     built.measureLineCustomBeats = requestedTask.measureLineCustomBeats;
     built.showObjectStatsHud = requestedTask.showObjectStatsHud;
@@ -748,6 +751,9 @@ bool miacode::runtime::VideoExportHost::buildVideoExportSnapshotForChartDirector
     built.showHandOrderAnnotations = requestedTask.showHandOrderAnnotations;
     built.showMeasureLines = requestedTask.showMeasureLines;
     built.showJudgementSkeleton = requestedTask.showJudgementSkeleton;
+    built.showSlideJudgementTiming = requestedTask.showSlideJudgementTiming;
+    built.slideTimingFromLaunchBeat = requestedTask.slideTimingFromLaunchBeat;
+    built.slideTimingEarlyPerfectFromHead = requestedTask.slideTimingEarlyPerfectFromHead;
     built.measureLineMode = requestedTask.measureLineMode;
     built.measureLineCustomBeats = requestedTask.measureLineCustomBeats;
     built.showObjectStatsHud = requestedTask.showObjectStatsHud;

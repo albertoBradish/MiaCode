@@ -5375,4 +5375,19 @@ Error: %1</source>
 
 
 
+<context>
+    <name>HandOrderSlideTiming</name>
+    <message id="preview.canvas.slide_timing_from_launch_beat">
+        <source>Start on a matching launch beat</source>
+        <translation>有启动拍时从启动拍开始</translation>
+    </message>
+    <message id="preview.canvas.slide_timing_early_perfect_from_head">
+        <source>Fully bright from star head when Perfect starts before launch beat</source>
+        <translation>启动拍前已进入 Perfect 时，从头拍全亮</translation>
+    </message>
+    <message id="preview.canvas.show_slide_judgement_timing">
+        <source>Show Slide Judgement Timing</source>
+        <translation>显示 Slide 判定时值</translation>
+    </message>
+</context>
 </TS>
