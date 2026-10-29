@@ -1,5 +1,5 @@
 #include "preview/quick_scene/PreviewQuickHudLayer.h"
-#include "AppVersion.h"
+#include "core/chart/model/HandOrderVersion.h"
 
 #include "common/DebugLog.h"
 #include "common/DebugOptions.h"
@@ -814,7 +814,7 @@ void PreviewQuickHudLayer::paint(QPainter* painter)
             canvasSize.width(), canvasSize.height() * 0.05);
         painter->drawText(footer, Qt::AlignHCenter | Qt::AlignVCenter,
             QStringLiteral("由@albertoBradish 开发的Miacode手序拓展拆解并渲染，V%1")
-                .arg(QString::fromLatin1(MIACODE_VERSION_STRING)));
+                .arg(miacode::chart::handOrderFeatureVersion));
     }
     appendHudPaintDiag(
         QStringLiteral("paint_exit"),

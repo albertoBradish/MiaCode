@@ -437,6 +437,12 @@ miacode::editor::SimaiTextEditResult EditorController::handOrderCommand(
     const miacode::simai::SimaiTimingMetadata& metadata)
 {
     activateHandOrderDocument(handOrderScope_, text);
+    if (command == QStringLiteral("hand_order.object_selection_requires_contiguous")) {
+        handOrderSplitAvailable_ = false;
+        handOrderFeedback_ = miacode::localizedText("hand_order.object_selection_requires_contiguous");
+        emit handOrderChanged();
+        return untouched(text, anchor, position);
+    }
     int begin = qBound(0, qMin(anchor, position), int(text.size()));
     int end = qBound(begin, qMax(anchor, position), int(text.size()));
     const bool bisect = command == QStringLiteral("hand_order.bisect_annotation");

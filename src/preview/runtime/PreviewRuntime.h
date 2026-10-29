@@ -284,6 +284,9 @@ signals:
     void introOverlayDataChanged();
     void introOverlayStateChanged();
     void touchPadAuthoringClicked(const QString& pad, QChar separator);
+    void noteSelectionStarted();
+    void noteSelectionInvalidated();
+    void noteSelectionFinished(const QSet<quint64>& locations, bool additive);
 
 private:
     SimaiParseResult visualAidTiming_;

@@ -83,6 +83,7 @@ miacode_add_module(miacode_chart
         src/core/chart/transform/ChartBatchTransform.Subdivision.cpp
         src/core/chart/transform/ChartBatchTransform.Transform.cpp
         src/core/chart/transform/ChartBatchTransform.h
+        src/core/chart/transform/ChartNoteSelection.cpp
         src/core/chart/transform/HandOrderEdit.cpp
         src/core/chart/transform/HandOrderEdit.h
         src/core/chart/transform/NativeSlideSplit.cpp

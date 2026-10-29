@@ -16,6 +16,20 @@ namespace {
 constexpr int kDefaultMeterNumerator = 4;
 constexpr int kDefaultMeterDenominator = 4;
 
+int sourceNoteEnd(const QString& text, int start, int length)
+{
+    const int limit = qMin(int(text.size()), start + length);
+    // Invalid annotated digit clusters can produce several native notes sharing
+    // one suffix. Never let their shifted columns consume the next separator.
+    for (int position = start; position < limit; ++position) {
+        const QChar ch = text[position];
+        if (ch == QLatin1Char(',') || ch == QLatin1Char('/') || ch == QLatin1Char('`')
+            || ch == QLatin1Char('\n') || ch == QLatin1Char('\r')) return position;
+    }
+    return limit;
+}
+
+
 void applyInitialTimingMetadata(
     int* meterNumerator,
     int* meterDenominator,
@@ -416,15 +430,35 @@ TimelineExportRange TimelineQuickModel::resolveExportRangeForSelection(
 TimelineQuickModel::NoteSelection TimelineQuickModel::resolveNoteSelection(
     int start, int end, double tapFlowSpeed, double touchFlowSpeed) const
 {
+    return resolveNoteSelection(miacode::chart_selection::NoteRanges{{start, end}}, tapFlowSpeed, touchFlowSpeed);
+}
+
+miacode::chart_selection::NoteRanges TimelineQuickModel::noteSourceRanges(const QSet<quint64>* locations) const
+{
+    miacode::chart_selection::NoteRanges ranges;
+    for (const auto& line : lines_) for (const auto& note : line.render.notes) {
+        if (locations && !locations->contains(timelineRenderLocationId(line.lineNumber, note.sourceCol))) continue;
+        const int start = line.startPosition + note.sourceCol - 1;
+        ranges.append({start, sourceNoteEnd(sourceText_, start, note.sourceLength)});
+    }
+    return miacode::chart_selection::normalizedNoteRanges(ranges, sourceText_.size());
+}
+
+TimelineQuickModel::NoteSelection TimelineQuickModel::resolveNoteSelection(
+    const miacode::chart_selection::NoteRanges& inputRanges, double tapFlowSpeed, double touchFlowSpeed) const
+{
     NoteSelection result;
-    if (end <= start) return result;
+    const auto ranges = miacode::chart_selection::normalizedNoteRanges(inputRanges, sourceText_.size());
+    if (ranges.isEmpty()) return result;
     double visibleStart = std::numeric_limits<double>::infinity();
     double visualEnd = -std::numeric_limits<double>::infinity();
     for (const auto& line : lines_) {
         for (const auto& note : line.render.notes) {
             const int noteStart = line.startPosition + note.sourceCol - 1;
-            const int noteEnd = noteStart + note.sourceLength;
-            if (start >= noteEnd || end <= noteStart) continue;
+            const int noteEnd = sourceNoteEnd(sourceText_, noteStart, note.sourceLength);
+            const auto range = std::lower_bound(ranges.cbegin(), ranges.cend(), noteStart,
+                [](const miacode::chart_selection::NoteRange& range, int position) { return range.end <= position; });
+            if (range == ranges.cend() || range->start >= noteEnd) continue;
             result.locations.insert(timelineRenderLocationId(line.lineNumber, note.sourceCol));
             const bool touch = note.kind == TimelineRenderNoteKind::Touch
                 || note.kind == TimelineRenderNoteKind::TouchHold;
