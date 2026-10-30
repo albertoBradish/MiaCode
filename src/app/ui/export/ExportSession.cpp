@@ -698,7 +698,7 @@ void ExportSession::adoptPreviewRenderSettings()
     task_.layoutSquareScale = fromPercent("layoutSquareScale", task_.layoutSquareScale);
     task_.backgroundScaleMode = static_cast<PreviewBackgroundScaleMode>(
         values.value(QStringLiteral("scaleMode"), static_cast<int>(task_.backgroundScaleMode)).toInt());
-    task_.fireworkBrightness = miacode::preview_video::normalizedFireworkBrightness(fromPercent("fireworkBrightness", task_.fireworkBrightness));
+    // Keep the export-specific firework brightness seeded on entry.
     task_.smoothBrightness = values.value(QStringLiteral("smoothBrightness"), task_.smoothBrightness).toBool();
     task_.showTimestamp = values.value(QStringLiteral("showTimestamp"), task_.showTimestamp).toBool();
     const bool previewShowsAnnotations = values.value(

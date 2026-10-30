@@ -345,7 +345,7 @@ VideoExportTask miacode::runtime::VideoExportHost::buildVideoExportSeedTask(int 
     task.backgroundBrightnessOuter = session_.previewBackgroundBrightnessOuter_;
     task.backgroundBrightnessInner = session_.previewBackgroundBrightnessInner_;
     task.layoutSquareScale = session_.previewLayoutSquareScale_;
-    task.fireworkBrightness = session_.previewFireworkBrightness_;
+    task.fireworkBrightness = 0.5;
     task.smoothBrightness = session_.previewSmoothBrightness_;
     task.outlineVariant = session_.previewOutlineVariant_;
     // Pair the variant with its custom-outline path (same resolver the real export
@@ -365,7 +365,7 @@ VideoExportTask miacode::runtime::VideoExportHost::buildVideoExportSeedTask(int 
     task.fps = 60;
     task.showTimestamp = session_.previewShowTimestamp_;
     task.showHandOrderAnnotations = session_.previewShowHandOrderAnnotations_;
-    task.showMeasureLines = session_.state_.previewShowMeasureLines_;
+    task.showMeasureLines = true;
     task.showJudgementSkeleton = session_.state_.previewShowJudgementSkeleton_;
     task.showSlideJudgementTiming = session_.state_.previewShowSlideJudgementTiming_;
     task.slideTimingFromLaunchBeat = session_.state_.previewSlideTimingFromLaunchBeat_;
