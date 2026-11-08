@@ -131,8 +131,6 @@ Item {
             bpmExportWindow.open()
         }
         renderModeMenuAvailable: splitView.renderModeMenuAvailable
-        canPlaySelection: root.chartEditorActive && root.editorSync.canPlaySelection
-        onPlaySelectionRequested: root.editorSync.playSelection()
         onExitRequested: root.requestClose()
         onUndoRequested: root.undo()
         onRedoRequested: root.redo()

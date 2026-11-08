@@ -17,7 +17,6 @@ QtObject {
     property bool canPlaySelection: false
     property bool netUploadEnabled: false
     property bool renderModeMenuAvailable: false
-    property bool canPlaySelection: false
     property bool commandsEnabled: true
 
     signal openRequested()
