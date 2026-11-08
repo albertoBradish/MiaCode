@@ -12,6 +12,7 @@
 #include "common/RuntimePaths.h"
 #include "core/chart/document/SimaiDocument.h"
 #include "export/video_export/VideoExportSettings.h"
+#include "tools/services/HandOrderTestRuntime.h"
 #include <QFile>
 #include <QJsonDocument>
 
@@ -79,39 +80,6 @@ public:
 };
 }
 
-// Legacy picker history is confined to the marked HandOrder runtime. Preserve
-// that isolated test store; never read or alter the standard app registry.
-class LegacyBatchHistoryGuard
-{
-public:
-    LegacyBatchHistoryGuard()
-    {
-        for (const QString& key : keys()) {
-            if (store_.contains(key)) saved_.insert(key, store_.value(key));
-            store_.remove(key);
-        }
-    }
-    ~LegacyBatchHistoryGuard()
-    {
-        for (const QString& key : keys()) {
-            if (saved_.contains(key)) store_.setValue(key, saved_.value(key));
-            else store_.remove(key);
-        }
-        store_.sync();
-    }
-    QString value(const QString& key) { store_.sync(); return store_.value(key).toString(); }
-    void setValue(const QString& key, const QString& value) { store_.setValue(key, value); store_.sync(); }
-
-private:
-    static QStringList keys()
-    {
-        return {QStringLiteral("batch_video_export_dialog/last_chart_directory"),
-                QStringLiteral("batch_video_export_dialog/last_output_directory")};
-    }
-    QSettings store_{miacode::runtime_paths::configFile("export-session.ini"), QSettings::IniFormat};
-    QHash<QString, QVariant> saved_;
-};
-
 int main(int argc, char** argv)
 {
     const bool native = argc > 1 && QByteArray(argv[1]) == "--native";
@@ -128,14 +96,19 @@ int main(int argc, char** argv)
     const auto expect = [&](bool condition, const char* message) {
         if (!condition) { err << "FAIL: " << message << Qt::endl; ok = false; }
     };
-    QString runtimeError;
-    if (!miacode::runtime_paths::initializeFromEnvironment(&runtimeError)) {
-        err << "FAIL: " << runtimeError << Qt::endl;
+    const QDir executableDirectory(QCoreApplication::applicationDirPath());
+    QTemporaryDir scratch(executableDirectory.filePath(QStringLiteral("MiaCode picker #XXXXXX")));
+    if (!scratch.isValid()) {
+        err << "FAIL: " << scratch.errorString() << Qt::endl;
         return 1;
     }
-    QTemporaryDir scratch(QDir(miacode::runtime_paths::tempDirectory())
-                              .filePath(QStringLiteral("MiaCode picker #XXXXXX")));
-    expect(scratch.isValid(), "scratch directory exists");
+    const QDir runtimeOwner(scratch.filePath(QStringLiteral("isolated-workspace")));
+    QString runtimeError;
+    if (!runtimeOwner.mkpath(QStringLiteral("fixtures"))
+        || !miacode::test_runtime::configureHandOrderRuntime(runtimeOwner, &runtimeError)) {
+        err << "FAIL: Cannot prepare the synthetic picker runtime. " << runtimeError << Qt::endl;
+        return 1;
+    }
     QDir parent(scratch.path());
     parent.mkdir(QStringLiteral("Song #1"));
     parent.mkdir(QStringLiteral("中文 Song 2"));
@@ -342,6 +315,14 @@ ApplicationWindow {
         historyRequests.cancelFileRequest(historyId);
         expect(tools.batchDirectory() == pvRoot, "cancelling PV selection preserves the root");
     }
+    const QString legacyRoot = chosen("legacy-root");
+    const QString nextChartRoot = chosen("next-chart-root");
+    const QString legacyOutputKey = QStringLiteral("batch_video_export_dialog/last_output_directory");
+    QSettings legacy(miacode::runtime_paths::configFile("export-session.ini"), QSettings::IniFormat);
+    legacy.setValue(QStringLiteral("batch_video_export_dialog/last_chart_directory"), chosen("legacy-root/song"));
+    legacy.setValue(legacyOutputKey, legacyRoot);
+    legacy.sync();
+
     const QString chartRoot = chosen("chart-root");
     const QString chartFolder = chosen("chart-root/song");
     auto withoutNewHistory = miacode::app_preferences::loadDialogPreferences();
@@ -383,10 +364,10 @@ ApplicationWindow {
         session.setBatchOutputDirectory(fontSource);
         expect(session.batchOutputDirectory() == fontSource, "the current session keeps an explicit directory choice");
         session.leave();
-        seed.task.chartPath = QDir(legacyRoot).filePath(QStringLiteral("maidata.txt"));
+        seed.task.chartPath = QDir(nextChartRoot).filePath(QStringLiteral("maidata.txt"));
         session.enter(5);
         wait();
-        expect(session.batchOutputDirectory() == legacyRoot, "switching charts reinitializes to the new working directory");
+        expect(session.batchOutputDirectory() == nextChartRoot, "switching charts reinitializes to the new working directory");
         session.leave();
         seed.task.chartPath.clear();
         session.enter(5);
@@ -396,8 +377,9 @@ ApplicationWindow {
         seed.task.chartPath = QDir(seedDirectory).filePath(QStringLiteral("maidata.txt"));
         session.enter(5);
         wait();
-        expect(legacy.value(QStringLiteral("batch_video_export_dialog/last_output_directory")) == legacyRoot,
-               "v1's native settings store is only read, never written");
+        legacy.sync();
+        expect(legacy.value(legacyOutputKey).toString() == legacyRoot,
+               "batch operations leave legacy output history unchanged");
         session.setBatchOutputDirectory({});
         session.leave();
         session.enter(5);
