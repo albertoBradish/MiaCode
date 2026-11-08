@@ -23,6 +23,7 @@
 #include <QQmlEngine>
 #include <QQuickStyle>
 #include <QQuickWindow>
+#include <QSettings>
 #include <QSignalSpy>
 #include <QStandardPaths>
 #include <QTemporaryDir>
@@ -78,7 +79,7 @@ public:
 };
 }
 
-// Legacy picker history is confined to the marked Better runtime. Preserve
+// Legacy picker history is confined to the marked HandOrder runtime. Preserve
 // that isolated test store; never read or alter the standard app registry.
 class LegacyBatchHistoryGuard
 {
