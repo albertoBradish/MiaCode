@@ -9,6 +9,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QSaveFile>
+#include <algorithm>
 
 namespace miacode::automatic_chart {
 namespace {
@@ -50,7 +51,7 @@ QByteArray gameplaySignature(const SimaiParseResult& parsed)
 }
 
 bool normalize(SimaiDocument* document, const chart_transform::ChartNormalizationOptions& options,
-               QMap<int, QString>* originals, QString* error)
+               bool renderingOriginal, QMap<int, QString>* originals, QString* error)
 {
     const auto timing = simai::buildTimingMetadata(*document);
     for (const int id : document->difficultyIds()) {
@@ -58,6 +59,12 @@ bool normalize(SimaiDocument* document, const chart_transform::ChartNormalizatio
         if (!difficulty || difficulty->chart.trimmed().isEmpty()) continue;
         const auto report = SimaiParser::buildValidationReport(difficulty->chart, SimaiValidationLocale::English, timing);
         if (report.errorCount > 0) {
+            const bool nativeError = std::any_of(report.issues.cbegin(), report.issues.cend(), [](const auto& issue) {
+                return issue.severity == SimaiValidationSeverity::Error && !issue.isAnnotation;
+            });
+            // Original rendering already accepts a valid native chart with a
+            // malformed hand-order suffix. Leave that difficulty untouched.
+            if (renderingOriginal && !nativeError) continue;
             *error = QStringLiteral("Automatic normalization stopped: difficulty %1 has syntax errors.").arg(id);
             return false;
         }
@@ -135,8 +142,9 @@ Result prepare(ChartWorkspace& workspace, ChartWorkspaceFileService& files, Trig
     SimaiDocument normalizedDisk = originalDisk;
     QMap<int, QString> originals;
     QString error;
-    if (!normalize(&normalizedWorkspace, options, &originals, &error)
-        || !normalize(&normalizedDisk, options, nullptr, &error)) return {false, false, error};
+    const bool renderingOriginal = trigger == Trigger::RenderOriginal;
+    if (!normalize(&normalizedWorkspace, options, renderingOriginal, &originals, &error)
+        || !normalize(&normalizedDisk, options, renderingOriginal, nullptr, &error)) return {false, false, error};
     const bool diskChanged = normalizedDisk.toText() != originalDisk.toText();
     if (originals.isEmpty() && !diskChanged) {
         if (trigger == Trigger::FirstOpen) markOpened();

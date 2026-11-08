@@ -786,7 +786,7 @@ bool miacode::runtime::VideoExportHost::startQmlExportAudition(int difficultyId,
     session_.playback_->pausePlayback();
     auto& services = session_.applicationServices_;
     const auto prepared = miacode::automatic_chart::prepare(
-        services.workspace(), services.files(), miacode::automatic_chart::Trigger::Render);
+        services.workspace(), services.files(), miacode::automatic_chart::renderTrigger(visualTask.showHandOrderAnnotations));
     if (!prepared.accepted) {
         services.uiRequests().postNotice(miacode::NoticeSeverity::Error,
             miacode::localizedText("dialog.video_export.title"), miacode::LocalizedText(prepared.error));
@@ -850,7 +850,7 @@ bool miacode::runtime::VideoExportHost::launchQmlVideoExport(
     session_.playback_->pausePlayback();
     auto& services = session_.applicationServices_;
     const auto prepared = miacode::automatic_chart::prepare(
-        services.workspace(), services.files(), miacode::automatic_chart::Trigger::Render);
+        services.workspace(), services.files(), miacode::automatic_chart::renderTrigger(requestedTask.showHandOrderAnnotations));
     if (!prepared.accepted) {
         if (errorMessage) *errorMessage = prepared.error;
         return false;

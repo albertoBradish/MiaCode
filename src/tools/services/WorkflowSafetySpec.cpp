@@ -4,6 +4,7 @@
 #include "app/services/ChartNormalizationPreferences.h"
 #include "core/chart/document/AdvancedMetadata.h"
 #include "editor/SpaceInputGuard.h"
+#include "tools/services/HandOrderTestRuntime.h"
 
 #include <QCoreApplication>
 #include <QDir>
@@ -55,6 +56,11 @@ int main(int argc, char** argv)
 
     QTemporaryDir directory;
     check(directory.isValid(), "temporary fixture directory created");
+    QString runtimeError;
+    if (!directory.isValid() || !miacode::test_runtime::configureHandOrderRuntime(QDir(directory.path()), &runtimeError)) {
+        QTextStream(stderr) << runtimeError << Qt::endl;
+        return 1;
+    }
     const QString path = directory.filePath("maidata.txt");
     const QByteArray original = QByteArray("\xEF\xBB\xBF") +
         "&title=Fixture\r\n&lv_2=\r\n&inote_2=E\r\n&lv_5=12\r\n&lv_6=13\r\n&desid_6=001\r\n&unknown=keep & this\r\n"
@@ -118,6 +124,19 @@ int main(int argc, char** argv)
     const auto failed = miacode::automatic_chart::prepare(blockedWorkspace, blockedFiles, miacode::automatic_chart::Trigger::Render);
     check(!failed.accepted && read(blockedPath) == original && !blockedWorkspace.snapshot().dirty,
           "backup failure preserves both disk and workspace");
+
+    const QString annotationPath = directory.filePath("invalid-annotation.txt");
+    const QByteArray invalidAnnotation = "&title=Fixture\n&inote_5=(120){4}1~q,2,3,4,E\n";
+    check(write(annotationPath, invalidAnnotation), "invalid hand annotation fixture written");
+    miacode::ChartWorkspace annotationWorkspace;
+    miacode::ChartWorkspaceFileService annotationFiles(annotationWorkspace);
+    check(annotationFiles.open(annotationPath).accepted, "invalid annotation can be opened for review");
+    const auto annotated = miacode::automatic_chart::prepare(annotationWorkspace, annotationFiles,
+        miacode::automatic_chart::Trigger::Render);
+    const auto plain = miacode::automatic_chart::prepare(annotationWorkspace, annotationFiles,
+        miacode::automatic_chart::Trigger::RenderOriginal);
+    check(!annotated.accepted && plain.accepted && !plain.changed && read(annotationPath) == invalidAnnotation,
+        "original rendering leaves an invalid annotation untouched while annotated rendering reports it");
     QTextStream(stdout) << (failures ? "FAILED" : "ALL PASS") << Qt::endl;
     return failures ? 1 : 0;
 }

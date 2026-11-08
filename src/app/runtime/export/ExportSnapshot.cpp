@@ -652,7 +652,8 @@ bool miacode::runtime::VideoExportHost::buildVideoExportSnapshotForChartDirector
     }
     ChartWorkspace& workspace = isCurrentChart ? services.workspace() : temporaryWorkspace;
     ChartWorkspaceFileService& files = isCurrentChart ? services.files() : temporaryFiles;
-    const auto prepared = miacode::automatic_chart::prepare(workspace, files, miacode::automatic_chart::Trigger::Render);
+    const auto prepared = miacode::automatic_chart::prepare(
+        workspace, files, miacode::automatic_chart::renderTrigger(requestedTask.showHandOrderAnnotations));
     if (!prepared.accepted) {
         if (errorMessage) *errorMessage = prepared.error;
         return false;
@@ -892,7 +893,7 @@ bool miacode::runtime::VideoExportHost::exportPreviewVideoFromCli(
     auto& services = session_.applicationServices_;
     services.workspace().openSource(chartText, chartPath);
     const auto prepared = miacode::automatic_chart::prepare(
-        services.workspace(), services.files(), miacode::automatic_chart::Trigger::Render);
+        services.workspace(), services.files(), miacode::automatic_chart::renderTrigger(request.showHandOrderAnnotations));
     if (!prepared.accepted) return fail(prepared.error, chartPath);
     session_.loadDocument();
     session_.refreshWaveformCache();

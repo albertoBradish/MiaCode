@@ -5,7 +5,11 @@
 #include "app/services/ChartWorkspaceFileService.h"
 
 namespace miacode::automatic_chart {
-enum class Trigger { FirstOpen, Zip, Render };
+enum class Trigger { FirstOpen, Zip, Render, RenderOriginal };
+inline constexpr Trigger renderTrigger(bool showHandOrderAnnotations)
+{
+    return showHandOrderAnnotations ? Trigger::Render : Trigger::RenderOriginal;
+}
 struct Result {
     bool accepted = true;
     bool changed = false;
