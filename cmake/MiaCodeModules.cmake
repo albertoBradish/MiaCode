@@ -111,6 +111,8 @@ set_source_files_properties(
 # ---- analysis: Muri and the analysis pipeline -----------------------------
 miacode_add_module(miacode_analysis
     SOURCES
+        src/core/analysis/HandOrderPressureAdapter.cpp
+        src/core/analysis/HandOrderPressureAdapter.h
         src/core/analysis/MuriAnalyzer.cpp
         src/core/analysis/MuriAnalyzer.h
         src/core/analysis/MuriAnalyzerGeometry.cpp

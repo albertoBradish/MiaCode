@@ -246,3 +246,9 @@ target_compile_definitions(preview_note_selection_interaction_spec PRIVATE
     "MIACODE_TEST_OUTPUT_ROOT=\"${CMAKE_CURRENT_BINARY_DIR}\""
 )
 set_tests_properties(preview_note_selection_interaction_spec PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+
+miacode_add_dev_tool(hand_order_pressure_adapter_spec TEST
+    SOURCES src/tools/analysis/HandOrderPressureAdapterSpec.cpp
+    LIBS miacode_analysis Qt6::Core
+    INCLUDES src
+)
