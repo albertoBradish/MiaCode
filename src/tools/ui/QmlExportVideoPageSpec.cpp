@@ -608,30 +608,11 @@ bool verifyBatchInputsOwnASettingsTab(QTextStream& err)
     if (moreDisplay) moreDisplay->setProperty("checked",true);
     QCoreApplication::processEvents();
     ok &= require(moreOptions && moreOptions->isVisible(),QStringLiteral("More Display reveals existing export options"),err);
-    auto* earlySwitch=findVisualItem(contentItem,QStringLiteral("exportSlideTimingEarlyPerfectFromHeadSwitch"));
-    ok &= require(earlySwitch!=nullptr,QStringLiteral("video options expose the launch child switch"),err);
-    if(earlySwitch) {
-        ok &= require(!earlySwitch->isEnabled() && !earlySwitch->property("checked").toBool(),
-            QStringLiteral("launch child option defaults off and requires both ancestors"),err);
-        session->setProperty("showSlideJudgementTiming",true);
-        QCoreApplication::processEvents();
-        ok &= require(!earlySwitch->isEnabled(),QStringLiteral("main visibility alone does not enable the child"),err);
-        session->setProperty("slideTimingFromLaunchBeat",true);
-        QCoreApplication::processEvents();
-        ok &= require(earlySwitch->isEnabled(),QStringLiteral("matching-launch option enables its child"),err);
-        earlySwitch->setProperty("checked",true);
-        QMetaObject::invokeMethod(earlySwitch,"toggled");
-        ok &= require(session->property("slideTimingEarlyPerfectFromHead").toBool(),
-            QStringLiteral("toggling the child updates export settings"),err);
-        session->setProperty("slideTimingFromLaunchBeat",false);
-        QCoreApplication::processEvents();
-        ok &= require(!earlySwitch->isEnabled() && earlySwitch->property("checked").toBool(),
-            QStringLiteral("disabling the parent retains the child preference"),err);
-        session->setProperty("slideTimingFromLaunchBeat",true);
-        session->setProperty("showSlideJudgementTiming",false);
-        QCoreApplication::processEvents();
-        ok &= require(!earlySwitch->isEnabled(),QStringLiteral("disabling visibility also disables the child"),err);
-    }
+    const auto* timingSwitch = findVisualItem(contentItem, QStringLiteral("exportShowSlideJudgementTimingSwitch"));
+    ok &= require(timingSwitch && timingSwitch->isVisible()
+        && !findVisualItem(contentItem, QStringLiteral("exportSlideTimingFromLaunchBeatSwitch"))
+        && !findVisualItem(contentItem, QStringLiteral("exportSlideTimingEarlyPerfectFromHeadSwitch")),
+        QStringLiteral("video options show the master switch; preferences own its child settings"), err);
 
     if (moreDisplay) moreDisplay->setProperty("checked",false);
     QCoreApplication::processEvents();
