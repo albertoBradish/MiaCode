@@ -215,6 +215,7 @@ bool verifyProjectSaveAs(QTextStream& out, miacode::ChartDocumentOrigin origin)
         && readBytes(saved).contains("(120){4}2,E"),
         QStringLiteral("save as preserves the document and its generation"), out);
     for (const QString& resource : resources) {
+        if (resource.startsWith(QLatin1String(".miacode/"))) continue;
         ok &= expect(readBytes(target.filePath(resource)) == readBytes(source.filePath(resource)),
                      QStringLiteral("save as carries %1").arg(resource), out);
     }

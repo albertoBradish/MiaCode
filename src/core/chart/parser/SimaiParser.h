@@ -32,6 +32,9 @@ struct SimaiParseResult {
     QVector<double> measureLineSeconds;
     QVector<double> textLineStartSeconds;
     QVector<TimelineBeatMarker> beatMarkers;
+    QVector<TimelineTimingPoint> timingPoints;
+    double endSecond = 0.0;
+    double endQuarterBeat = 0.0;
     QVector<TimelineNoteMarker> noteMarkers;
     QVector<SimaiSourceToken> sourceTokens;
     double durationSeconds = 0.0;

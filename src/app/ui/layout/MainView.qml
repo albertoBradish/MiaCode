@@ -119,6 +119,17 @@ Item {
         canCopy: root.editorCommandsAvailable && splitView.canCopy
         canPaste: root.editorCommandsAvailable && splitView.canPaste
         canTransform: root.editorCommandsAvailable && splitView.canTransform
+        canNormalize: root.editorCommandsAvailable && splitView.normalizationAvailable
+        canPlaySelection: root.chartEditorActive && root.editorSync.canPlaySelection
+        onPlaySelectionRequested: root.editorSync.playSelection()
+        onScoreLossRequested: {
+            root.applicationContext.refreshChartTools()
+            scoreLossWindow.open()
+        }
+        onBpmExportRequested: {
+            root.applicationContext.refreshChartTools()
+            bpmExportWindow.open()
+        }
         renderModeMenuAvailable: splitView.renderModeMenuAvailable
         canPlaySelection: root.chartEditorActive && root.editorSync.canPlaySelection
         onPlaySelectionRequested: root.editorSync.playSelection()
@@ -882,6 +893,40 @@ Item {
         previewSettings: root.applicationContext.previewSettings
     }
 
+    DxScoreLossWindow {
+        id: scoreLossWindow
+        chartTools: root.applicationContext.chartTools
+        transientParent: root.Window.window
+    }
+    BpmExportWindow {
+        id: bpmExportWindow
+        chartTools: root.applicationContext.chartTools
+        transientParent: root.Window.window
+    }
+    Connections {
+        target: root.applicationContext.chartTools
+        function onApplyBpmRequested(original, replacement, difficulty, revision) {
+            root.applicationContext.chartTools.completeBpmApply(
+                splitView.sourceEditorItem.applyBpmImport(original, replacement, difficulty, revision))
+            root.applicationContext.refreshChartTools()
+        }
+    }
+    Timer {
+        id: chartToolsRefresh
+        interval: 150
+        onTriggered: {
+            if (scoreLossWindow.visible || bpmExportWindow.visible)
+                root.applicationContext.refreshChartTools()
+        }
+    }
+    Connections {
+        target: root.documentSession
+        function onChartTextChanged() { chartToolsRefresh.restart() }
+        function onCurrentDifficultyChanged() { chartToolsRefresh.restart() }
+        function onMetadataChanged() { chartToolsRefresh.restart() }
+        function onDocumentReplaced() { chartToolsRefresh.restart() }
+    }
+
     PreferencesDialog {
         id: preferencesDialog
         objectName: "shellPreferencesDialog"
@@ -893,6 +938,7 @@ Item {
         preferences: root.preferences
         appBackground: root.appBackground
         updateService: root.updates
+        cliIntegration: root.applicationContext.cli
         onUpdateRequested: updatePrompt.present()
     }
 

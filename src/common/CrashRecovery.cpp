@@ -1,3 +1,4 @@
+#include "common/RuntimePaths.h"
 #include "common/CrashRecovery.h"
 
 #include "common/DebugLog.h"

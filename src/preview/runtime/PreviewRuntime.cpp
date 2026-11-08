@@ -623,7 +623,11 @@ void PreviewRuntime::setVisualAidChartTiming(const SimaiParseResult& parsed, int
 {
     if (visualAidTiming_.beatMarkers.constData() == parsed.beatMarkers.constData()
         && visualAidTiming_.textLineStartSeconds.constData() == parsed.textLineStartSeconds.constData()
+        && visualAidTiming_.timingPoints.constData() == parsed.timingPoints.constData()
         && visualAidClockCount_ == clockCount && visualAidFirstSeconds_ == firstSeconds) return;
+    visualAidTiming_.timingPoints = parsed.timingPoints;
+    frameState_.timingPoints = parsed.timingPoints;
+    for (auto& point : frameState_.timingPoints) point.second += firstSeconds;
     visualAidTiming_.beatMarkers = parsed.beatMarkers;
     visualAidTiming_.textLineStartSeconds = parsed.textLineStartSeconds;
     visualAidClockCount_ = clockCount;
@@ -718,6 +722,7 @@ void PreviewRuntime::setMuriAnalysisReport(const MuriAnalysisReport& report)
 void PreviewRuntime::setMuriRenderOptions(const MuriRenderOptions& options)
 {
     frameState_.muriRenderOptions = options;
+    frameState_.render.backgroundPolicy = backgroundPolicyForRenderMode(options.renderMode);
     frameState_.sceneContentRevision += 1;
     update();
 }
@@ -1027,6 +1032,38 @@ bool PreviewRuntime::showObjectStatsHud() const
     return frameState_.render.showObjectStatsHud;
 }
 
+void PreviewRuntime::setShowBpmHud(bool show)
+{
+    if (frameState_.render.showBpmHud == show) return;
+    frameState_.render.showBpmHud = show;
+    update();
+}
+bool PreviewRuntime::showBpmHud() const { return frameState_.render.showBpmHud; }
+
+void PreviewRuntime::setShowCpsHud(bool show)
+{
+    if (frameState_.render.showCpsHud == show) return;
+    frameState_.render.showCpsHud = show;
+    update();
+}
+bool PreviewRuntime::showCpsHud() const { return frameState_.render.showCpsHud; }
+
+void PreviewRuntime::setShowMeterHud(bool show)
+{
+    if (frameState_.render.showMeterHud == show) return;
+    frameState_.render.showMeterHud = show;
+    update();
+}
+bool PreviewRuntime::showMeterHud() const { return frameState_.render.showMeterHud; }
+
+void PreviewRuntime::setShowModsHud(bool show)
+{
+    if (frameState_.render.showModsHud == show) return;
+    frameState_.render.showModsHud = show;
+    update();
+}
+bool PreviewRuntime::showModsHud() const { return frameState_.render.showModsHud; }
+
 void PreviewRuntime::setShowChartInfoHud(bool show)
 {
     if (frameState_.render.showChartInfoHud == show) {
@@ -1125,6 +1162,7 @@ void PreviewRuntime::reset(bool releaseStorage)
             .arg(frameState_.render.showChartInfoHud ? 1 : 0));
     visualAidTiming_ = SimaiParseResult();
     frameState_.measureLineSeconds.clear();
+    frameState_.timingPoints.clear();
     const auto presentationMode = frameState_.media.presentationMode;
     if (releaseStorage) {
         frameState_.noteMarkers = QVector<TimelineNoteMarker>();

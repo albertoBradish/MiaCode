@@ -107,6 +107,21 @@ bool PreviewStageMediaHost::chartHasVideoBackground() const
     return miacode::chart_assets::isVideoBackgroundPath(resolved);
 }
 
+void PreviewStageMediaHost::setBackgroundPolicy(BackgroundPolicy policy)
+{
+    if (backgroundPolicy_ == policy) return;
+    backgroundPolicy_ = policy;
+    reloadCurrentMediaPreservingPlayback();
+}
+
+void PreviewStageMediaHost::setExportIncludePv(std::optional<bool> include)
+{
+    const bool previouslyIncluded = exportIncludePv_.value_or(!hidePv_);
+    exportIncludePv_ = include;
+    if (previouslyIncluded != exportIncludePv_.value_or(!hidePv_))
+        reloadCurrentMediaPreservingPlayback();
+}
+
 bool PreviewStageMediaHost::hidePv() const
 {
     return hidePv_;
@@ -264,7 +279,7 @@ void PreviewStageMediaHost::setChartPath(const QString& chartPath,
     // still force a re-decode. Phase 4c — explicit `&video=` beats the sibling
     // heuristic; fall back to the legacy resolver for image-only backgrounds.
     QString resolvedPath;
-    if (!normalizedChartPath.isEmpty()) {
+    if (usesBackgroundMedia(backgroundPolicy_) && !normalizedChartPath.isEmpty()) {
         resolvedPath = resolveStageMediaPath(normalizedChartPath, chartVideoOverridePath);
     }
     const QString mediaStamp = miacode::fs::fileContentStamp(resolvedPath);
@@ -457,7 +472,7 @@ QString PreviewStageMediaHost::resolveStageMediaPath(
             ? miacode::chart_assets::resolveDisplayBackgroundImagePath(chartPath)
             : QString();
     }
-    if (!hidePv_ && miacode::chart_assets::isVideoBackgroundPath(resolved)) {
+    if (exportIncludePv_.value_or(!hidePv_) && miacode::chart_assets::isVideoBackgroundPath(resolved)) {
         return resolved;
     }
     const QString imagePath = miacode::chart_assets::resolveUsableBackgroundImagePath(chartPath);

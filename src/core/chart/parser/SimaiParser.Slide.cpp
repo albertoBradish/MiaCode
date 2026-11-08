@@ -190,6 +190,8 @@ void parseSlideToken(ParseState* state, const QString& token, int lineNumber, in
     marker.slideBranchSourceCol = sourceBranchCol > 0 ? sourceBranchCol : marker.sourceCol;
     marker.slideBranchSourceEndCol = sourceBranchEndCol > 0
         ? sourceBranchEndCol : tokenEndCol;
+    marker.slideTrackSourceCol = sourceBranchIndex > 0 ? marker.slideBranchSourceCol
+        : marker.sourceCol + 1 + modifierCount;
     marker.lane = lane;
     marker.type = sanitizedCore.contains('w', Qt::CaseInsensitive) ? "wifi" : "slide";
     marker.slideDisplayKey = normalizedSlideLookupKey(sanitizedCore);

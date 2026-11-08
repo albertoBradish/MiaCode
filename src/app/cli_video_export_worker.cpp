@@ -1,3 +1,4 @@
+#include "common/RuntimePaths.h"
 #include "app/MainEntrypoints.h"
 #include "app/runtime/settings/PreferenceDocumentProvider.h"
 
@@ -18,6 +19,12 @@
 #include <QTextStream>
 
 namespace {
+
+QString videoExportWorkerProjectLogDirectory(const VideoExportSnapshot& snapshot)
+{
+    Q_UNUSED(snapshot);
+    return miacode::runtime_paths::directory("logs");
+}
 
 void writeWorkerJsonLine(const QJsonObject& object)
 {

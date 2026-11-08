@@ -55,6 +55,7 @@ Rectangle {
         Behavior on opacity { NumberAnimation { duration: 150 } }
     }
 
+    signal playbackToggleRequested()
     signal normalizeChartRequested()
     signal completionSettingsRequested(string group)
     function focusEditor() { sourceArea.forceActiveFocus() }
@@ -151,10 +152,11 @@ Rectangle {
             return prepared
         }
         const applied = sourceArea.applyChartTransform(operation)
-        if (operation === "hand_order.split_annotation" && editorController.handOrderSplitAvailable)
+        if (applied && operation === "hand_order.split_annotation" && editorController.handOrderSplitAvailable)
             handOrderIntervals.open()
         return applied
     }
+    function applyBpmImport(original, replacement, difficulty, revision) { return sourceArea.applyBpmImport(original, replacement, difficulty, revision) }
     function applyNormalization(options) { return sourceArea.applyNormalization(options) }
     function selectionDescription() {
         if (sourceArea.selectionStart === sourceArea.selectionEnd)
@@ -452,10 +454,24 @@ Rectangle {
         anchors.top: parent.top
         editor: sourceArea
     }
+    Label {
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.margins: 8
+        z: 20
+        visible: sourceArea.spaceInputUnlocked && sourceArea.activeFocus
+        text: qsTrId("editor.space_unlocked")
+        color: Theme.colors.text.secondary
+        padding: 6
+        background: Rectangle { color: Theme.colors.background.elevated; radius: 4 }
+    }
     ScintillaEditor {
         id: sourceArea
+        onNoteComponentEditRejected: ToolTip.show(qsTrId("editor.slide_component_edit_rejected"), 3500)
         objectName: "sourceArea"
         property bool reservesPlainSpace: true
+        spaceGuardEnabled: root.preferences ? root.preferences.spaceGuardEnabled : true
+        onPlaybackToggleRequested: root.playbackToggleRequested()
         anchors.left: parent.left
         anchors.right: verticalBar.left
         anchors.top: findReplaceBar.bottom

@@ -35,7 +35,19 @@ enum class PreviewOutlineVariant {
     Line = 1,
     JudgeArea = 2,
     JudgeAreaLabeled = 3,
+    None = 4,
 };
+
+enum class BackgroundPolicy {
+    Normal,
+    OpaqueBlack,
+    Transparent,
+};
+
+constexpr bool usesBackgroundMedia(BackgroundPolicy policy)
+{
+    return policy == BackgroundPolicy::Normal;
+}
 
 enum class PreviewBackgroundScaleMode {
     FillCrop = 0,

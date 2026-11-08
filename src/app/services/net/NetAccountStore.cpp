@@ -1,4 +1,5 @@
 #include "app/services/net/NetAccountStore.h"
+#include "common/RuntimePaths.h"
 #include "app/services/net/NetConfiguration.h"
 
 #include <QCryptographicHash>
@@ -13,9 +14,10 @@
 
 namespace miacode {
 namespace {
-QString target(const QString& principal)
-{
-    return QStringLiteral("MiaCode/Majdata/") + QString::fromLatin1(
+QString target(const QString& principal) {
+    const QString installation = QString::fromLatin1(QCryptographicHash::hash(
+        miacode::runtime_paths::root().toUtf8(), QCryptographicHash::Sha256).toHex());
+    return QStringLiteral("MiaCodeHandOrder/%1/Majdata/").arg(installation) + QString::fromLatin1(
         QCryptographicHash::hash(principal.toUtf8(), QCryptographicHash::Sha256).toHex());
 }
 

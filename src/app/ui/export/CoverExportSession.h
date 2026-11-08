@@ -90,6 +90,24 @@ public:
                           QObject* parent = nullptr);
     ~CoverExportSession() override;
 
+    static QVariantList batchPresetOptions();
+    // Static, non-interactive renderer shared by single video export and CLI.
+    // task is already parsed; frameSeconds is the export preview axis (negative
+    // includes intro; NaN uses each preset frame's saved time). Returns a frozen image with no disk write.
+    static QImage renderPresetCover(
+        miacode::ExportEngine& engine, miacode::UiRequestService& requests,
+        const VideoExportTask& task, const QString& presetToken, double frameSeconds,
+        QString* errorMessage, QStringList* frameAdjustments = nullptr);
+    static miacode::cover_export::CoverExportResult exportPresetCover(
+        miacode::ExportEngine& engine, miacode::UiRequestService& requests,
+        const VideoExportTask& task, const QString& presetToken, double frameSeconds,
+        const QString& outputPath);
+    static miacode::cover_export::CoverExportResult exportBatchCover(
+        miacode::ExportEngine& engine, miacode::UiRequestService& requests,
+        const VideoExportTask& task, const QString& presetToken, const QString& outputPath,
+        QStringList* frameAdjustments);
+
+
     QObject* uiRequests() const;
     bool pageSessionActive() const { return pageSessionActive_; }
     int selectedDifficultyId() const { return selectedDifficultyId_; }
@@ -166,6 +184,7 @@ public:
     Q_INVOKABLE void setActiveLayerText(const QString& text);
     Q_INVOKABLE void setActiveLayerTextColor(const QString& color);
     Q_INVOKABLE void setActiveLayerTextBold(bool bold);
+    Q_INVOKABLE void setActiveLayerTextEffect(const QString& property, const QVariant& value);
     Q_INVOKABLE void setActiveLayerFrameSeconds(double seconds);
     Q_INVOKABLE void previewActiveLayerFrameSeconds(double seconds);
     Q_INVOKABLE void commitActiveLayerFrameSeconds();
@@ -230,12 +249,14 @@ private:
     bool containsDifficulty(int difficultyId) const;
     int defaultDifficultyId(int preferredDifficultyId) const;
     void seedFromDifficulty(int difficultyId);
+    void seedFromTask(const VideoExportTask& task);
+    static QVariantList builtinPresetChoices();
     void rebuildDifficultyList();
     void refreshSavedLists();
     bool renderChartFrame(miacode::cover_export::CoverLayer* layer, int sidePx = 0,
                           bool reportErrors = false);
     void syncPlaybackFromActiveLayer();
-    bool renderVisibleChartFramesForExport(int sidePx);
+    bool renderVisibleChartFramesForExport(int sidePx, bool reportErrors = true);
     // frameBgMode "pv": queue the layer's PV frame (latest-wins), or drop it
     // when the layer is in another mode / the chart has no video PV.
     void requestPvFrame(miacode::cover_export::CoverLayer* layer);
@@ -296,6 +317,7 @@ private:
     bool hasLoadedPreferences_ = false;
     QTimer compositionSaveTimer_;
     bool compositionDirty_ = false;
+    bool batchExportMode_ = false;
     bool outputDirty_ = false;
     bool backgroundDirty_ = false;
     bool blurBackground_ = true;

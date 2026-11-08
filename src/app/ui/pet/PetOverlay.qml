@@ -10,9 +10,57 @@ Window {
     required property Window hostWindow
 
     property bool placementApplied: false
+    property bool throttleAuxiliary: false
     property string animationState: "idle"
     property real animationPhase: 0
     property real lifeTime: 0
+    // Supplied by the chart's authoritative transport, never integrated here.
+    property real rhythmQuarterBeat: 0
+    property bool rhythmPlaying: false
+    property real rhythmSecond: 0
+    property bool dropAvailable: false
+    property real dropStart: 0
+    property real dropEnd: 0
+    property real previousRhythmBeat: 0
+    property real phaseCorrection: 0
+    readonly property real dropEnvelope: {
+        if (!visible || !dropAvailable || rhythmSecond <= dropStart || rhythmSecond >= dropEnd)
+            return 0
+        const ramp = Math.min(0.33, (dropEnd - dropStart) * 0.25)
+        const t = Math.min(1, Math.min(rhythmSecond - dropStart, dropEnd - rhythmSecond) / ramp)
+        return t * t * (3 - 2 * t)
+    }
+    property real dropWeight: dropEnvelope
+    Behavior on dropWeight { NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
+    NumberAnimation {
+        id: phaseRecovery
+        target: petWindow
+        property: "phaseCorrection"
+        to: 0
+        duration: 220
+        easing.type: Easing.OutCubic
+    }
+    onRhythmQuarterBeatChanged: {
+        // Preserve the current pose on a seek, then recover the transport phase.
+        if (visible && Math.abs(rhythmQuarterBeat - previousRhythmBeat) > 0.5) {
+            phaseRecovery.stop()
+            const delta = previousRhythmBeat + phaseCorrection - rhythmQuarterBeat
+            phaseCorrection = ((delta + 1) % 2 + 2) % 2 - 1
+            phaseRecovery.restart()
+        }
+        previousRhythmBeat = rhythmQuarterBeat
+    }
+    property real rhythmWeight: rhythmPlaying && visible
+        ? (animationState === "interaction" ? 0.18 : 1) : 0
+    Behavior on rhythmWeight { NumberAnimation { duration: 300; easing.type: Easing.InOutSine } }
+    onRhythmPlayingChanged: {
+        // An explicit click gesture owns its two-second lifetime even when
+        // playback starts or stops. Its timer returns to the current idle/dance.
+        if (animationState === "interaction")
+            return
+        if (visible)
+            enterState("idle")
+    }
 
     width: controller.size
     height: controller.size
@@ -54,7 +102,11 @@ Window {
         animationState = nextState
         animationPhase = 0
         stateTimer.stop()
-        if (nextState === "sleeping")
+        if (nextState === "sleeping" || !visible)
+            return
+        // Interaction must finish during playback too. Only the autonomous
+        // idle/sit/sleep cycle yields to the chart-driven dance.
+        if (rhythmPlaying && nextState !== "interaction")
             return
         stateTimer.interval = nextState === "interaction" ? 2000
                              : nextState === "sitting" ? 12000 : 8000
@@ -114,6 +166,9 @@ Window {
                           : ""
                 phase: petWindow.animationPhase
                 lifeTime: petWindow.lifeTime
+                rhythmQuarterBeat: petWindow.rhythmQuarterBeat + petWindow.phaseCorrection
+                rhythmWeight: petWindow.rhythmWeight
+                rhythmDropWeight: petWindow.dropWeight
             }
         }
 
@@ -198,10 +253,15 @@ Window {
     }
 
     FrameAnimation {
+        property real elapsed: 0
         running: petWindow.visible
         onTriggered: {
-            petWindow.animationPhase += frameTime
-            petWindow.lifeTime += frameTime
+            elapsed += frameTime
+            if (petWindow.throttleAuxiliary && elapsed < 1 / 31)
+                return
+            petWindow.animationPhase += elapsed
+            petWindow.lifeTime += elapsed
+            elapsed = 0
             petScene.advanceFrame()
         }
     }

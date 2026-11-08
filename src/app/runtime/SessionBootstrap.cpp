@@ -185,6 +185,7 @@ Session::Session(miacode::ApplicationServices& services, QObject* parent)
                 documents_->syncRuntimeFromWorkspace();
                 playback_->setDocumentRevision(revision);
                 timelineHost_->setDocumentRevision(revision);
+                emit applicationServices_.shellNotifications().documentRevisionChanged(revision);
             });
     // unique_ptr owns it; pass no QObject parent to avoid double-delete.
     latencySandboxController_ = std::make_unique<miacode::latency::LatencySandboxController>(this, nullptr);
@@ -420,8 +421,14 @@ Session::Session(miacode::ApplicationServices& services, QObject* parent)
             &TimelineQuickStateBridge::renderCadenceTick,
             this,
             &Session::onTimelineRenderCadenceTick);
-    connect(state_.timeline_.timelineQuickStateBridge_, &TimelineQuickStateBridge::zoomScaleChanged, this, [this](double) {
-        savePortableState();
+    auto* zoomSaveTimer = new QTimer(this);
+    zoomSaveTimer->setSingleShot(true);
+    zoomSaveTimer->setInterval(250);
+    connect(zoomSaveTimer, &QTimer::timeout, this, [this] { savePortableState(); });
+    connect(state_.timeline_.timelineQuickStateBridge_, &TimelineQuickStateBridge::zoomScaleChanged,
+            zoomSaveTimer, [zoomSaveTimer](double) { zoomSaveTimer->start(); });
+    connect(qApp, &QCoreApplication::aboutToQuit, this, [this, zoomSaveTimer] {
+        if (zoomSaveTimer->isActive()) { zoomSaveTimer->stop(); savePortableState(); }
     });
     connect(state_.timeline_.timelineQuickStateBridge_, &TimelineQuickStateBridge::waveformBrightnessChanged, this, [this](double) {
         savePortableState();

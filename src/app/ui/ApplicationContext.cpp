@@ -16,6 +16,7 @@ ApplicationContext::ApplicationContext(miacode::ApplicationServices& services,
                 services.previewSurfaceSlot(), this)
     , analysis_(services.workspace(), services.analysis(), this)
     , preview_(services.shellNotifications(), services.previewSurfaceSlot(), services.playbackControlSlot(), this)
+    , chartStructure_(services.workspace(), services.files(), this)
     , timeline_(services.shellNotifications(), services.timelineSurfaceSlot(), this)
     , commands_(document_, services.documentBridgeSlot(), this)
     , pages_(services.shellNotifications(), document_, services.editorPageRouterSlot(),
@@ -33,10 +34,28 @@ ApplicationContext::ApplicationContext(miacode::ApplicationServices& services,
     , pet_(this)
     , net_(services.netService(), this)
     , netUpload_(services.netService(), services.uiRequests(), this)
+    , cli_(this)
+    , chartTools_(services.uiRequests(), this)
     , lifecycle_(services.editorPageRouterSlot(), this)
 {
     connect(&miacode::LocaleService::instance(), &miacode::LocaleService::languageChanged,
             &editor_, &EditorController::retranslate);
+    preview_.setStructure(&chartStructure_);
+    const auto syncStructureTransport = [this] {
+        chartStructure_.setPlaying(preview_.playing());
+        chartStructure_.setPlaybackDuration(preview_.durationSeconds());
+    };
+    connect(&preview_, &PreviewModel::playingChanged, this, syncStructureTransport);
+    connect(&preview_, &PreviewModel::transportChanged, this, syncStructureTransport);
+    syncStructureTransport();
+    const auto syncStructurePerformance = [this] {
+        chartStructure_.setLowPerformanceMode(preferences_.lowPerformanceMode());
+    };
+    connect(&preferences_, &WorkbenchSettings::workflowSettingsChanged, this, syncStructurePerformance);
+    syncStructurePerformance();
+    connect(&LocaleService::instance(), &LocaleService::languageChanged,
+            &chartStructure_, &ChartStructureModel::changed);
+
     net_.setHost(&document_, &services.uiRequests());
     if (auto* netService = services.netService()) {
         netService->setDocumentSnapshotHandler([this] { return document_.documentIdentity(); });
@@ -123,6 +142,15 @@ QObject* ApplicationContext::latency() { return &latency_; }
 QObject* ApplicationContext::pet() { return &pet_; }
 QObject* ApplicationContext::update() { return services_.updateService(); }
 QObject* ApplicationContext::net() { return &net_; }
+
+void ApplicationContext::refreshChartTools()
+{
+    const auto& document = services_.workspace().document();
+    const auto snapshot = services_.workspace().snapshot();
+    const auto* difficulty = document.difficulty(snapshot.activeDifficultyId);
+    chartTools_.setChart(difficulty ? difficulty->chart : QString(),
+        miacode::simai::buildTimingMetadata(document), document.first, snapshot.activeDifficultyId, snapshot.revision);
+}
 
 void ApplicationContext::setWindowChrome(QObject* chrome)
 {

@@ -3,6 +3,8 @@
 #include "common/DebugLog.h"
 #include "common/DebugOptions.h"
 #include "core/analysis/MuriRenderOptions.h"
+#include "core/chart/ChartTiming.h"
+#include "preview/runtime/PreviewRuntime.h"
 #include "app/ui/preferences/LocaleService.h"
 
 #include <array>
@@ -184,13 +186,19 @@ void PreviewModel::refreshFromBackend(bool force)
     const bool nextSmoothStarErase = lastRegularMode_ != RenderMode::EraseByArea;
     const QString nextRenderModeLabel = nextMuriCheckEnabled
         ? qtTrId("qml.muri_analysis")
-        : qtTrId("qml.normal_rendering");
+        : nextRenderModeValue == RenderMode::Debug
+            ? qtTrId("qml.debug_rendering")
+            : qtTrId("qml.normal_rendering");
     const QStringList nextStatisticsTexts = surface()->statsTexts();
     const bool nextStatisticsAvailable = !nextStatisticsTexts.isEmpty();
     const int nextMuriHandRadiusPx = surface()->muriHandRadiusPx();
     const int nextMuriTapOnSlideThresholdMs = surface()->muriTapOnSlideThresholdMs();
 
-    const bool positionChangedValue = force || nextPosition != positionSeconds_;
+    const auto* runtime = qobject_cast<PreviewRuntime*>(surface()->previewRuntimeObject());
+    const double nextQuarterBeat = runtime
+        ? miacode::chart::timingAt(runtime->timingPoints(), nextPosition).quarterBeat : 0.0;
+    const bool positionChangedValue = force || nextPosition != positionSeconds_
+        || nextQuarterBeat != quarterBeat_;
     const bool transportChangedValue = force
         || nextDuration != durationSeconds_
         || nextLowerBound != lowerBoundSeconds_
@@ -208,6 +216,7 @@ void PreviewModel::refreshFromBackend(bool force)
         || nextMuriTapOnSlideThresholdMs != muriTapOnSlideThresholdMs_;
 
     positionSeconds_ = nextPosition;
+    quarterBeat_ = nextQuarterBeat;
     durationSeconds_ = nextDuration;
     lowerBoundSeconds_ = nextLowerBound;
     rate_ = rateOk ? nextRate : 1.0;
@@ -353,12 +362,20 @@ void PreviewModel::setMuriCheckEnabled(bool enabled)
         }
         surface()->setMuriRenderMode(RenderMode::MaimuriDxStyle);
     } else {
-        if (current != RenderMode::MaimuriDxStyle) {
+        if (current != RenderMode::MaimuriDxStyle && current != RenderMode::Debug) {
             return;
         }
         surface()->setMuriRenderMode(lastRegularMode_);
     }
     refreshFromBackend();
+}
+
+void PreviewModel::setDebugRendering()
+{
+    if (surface() != nullptr && surface()->muriRenderMode() != RenderMode::Debug) {
+        surface()->setMuriRenderMode(RenderMode::Debug);
+        refreshFromBackend();
+    }
 }
 
 void PreviewModel::setMuriHandRadiusPx(int radiusPx)
@@ -386,7 +403,8 @@ void PreviewModel::setSmoothStarErase(bool enabled)
         return;
     }
     lastRegularMode_ = enabled ? RenderMode::Native : RenderMode::EraseByArea;
-    if (surface()->muriRenderMode() != RenderMode::MaimuriDxStyle) {
+    if (surface()->muriRenderMode() == RenderMode::Native
+        || surface()->muriRenderMode() == RenderMode::EraseByArea) {
         surface()->setMuriRenderMode(lastRegularMode_);
     }
     refreshFromBackend();

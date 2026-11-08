@@ -1,4 +1,5 @@
 #include "export/video_export/VideoExportSnapshot.h"
+#include "export/video_export/VideoExportSettings.h"
 #include "export/video_export/VideoExportRuntimePolicy.h"
 
 #include "core/chart/document/SimaiDocument.h"
@@ -26,6 +27,8 @@ using miacode::timeline::offset::shiftedNoteMarkers;
 QString outlineVariantToken(PreviewOutlineVariant variant)
 {
     switch (variant) {
+    case PreviewOutlineVariant::None:
+        return QStringLiteral("none");
     case PreviewOutlineVariant::Point:
         return QStringLiteral("point");
     case PreviewOutlineVariant::JudgeArea:
@@ -41,6 +44,7 @@ QString outlineVariantToken(PreviewOutlineVariant variant)
 PreviewOutlineVariant outlineVariantFromToken(const QString& token)
 {
     const QString normalized = token.trimmed().toLower();
+    if (normalized == QLatin1String("none")) return PreviewOutlineVariant::None;
     if (normalized == QLatin1String("point")) {
         return PreviewOutlineVariant::Point;
     }
@@ -84,20 +88,6 @@ VideoExportPreset videoExportPresetFromToken(const QString& token)
     // Unknown/missing token -> the safe default (synchronous readback, no
     // tearing), matching the dialog's default export-quality choice.
     return VideoExportPreset::HighQuality;
-}
-
-VideoExportSizePreset videoExportSizePresetFromToken(const QString& token)
-{
-    if (token.compare(QStringLiteral("compact"), Qt::CaseInsensitive) == 0) {
-        return VideoExportSizePreset::Compact;
-    }
-    if (token.compare(QStringLiteral("ultra_compact"), Qt::CaseInsensitive) == 0) {
-        return VideoExportSizePreset::UltraCompact;
-    }
-    if (token.compare(QStringLiteral("ultra_compact_with_pv"), Qt::CaseInsensitive) == 0) {
-        return VideoExportSizePreset::UltraCompactWithPv;
-    }
-    return VideoExportSizePreset::Standard;
 }
 
 PreviewBackgroundScaleMode backgroundScaleModeFromToken(const QString& token)
@@ -219,6 +209,11 @@ QJsonObject VideoExportSnapshot::toJson() const
     render.insert(QStringLiteral("measure_line_custom_beats"), measureLineCustomBeats);
     render.insert(QStringLiteral("show_object_stats_hud"), showObjectStatsHud);
     render.insert(QStringLiteral("show_chart_info_hud"), showChartInfoHud);
+    render.insert(QStringLiteral("show_bpm_hud"), showBpmHud);
+    render.insert(QStringLiteral("show_cps_hud"), showCpsHud);
+    render.insert(QStringLiteral("show_meter_hud"), showMeterHud);
+    render.insert(QStringLiteral("show_mods_hud"), showModsHud);
+
     render.insert(QStringLiteral("clock_count_enabled"), clockCountEnabled);
     render.insert(
         QStringLiteral("center_display_mode"),
@@ -241,6 +236,8 @@ QJsonObject VideoExportSnapshot::toJson() const
     exportObject.insert(
         QStringLiteral("size_preset"),
         miacode::video_export::videoExportSizePresetToken(sizePreset));
+    exportObject.insert(QStringLiteral("target_video_bitrate_mbps"), targetVideoBitrateMbps);
+    exportObject.insert(QStringLiteral("include_pv"), includePv);
     exportObject.insert(QStringLiteral("full_range_export"), fullRangeExport);
     exportObject.insert(QStringLiteral("output_path"), outputPath);
     exportObject.insert(QStringLiteral("output_mode"), videoExportOutputModeToken(outputMode));
@@ -264,6 +261,9 @@ QJsonObject VideoExportSnapshot::toJson() const
     introObject.insert(QStringLiteral("font_display_path"), intro.fontDisplayPath);
     introObject.insert(QStringLiteral("font_body_path"), intro.fontBodyPath);
     introObject.insert(QStringLiteral("pv_preview"), intro.pvPreview);
+    introObject.insert(QStringLiteral("chart_preview"), intro.chartPreview);
+    introObject.insert(QStringLiteral("pv_preview_end_seconds"), intro.pvPreviewEndSeconds);
+    introObject.insert(QStringLiteral("preview_window_source"), static_cast<int>(intro.previewWindowSource));
     introObject.insert(QStringLiteral("pv_preview_start_seconds"), intro.pvPreviewStartSeconds);
     introObject.insert(QStringLiteral("pv_preview_brightness"), intro.pvPreviewBrightness);
     if (!introSoundFileName.trimmed().isEmpty()) {
@@ -395,6 +395,10 @@ bool VideoExportSnapshot::fromJson(
         render.value(QStringLiteral("show_object_stats_hud")).toBool(parsed.showObjectStatsHud);
     parsed.showChartInfoHud =
         render.value(QStringLiteral("show_chart_info_hud")).toBool(parsed.showChartInfoHud);
+    parsed.showBpmHud = render.value(QStringLiteral("show_bpm_hud")).toBool(false);
+    parsed.showCpsHud = render.value(QStringLiteral("show_cps_hud")).toBool(false);
+    parsed.showMeterHud = render.value(QStringLiteral("show_meter_hud")).toBool(false);
+    parsed.showModsHud = render.value(QStringLiteral("show_mods_hud")).toBool(false);
     parsed.clockCountEnabled =
         render.value(QStringLiteral("clock_count_enabled")).toBool(parsed.clockCountEnabled);
     parsed.centerDisplayMode = miacode::preview_gameplay::centerDisplayModeFromToken(
@@ -417,8 +421,20 @@ bool VideoExportSnapshot::fromJson(
     parsed.audioBitrateKbps = exportObject.value(QStringLiteral("audio_bitrate_kbps"))
                                   .toInt(parsed.audioBitrateKbps);
     parsed.preset = videoExportPresetFromToken(exportObject.value(QStringLiteral("preset")).toString());
-    parsed.sizePreset = videoExportSizePresetFromToken(
-        exportObject.value(QStringLiteral("size_preset")).toString());
+    parsed.sizePreset = miacode::video_export::videoExportSizePresetFromPreference(
+        exportObject.value(QStringLiteral("size_preset")), parsed.sizePreset);
+    parsed.targetVideoBitrateMbps = miacode::video_export::normalizedCustomVideoBitrateMbps(
+        exportObject.value(QStringLiteral("target_video_bitrate_mbps")).toDouble(parsed.targetVideoBitrateMbps));
+    parsed.includePv = exportObject.value(QStringLiteral("include_pv"))
+        .toBool(!miacode::video_export::legacySizePresetOmitsPv(parsed.sizePreset));
+    const double legacyBitrate = miacode::video_export::legacySizePresetVideoBitrateMbps(
+        parsed.sizePreset, parsed.outputWidth, parsed.outputHeight, parsed.fps);
+    if (legacyBitrate > 0.0) {
+        parsed.targetVideoBitrateMbps = legacyBitrate;
+        parsed.audioBitrateKbps = miacode::video_export::effectiveVideoExportAudioBitrateKbps(
+            parsed.sizePreset, parsed.audioBitrateKbps);
+        parsed.sizePreset = VideoExportSizePreset::Custom;
+    }
     parsed.fullRangeExport = exportObject.value(QStringLiteral("full_range_export")).toBool(parsed.fullRangeExport);
     parsed.outputPath = exportObject.value(QStringLiteral("output_path")).toString();
     parsed.outputMode = videoExportOutputModeFromToken(exportObject.value(QStringLiteral("output_mode")).toString());
@@ -450,6 +466,13 @@ bool VideoExportSnapshot::fromJson(
         introObject.value(QStringLiteral("pv_preview")).toBool(parsed.intro.pvPreview);
     parsed.intro.pvPreviewStartSeconds = qMax(
         0.0, introObject.value(QStringLiteral("pv_preview_start_seconds")).toDouble(parsed.intro.pvPreviewStartSeconds));
+    parsed.intro.chartPreview = parsed.intro.pvPreview && introObject.value(QStringLiteral("chart_preview")).toBool();
+    parsed.intro.pvPreviewEndSeconds = qMax(0.0,
+        introObject.value(QStringLiteral("pv_preview_end_seconds")).toDouble());
+    const int source = introObject.value(QStringLiteral("preview_window_source")).toInt(-1);
+    using IntroWindowSource = miacode::chart_preview::IntroWindowSource;
+    if (source >= static_cast<int>(IntroWindowSource::Explicit) && source <= static_cast<int>(IntroWindowSource::Default))
+        parsed.intro.previewWindowSource = static_cast<IntroWindowSource>(source);
     parsed.intro.pvPreviewBrightness = qBound(
         0.0, introObject.value(QStringLiteral("pv_preview_brightness")).toDouble(parsed.intro.pvPreviewBrightness), 1.0);
     parsed.introSoundFileName = QFileInfo(introObject.value(QStringLiteral("sound_file")).toString()).fileName();
@@ -525,14 +548,19 @@ bool buildVideoExportTaskFromSnapshot(
     built.outputPath = snapshot.outputPath;
     built.outputMode = snapshot.outputMode;
     built.chartPath = snapshot.originalChartPath;
-    built.backgroundMediaPath = miacode::chart_assets::resolvePreferredBackgroundMediaPath(
-        snapshot.originalChartPath,
-        snapshot.backgroundMediaPath
-    );
+    if (usesBackgroundMedia(backgroundPolicyForRenderMode(snapshot.muriRenderOptions.renderMode))) {
+        built.backgroundMediaPath = miacode::chart_assets::isSupportedBackgroundMediaPath(
+            snapshot.backgroundMediaPath, snapshot.includePv)
+            ? snapshot.backgroundMediaPath
+            : miacode::chart_assets::resolvePreferredBackgroundMediaPath(
+                snapshot.originalChartPath, snapshot.backgroundMediaPath, snapshot.includePv);
+    }
     built.trackPath = snapshot.trackPath;
     built.skinDirectory = snapshot.skinDirectory;
     built.noteMarkers =
         shiftedNoteMarkers(nativeResult.noteMarkers, firstSeconds, NonFiniteHandling::Propagate);
+    built.timingPoints = nativeResult.timingPoints;
+    for (auto& point : built.timingPoints) point.second += firstSeconds;
     built.audioSettings = snapshot.audioSettings;
     built.audioSettings.normalize();
     built.timingSettings = snapshot.timingSettings;
@@ -561,6 +589,8 @@ bool buildVideoExportTaskFromSnapshot(
     built.audioBitrateKbps = qBound(96, snapshot.audioBitrateKbps, 320);
     built.preset = snapshot.preset;
     built.sizePreset = snapshot.sizePreset;
+    built.targetVideoBitrateMbps = snapshot.targetVideoBitrateMbps;
+    built.includePv = snapshot.includePv;
     built.fullRangeExport = snapshot.fullRangeExport;
     built.showTimestamp = snapshot.showTimestamp;
     built.showHandOrderAnnotations = snapshot.showHandOrderAnnotations;
@@ -578,6 +608,11 @@ bool buildVideoExportTaskFromSnapshot(
         miacode::preview::scene::normalizedMeasureLineMode(built.measureLineMode), built.measureLineCustomBeats, firstSeconds);
     built.showObjectStatsHud = snapshot.showObjectStatsHud;
     built.showChartInfoHud = snapshot.showChartInfoHud;
+    built.showBpmHud = snapshot.showBpmHud;
+    built.showCpsHud = snapshot.showCpsHud;
+    built.showMeterHud = snapshot.showMeterHud;
+    built.showModsHud = snapshot.showModsHud;
+
     // Reconstruct chart metadata from the parsed SimaiDocument so the
     // out-of-process worker can populate the chart info HUD without
     // shipping the strings separately. Per-difficulty designer takes

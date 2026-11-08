@@ -72,14 +72,14 @@ PreviewQuickExportSession::~PreviewQuickExportSession()
 
 void PreviewQuickExportSession::setBackgroundFrame(const QImage& image, bool cacheable, bool fullFrame, qreal brightness)
 {
-    backgroundEnabled_ = true;
+    backgroundEnabled_ = usesBackgroundMedia(frameState_.render.backgroundPolicy);
     backgroundFullFrame_ = fullFrame;
     backgroundBrightness_ = brightness;
     frameState_.media.resolvedStageImage = image;
     frameState_.media.resolvedStageImageCacheable = cacheable;
     frameState_.media.stageMediaSerial = image.cacheKey();
     if (backgroundItem_) {
-        backgroundItem_->setVisible(true);
+        backgroundItem_->setVisible(backgroundEnabled_);
         backgroundItem_->setFrameState(frameState_, fullFrame, brightness);
     }
 }
@@ -815,7 +815,9 @@ bool PreviewQuickExportSession::convertBottomUpReadbackToRgba(
     // returns nullptr, so the per-pixel `dst[...] = ...` store faults on a
     // near-null address. Allocating explicitly here routes any OOM through the
     // checked isNull() path instead of crashing the export worker.
-    const QImage::Format outputFormat = preservePremultipliedReadback_
+    const bool preservePremultiplied = preservePremultipliedReadback_
+        || frameState_.render.backgroundPolicy == BackgroundPolicy::Transparent;
+    const QImage::Format outputFormat = preservePremultiplied
         ? QImage::Format_RGBA8888_Premultiplied
         : QImage::Format_RGBA8888;
     if (frame->isNull()
@@ -846,7 +848,7 @@ bool PreviewQuickExportSession::convertBottomUpReadbackToRgba(
             }
             return false;
         }
-        if (preservePremultipliedReadback_) {
+        if (preservePremultiplied) {
             std::memcpy(outputRow, sourceRowBytes, static_cast<size_t>(expectedBytesPerRow));
             continue;
         }
@@ -1212,7 +1214,8 @@ bool PreviewQuickExportSession::renderSceneIntoFramebuffer(QString* errorMessage
     }
 
     gl->glViewport(0, 0, framebuffer_->width(), framebuffer_->height());
-    gl->glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    gl->glClearColor(0.0f, 0.0f, 0.0f,
+        frameState_.render.backgroundPolicy == BackgroundPolicy::OpaqueBlack ? 1.0f : 0.0f);
     gl->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     framebuffer_->release();
 
@@ -1320,15 +1323,24 @@ void PreviewQuickExportSession::applyFrameSize()
     rootItem_->setSize(QSizeF(frameSize_));
 
     backgroundItem_->setSize(QSizeF(frameSize_));
-    sceneRoot_->setPosition(QPointF(0.0, 0.0));
-    sceneRoot_->setSize(QSizeF(frameSize_));
-    sceneRoot_->update();
-
-    hudLayer_->setPosition(QPointF(0.0, 0.0));
-    hudLayer_->setSize(QSizeF(frameSize_));
-    hudLayer_->update();
+    applyChartGeometry();
 
     applyIntroGeometry();
+}
+
+void PreviewQuickExportSession::applyChartGeometry()
+{
+    if (!sceneRoot_ || !hudLayer_) return;
+    const double x = introChartPreviewSplit_ ? frameSize_.width() * 0.5 : 0.0;
+    const QSizeF size(frameSize_.width() - x, frameSize_.height());
+    sceneRoot_->setPosition(QPointF(x, 0.0));
+    sceneRoot_->setSize(size);
+    sceneRoot_->setClip(introChartPreviewSplit_);
+    sceneRoot_->update();
+    hudLayer_->setPosition(QPointF(x, 0.0));
+    hudLayer_->setSize(size);
+    hudLayer_->setClip(introChartPreviewSplit_);
+    hudLayer_->update();
 }
 
 void PreviewQuickExportSession::applyIntroGeometry()
@@ -1340,15 +1352,16 @@ void PreviewQuickExportSession::applyIntroGeometry()
     // height around its centre and centre it horizontally; anything past the
     // frame edges is clipped by the framebuffer viewport, which gives the
     // requested "centre crop of the 16:9 intro" for 4:3 / 1:1 outputs.
-    constexpr double kNativeW = 1920.0;
     constexpr double kNativeH = 1080.0;
     const double frameW = qMax(1, frameSize_.width());
     const double frameH = qMax(1, frameSize_.height());
-    introItem_->setWidth(kNativeW);
+    const double nativeWidth = introItem_->property("chartPreviewMode").toBool()
+        ? frameW * kNativeH / frameH : 1920.0;
+    introItem_->setWidth(nativeWidth);
     introItem_->setHeight(kNativeH);
     introItem_->setTransformOrigin(QQuickItem::Center);
     introItem_->setScale(frameH / kNativeH);
-    introItem_->setX(frameW / 2.0 - kNativeW / 2.0);
+    introItem_->setX(frameW / 2.0 - nativeWidth / 2.0);
     introItem_->setY(frameH / 2.0 - kNativeH / 2.0);
 }
 
@@ -1358,6 +1371,7 @@ void PreviewQuickExportSession::destroyIntroOverlay()
     // with the window during invalidate(); here we only drop our references.
     introItem_ = nullptr;
     introActive_ = false;
+    introChartPreviewSplit_ = false;
 }
 
 bool PreviewQuickExportSession::setupIntroOverlay(const QUrl& qmlUrl, QString* errorMessage)
@@ -1431,6 +1445,7 @@ void PreviewQuickExportSession::setIntroBannerData(
     for (auto it = style.constBegin(); it != style.constEnd(); ++it) {
         introItem_->setProperty(it.key().toUtf8().constData(), it.value());
     }
+    applyIntroGeometry();
 }
 
 void PreviewQuickExportSession::setChartLayersVisible(bool visible)
@@ -1453,11 +1468,21 @@ void PreviewQuickExportSession::setIntroFrame(int authoringFrame, bool active)
         introItem_->setProperty("frame", authoringFrame);
     }
     introItem_->setVisible(active);
+    const bool split = active && introItem_->property("chartPreviewMode").toBool()
+        && authoringFrame < introItem_->property("pvPreviewHoldFrames").toInt();
+    if (introChartPreviewSplit_ != split) {
+        introChartPreviewSplit_ = split;
+        applyChartGeometry();
+    }
 }
 
 void PreviewQuickExportSession::applyFrameState()
 {
-    if (backgroundItem_ && backgroundEnabled_) {
+    const BackgroundPolicy policy = frameState_.render.backgroundPolicy;
+    if (quickWindow_) quickWindow_->setColor(policy == BackgroundPolicy::OpaqueBlack
+        ? QColor(Qt::black) : QColor(Qt::transparent));
+    if (backgroundItem_) {
+        backgroundItem_->setVisible(backgroundEnabled_ && usesBackgroundMedia(policy));
         backgroundItem_->setFrameState(frameState_, backgroundFullFrame_, backgroundBrightness_);
     }
     bindFrameStateIfNeeded();

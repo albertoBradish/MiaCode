@@ -481,6 +481,17 @@ Item {
             }
             AppMenuSeparator {}
             AppMenuAction {
+                text: qsTrId("tools.dx_loss.title")
+                enabled: root.commandsEnabled && root.documentAvailable
+                onTriggered: root.commands.scoreLossRequested()
+            }
+            AppMenuAction {
+                text: qsTrId("tools.bpm.title")
+                enabled: root.commandsEnabled && root.documentAvailable
+                onTriggered: root.commands.bpmExportRequested()
+            }
+
+            AppMenuAction {
                 text: qsTrId("dialog.unsaved_field_changes.field.metadata")
                 enabled: root.commandsEnabled && root.toolCommandsEnabled
                 onTriggered: root.commands.metadataRequested()

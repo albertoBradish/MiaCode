@@ -20,6 +20,10 @@ struct PreviewPreparedSceneCacheKey {
     double touchFlowSpeed = 0.0;
     RenderMode renderMode = RenderMode::Native;
     bool showSlideTracks = true;
+    bool showSlideJudgementTiming = false;
+    bool slideTimingFromLaunchBeat = false;
+    bool slideTimingEarlyPerfectFromHead = false;
+    quintptr slideTimingLaunchBeatIdentity = 0;
     bool showJudgeMarkers = false;
     bool showTouchTrail = false;
     bool showSlideJudgementTiming = false;

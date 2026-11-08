@@ -2,6 +2,7 @@
 #include "common/LocalizedText.h"
 
 #include "app/ui/export/CoverExportSession.h"
+#include "export/cover_export/CoverBatchExportPolicy.h"
 #include "app/ui/document/DifficultyOptions.h"
 #include "app/ui/preferences/LocaleService.h"
 
@@ -27,6 +28,12 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QSaveFile>
+#include <QElapsedTimer>
+#include <QMap>
+#include <QEventLoop>
+#include <limits>
+#include <cmath>
 #include <QHash>
 #include <QImage>
 #include <QJsonDocument>
@@ -207,6 +214,11 @@ double CoverExportSession::activeChartFrameSeconds() const
 
 QVariantList CoverExportSession::builtinPresets() const
 {
+    return builtinPresetChoices();
+}
+
+QVariantList CoverExportSession::builtinPresetChoices()
+{
     return {
         QVariantMap{{QStringLiteral("id"), QStringLiteral("card")},
                     {QStringLiteral("label"), qtTrId("cover.centered_card_default")},
@@ -221,6 +233,155 @@ QVariantList CoverExportSession::builtinPresets() const
                     {QStringLiteral("label"), qtTrId("cover.pure_chart_frame")},
                     {QStringLiteral("requiresChartFrame"), true}},
     };
+}
+
+QVariantList CoverExportSession::batchPresetOptions()
+{
+    QVariantList options{QVariantMap{{QStringLiteral("value"), QString()},
+                                   {QStringLiteral("label"), qtTrId("dialog.batch_export.cover_none")}}};
+    for (const auto& choice : builtinPresetChoices()) {
+        const auto row = choice.toMap();
+        options.append(QVariantMap{{QStringLiteral("value"), QStringLiteral("builtin:") + row.value(QStringLiteral("id")).toString()},
+                                   {QStringLiteral("label"), row.value(QStringLiteral("label"))}});
+    }
+    for (const auto& preset : miacode::app_preferences::coverExportPreferences().loadUserPresets()) {
+        options.append(QVariantMap{{QStringLiteral("value"), QStringLiteral("user:") + preset.name},
+                                   {QStringLiteral("label"), preset.name}});
+    }
+    for (const auto& path : miacode::app_preferences::coverExportPreferences().loadRecentFiles()) {
+        options.append(QVariantMap{{QStringLiteral("value"), QStringLiteral("file:") + path},
+                                   {QStringLiteral("label"), QFileInfo(path).fileName()}});
+    }
+    return options;
+}
+
+QImage CoverExportSession::renderPresetCover(
+    miacode::ExportEngine& engine, miacode::UiRequestService& requests,
+    const VideoExportTask& task, const QString& presetToken, double frameSeconds,
+    QString* errorMessage, QStringList* frameAdjustments)
+{
+    if (errorMessage) errorMessage->clear();
+    miacode::PlaybackControl* control = nullptr;
+    CoverExportSession session(engine, requests, control);
+    session.batchExportMode_ = true;
+    session.seedFromTask(task);
+    QJsonObject composition;
+    if (presetToken.startsWith(QLatin1String("builtin:"))) {
+        composition = session.builtinPresetComposition(presetToken.mid(8));
+    } else if (presetToken.startsWith(QLatin1String("user:"))) {
+        for (const auto& preset : miacode::app_preferences::coverExportPreferences().loadUserPresets()) {
+            if (preset.name == presetToken.mid(5)) {
+                composition = preset.composition;
+                break;
+            }
+        }
+    }
+    if (presetToken.startsWith(QLatin1String("file:"))) {
+        QFile file(presetToken.mid(5));
+        if (file.open(QIODevice::ReadOnly))
+            composition = QJsonDocument::fromJson(file.readAll()).object();
+    }
+    if (composition.isEmpty() || !session.applyCompositionJsonInternal(composition, false, false)) {
+        if (errorMessage) *errorMessage = qtTrId("dialog.batch_export.cover_preset_unavailable");
+        return {};
+    }
+    const auto frames = session.layout_->visibleChartFrameLayers();
+    const bool currentFrame = std::isfinite(frameSeconds);
+    const auto time = miacode::cover_export::coverPreviewFrameTime(
+        frameSeconds, task.intro.enabled, task.intro.pvPreview, task.intro.pvPreviewStartSeconds);
+    const bool needsPv = std::any_of(frames.cbegin(), frames.cend(), [](const auto* layer) {
+        return layer->frameBgUsesPv();
+    });
+    const double pvEnd = needsPv && !session.pvMediaPath_.isEmpty()
+        ? miacode::cover_export::CoverPvFrameSource::latestSeekableSecond(session.pvMediaPath_) : -1.0;
+    const int frameSide = qBound(512, qMax(session.outputWidth(), session.outputHeight()), 4096);
+    if (!frames.isEmpty()) {
+        // Initialize the capture surface once. Pump only non-input events while
+        // waiting: all task/preset data was copied before entering this method.
+        session.frameRenderer_->prepareCaptureWindow(frameSide, currentFrame ? time.chartSeconds : frames.first()->frameSeconds());
+        QElapsedTimer readyTimer;
+        readyTimer.start();
+        while (!session.frameRenderer_->captureReady() && readyTimer.elapsed() < 1500) {
+            QEventLoop loop;
+            QTimer::singleShot(16, &loop, &QEventLoop::quit);
+            loop.exec(QEventLoop::ExcludeUserInputEvents);
+        }
+    }
+    QMap<double, QImage> chartFrames;
+    QMap<double, QImage> pvFrames;
+    for (auto* layer : frames) {
+        const double requested = currentFrame ? time.chartSeconds : layer->frameSeconds();
+        const double bounded = currentFrame ? requested
+            : miacode::cover_export::boundedBatchCoverFrameSeconds(
+                requested, session.chartFrameDuration_, layer->frameBgUsesPv() ? pvEnd : -1.0);
+        layer->setFrameSeconds(bounded);
+        if (frameAdjustments != nullptr && !qFuzzyCompare(requested + 1.0, bounded + 1.0)) {
+            frameAdjustments->append(qtTrId("dialog.batch_export.cover_frame_adjusted")
+                .arg(layer->label()).arg(requested, 0, 'f', 2).arg(bounded, 0, 'f', 2));
+        }
+        QString error;
+        // Collage layers at the same explicit time share one frozen grab.
+        QImage chartImage = chartFrames.value(bounded);
+        if (chartImage.isNull()) {
+            if (currentFrame && time.hideChart) {
+                chartImage = QImage(frameSide, frameSide, QImage::Format_ARGB32_Premultiplied);
+                chartImage.fill(Qt::transparent);
+            } else {
+                chartImage = session.frameRenderer_->renderAt(bounded, frameSide, &error);
+            }
+        }
+        if (chartImage.isNull()) {
+            if (errorMessage) *errorMessage = error.isEmpty() ? qtTrId("cover.could_not_render_the_chart") : error;
+            return {};
+        }
+        chartFrames.insert(bounded, chartImage);
+        session.layout_->setLayerImage(layer->key(), chartImage);
+        if (layer->frameBgUsesPv() && !session.pvMediaPath_.isEmpty()) {
+            const double requestedPvSeconds = currentFrame ? time.pvSeconds : bounded;
+            const double pvSeconds = pvEnd >= 0.0 ? qMin(requestedPvSeconds, pvEnd) : requestedPvSeconds;
+            QImage pvImage = pvFrames.value(pvSeconds);
+            if (pvImage.isNull())
+                pvImage = miacode::cover_export::CoverPvFrameSource::decodeFrame(
+                    session.pvMediaPath_, pvSeconds, frameSide, &error);
+            if (pvImage.isNull()) {
+                if (errorMessage) *errorMessage = error;
+                return {};
+            }
+            pvFrames.insert(pvSeconds, pvImage);
+            session.layout_->setLayerPvFrame(layer->key(), pvImage);
+        }
+    }
+    return miacode::cover_export::renderCoverComposite(
+        session.layout_.get(), session.buildInputs(),
+        QSize(session.outputWidth(), session.outputHeight()), errorMessage);
+}
+
+miacode::cover_export::CoverExportResult CoverExportSession::exportPresetCover(
+    miacode::ExportEngine& engine, miacode::UiRequestService& requests,
+    const VideoExportTask& task, const QString& presetToken, double frameSeconds,
+    const QString& outputPath)
+{
+    QString error;
+    const QImage image = renderPresetCover(engine, requests, task, presetToken, frameSeconds, &error);
+    if (image.isNull()) return {false, {}, error};
+    QSaveFile file(outputPath);
+    if (!file.open(QIODevice::WriteOnly) || !image.save(&file, "PNG") || !file.commit())
+        return {false, {}, file.errorString()};
+    return {true, outputPath, {}};
+}
+
+miacode::cover_export::CoverExportResult CoverExportSession::exportBatchCover(
+    miacode::ExportEngine& engine, miacode::UiRequestService& requests,
+    const VideoExportTask& task, const QString& presetToken, const QString& outputPath,
+    QStringList* frameAdjustments)
+{
+    QString error;
+    const QImage image = renderPresetCover(engine, requests, task, presetToken, std::numeric_limits<double>::quiet_NaN(), &error, frameAdjustments);
+    if (image.isNull()) return {false, {}, error};
+    QSaveFile file(outputPath);
+    if (!file.open(QIODevice::WriteOnly) || !image.save(&file, "PNG") || !file.commit())
+        return {false, {}, file.errorString()};
+    return {true, outputPath, {}};
 }
 
 void CoverExportSession::enter(int preferredDifficultyId)
@@ -309,10 +470,14 @@ void CoverExportSession::selectDifficulty(int difficultyId)
 
 void CoverExportSession::seedFromDifficulty(int difficultyId)
 {
+    seedFromTask(exportEngine_.buildSeedTask(difficultyId));
+}
+
+void CoverExportSession::seedFromTask(const VideoExportTask& nextTask)
+{
     commitActiveLayerFrameSeconds();
     stopAndDetachLiveChartScene();
     setBusy(true);
-    const VideoExportTask nextTask = exportEngine_.buildSeedTask(difficultyId);
     const bool chartChanged = task_.chartPath != nextTask.chartPath;
     const bool loadProjectSettings = chartChanged || !hasLoadedPreferences_;
     if (chartChanged) flushComposition();
@@ -356,7 +521,11 @@ void CoverExportSession::seedFromDifficulty(int difficultyId)
         saved.remove(QStringLiteral("outputFile"));
         saved.remove(QStringLiteral("output"));
         if (!saved.isEmpty()) {
-            applyCompositionJson(saved, false);
+            if (batchExportMode_) {
+                applyCompositionJsonInternal(saved, false, false);
+            } else {
+                applyCompositionJson(saved, false);
+            }
         }
         hasLoadedPreferences_ = true;
     }
@@ -411,7 +580,7 @@ void CoverExportSession::seedFromDifficulty(int difficultyId)
     // Warm the secondary capture surface without making it a prerequisite for
     // the live preview. By the time the user switches away from the active
     // chart frame, the surface has had normal event-loop time to initialize.
-    if (chartFrameAvailable_ && !visibleChartFrames.isEmpty() && frameRenderer_ != nullptr) {
+    if (!batchExportMode_ && chartFrameAvailable_ && !visibleChartFrames.isEmpty() && frameRenderer_ != nullptr) {
         frameRenderer_->prepareCaptureWindow(
             qBound(512, qMax(outputWidth(), outputHeight()), 2048),
             activeChartFrameSeconds());
@@ -478,6 +647,7 @@ bool CoverExportSession::renderChartFrame(miacode::cover_export::CoverLayer* lay
 
 void CoverExportSession::syncPlaybackFromActiveLayer()
 {
+    if (batchExportMode_) return;
     if (playback_ == nullptr) {
         return;
     }
@@ -522,7 +692,7 @@ void CoverExportSession::onPlaybackReachedEnd()
     commitActiveLayerFrameSeconds();
 }
 
-bool CoverExportSession::renderVisibleChartFramesForExport(int sidePx)
+bool CoverExportSession::renderVisibleChartFramesForExport(int sidePx, bool reportErrors)
 {
     if (!chartFrameAvailable_ || layout_ == nullptr) {
         return true;
@@ -535,7 +705,7 @@ bool CoverExportSession::renderVisibleChartFramesForExport(int sidePx)
             return false;
         }
         layer->setFrameSeconds(frame.seconds);
-        if (!renderChartFrame(layer, sidePx, true)) {
+        if (!renderChartFrame(layer, sidePx, reportErrors)) {
             return false;
         }
         if (layer->frameBgUsesPv() && !pvMediaPath_.isEmpty()) {
@@ -545,8 +715,10 @@ bool CoverExportSession::renderVisibleChartFramesForExport(int sidePx)
             const QImage pvFrame = miacode::cover_export::CoverPvFrameSource::decodeFrame(
                 pvMediaPath_, frame.seconds, sidePx, &error);
             if (pvFrame.isNull()) {
-                notifyError(miacode::localizedText("cover.chart_frame"),
-                            miacode::localizedText("cover.could_not_render_the_chart"), error);
+                if (reportErrors) {
+                    notifyError(miacode::localizedText("cover.chart_frame"),
+                                miacode::localizedText("cover.could_not_render_the_chart"), error);
+                }
                 return false;
             }
             layout_->setLayerPvFrame(layer->key(), pvFrame);
@@ -557,6 +729,7 @@ bool CoverExportSession::renderVisibleChartFramesForExport(int sidePx)
 
 void CoverExportSession::requestPvFrame(miacode::cover_export::CoverLayer* layer)
 {
+    if (batchExportMode_) return;
     if (layer == nullptr || layout_ == nullptr || layer->kind() != QStringLiteral("chartFrame")) {
         return;
     }
@@ -853,6 +1026,18 @@ void CoverExportSession::setActiveLayerTextColor(const QString& color)
         layer->setTextColor(color); persistComposition();
     }
 }
+void CoverExportSession::setActiveLayerTextEffect(const QString& property, const QVariant& value)
+{
+    auto* layer = activeCoverLayer();
+    if (!layer || layer->kind() != QStringLiteral("text")) return;
+    static const QStringList properties = {"textStrokeEnabled", "textStrokeColor", "textStrokeWidth",
+        "textShadowEnabled", "textShadowColor", "textShadowOpacity", "textShadowBlur",
+        "textShadowOffsetX", "textShadowOffsetY"};
+    if (!properties.contains(property)) return;
+    layer->setProperty(property.toUtf8().constData(), value);
+    persistComposition();
+}
+
 void CoverExportSession::setActiveLayerTextBold(bool bold)
 {
     if (auto* layer = activeCoverLayer(); layer != nullptr && layer->kind() == QStringLiteral("text")) {
@@ -1274,6 +1459,7 @@ bool CoverExportSession::applyCompositionJsonInternal(const QJsonObject& root,
             layout_->clearLayerImage(frame->key());
         }
         if (!chartFrameAvailable_) {
+            if (batchExportMode_ && !layout_->visibleChartFrameLayers().isEmpty()) return false;
             for (auto* frame : layout_->chartFrameLayers()) {
                 frame->setVisible(false);
             }
@@ -1352,12 +1538,14 @@ bool CoverExportSession::applyCompositionJson(const QJsonObject& root, bool repo
 
 void CoverExportSession::persistComposition()
 {
+    if (batchExportMode_) return;
     compositionDirty_ = true;
     compositionSaveTimer_.start();
 }
 
 void CoverExportSession::flushComposition()
 {
+    if (batchExportMode_) return;
     compositionSaveTimer_.stop();
     if (compositionDirty_
         && miacode::app_preferences::coverExportPreferences().savePreferences(sharedCompositionJson())) {

@@ -1,3 +1,16 @@
+miacode_add_dev_tool(cli_integration_spec TEST
+    SOURCES
+        src/tools/services/CliIntegrationSpec.cpp
+        src/app/services/CliIntegration.cpp
+        src/app/services/CliIntegration.h
+        src/app/services/PreferenceDocument.cpp
+    LIBS miacode_base Qt6::Core $<$<PLATFORM_ID:Windows>:User32> $<$<PLATFORM_ID:Windows>:Advapi32>
+    INCLUDES src
+)
+target_compile_definitions(cli_integration_spec PRIVATE
+    "MIACODE_TEST_OUTPUT_ROOT=\"${CMAKE_CURRENT_BINARY_DIR}\""
+)
+
 miacode_add_dev_tool(net_api_contract_spec TEST
     SOURCES
         src/tools/services/NetApiContractSpec.cpp
@@ -69,6 +82,7 @@ miacode_add_dev_tool(chart_workspace_file_service_spec TEST
         src/tools/services/ChartWorkspaceFileServiceSpec.cpp
         src/app/services/ChartWorkspace.cpp
         src/app/services/ChartWorkspace.h
+        src/app/services/ChartFileSafety.cpp
         src/app/services/ChartWorkspaceFileService.cpp
         src/app/services/ChartWorkspaceFileService.h
     LIBS miacode_chart Qt6::Core Qt6::Gui
@@ -127,6 +141,7 @@ miacode_add_dev_tool(editor_page_router_spec TEST
         src/app/services/ChartWorkspace.h
         src/app/services/ChartWorkspace.cpp
         src/app/services/ChartWorkspaceFileService.h
+        src/app/services/ChartFileSafety.cpp
         src/app/services/ChartWorkspaceFileService.cpp
         src/app/services/EditorPageRouter.h
         src/app/services/EditorSyncController.h
@@ -155,6 +170,7 @@ miacode_add_dev_tool(export_engine_spec TEST
         src/app/services/ChartWorkspace.h
         src/app/services/ChartWorkspace.cpp
         src/app/services/ChartWorkspaceFileService.h
+        src/app/services/ChartFileSafety.cpp
         src/app/services/ChartWorkspaceFileService.cpp
         src/app/services/EditorSyncController.h
         src/app/services/EditorSyncController.cpp
@@ -192,6 +208,7 @@ miacode_add_dev_tool(application_services_spec TEST
         src/app/services/ChartWorkspace.h
         src/app/services/ChartWorkspace.cpp
         src/app/services/ChartWorkspaceFileService.h
+        src/app/services/ChartFileSafety.cpp
         src/app/services/ChartWorkspaceFileService.cpp
         src/app/services/EditorSyncController.h
         src/app/services/EditorSyncController.cpp
@@ -355,3 +372,26 @@ miacode_add_dev_tool(hud_font_preference_migration_spec TEST
 )
 target_compile_definitions(hud_font_preference_migration_spec PRIVATE
     "MIACODE_SOURCE_ROOT=\"${CMAKE_CURRENT_SOURCE_DIR}\"")
+miacode_add_dev_tool(cli_request_spec TEST
+    SOURCES src/tools/services/CliRequestSpec.cpp src/app/CliRequest.cpp
+    LIBS Qt6::Core
+    INCLUDES src
+)
+
+miacode_add_dev_tool(workflow_safety_spec TEST
+    SOURCES
+        src/tools/services/WorkflowSafetySpec.cpp
+        src/app/services/AutomaticChartPreparation.cpp
+        src/app/services/ChartFileSafety.cpp
+        src/app/services/ChartWorkspace.cpp
+        src/app/services/ChartWorkspace.h
+        src/app/services/ChartWorkspaceFileService.cpp
+        src/app/services/ChartWorkspaceFileService.h
+        src/app/services/PreferenceDocument.cpp
+    LIBS miacode_chart Qt6::Core Qt6::Gui
+    INCLUDES src)
+
+miacode_add_dev_tool(chart_structure_spec TEST
+    SOURCES src/tools/preview/ChartStructureSpec.cpp
+    LIBS miacode_analysis Qt6::Core
+    INCLUDES src)

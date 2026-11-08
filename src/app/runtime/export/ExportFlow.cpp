@@ -18,6 +18,7 @@
 #include "preview/runtime/PreviewRuntime.h"
 #include "preview/stage_media/PreviewStageMediaHost.h"
 #include "app/services/ExportPagePort.h"
+#include "app/services/AutomaticChartPreparation.h"
 #include "core/analysis/MuriAnalyzer.h"
 #include "export/video_export/VideoExportController.h"
 
@@ -217,10 +218,20 @@ QString localizeExportWorkerMessageForUiLanguage(const QString& rawMessage)
 void miacode::runtime::VideoExportHost::applySharedExportTaskSettings(const VideoExportTask& task)
 {
     session_.previewShowTimestamp_ = task.showTimestamp;
+    session_.state_.previewSlideTimingFromLaunchBeat_ = task.slideTimingFromLaunchBeat;
+    session_.state_.previewSlideTimingEarlyPerfectFromHead_ = task.slideTimingEarlyPerfectFromHead;
     session_.previewShowObjectStatsHud_ = task.showObjectStatsHud;
     session_.exportShowObjectStatsHud_ = task.showObjectStatsHud;
     session_.previewShowChartInfoHud_ = task.showChartInfoHud;
+    session_.previewShowBpmHud_ = task.showBpmHud;
+    session_.previewShowCpsHud_ = task.showCpsHud;
+    session_.previewShowMeterHud_ = task.showMeterHud;
+    session_.previewShowModsHud_ = task.showModsHud;
     session_.exportShowChartInfoHud_ = task.showChartInfoHud;
+    session_.exportShowBpmHud_ = task.showBpmHud;
+    session_.exportShowCpsHud_ = task.showCpsHud;
+    session_.exportShowMeterHud_ = task.showMeterHud;
+    session_.exportShowModsHud_ = task.showModsHud;
     session_.previewBackgroundBrightnessOuter_ = qBound(0.0, task.backgroundBrightnessOuter, 1.0);
     session_.previewBackgroundBrightnessInner_ = qBound(0.0, task.backgroundBrightnessInner, 1.0);
     session_.previewLayoutSquareScale_ = miacode::preview_video::normalizedLayoutSquareScale(task.layoutSquareScale);
@@ -238,6 +249,8 @@ void miacode::runtime::VideoExportHost::applySharedExportTaskSettings(const Vide
         session_.setPreviewCanvasAspectRatio(
             static_cast<double>(task.outputWidth) / static_cast<double>(task.outputHeight), false);
     }
+    if (session_.exportPreviewActive_ && session_.previewStageMediaHost_ != nullptr)
+        session_.previewStageMediaHost_->setExportIncludePv(task.includePv);
     session_.applyPreviewStageMediaRouteVisualSettings();
     if (session_.scene_ != nullptr) {
         session_.scene_->setShowTimestamp(session_.previewShowTimestamp_);
@@ -255,6 +268,10 @@ void miacode::runtime::VideoExportHost::applySharedExportTaskSettings(const Vide
         // state is left untouched.
         if (session_.exportPreviewActive_) {
             session_.scene_->setShowChartInfoHud(task.showChartInfoHud);
+            session_.scene_->setShowBpmHud(task.showBpmHud);
+            session_.scene_->setShowCpsHud(task.showCpsHud);
+            session_.scene_->setShowMeterHud(task.showMeterHud);
+            session_.scene_->setShowModsHud(task.showModsHud);
         }
         session_.scene_->setCenterDisplayMode(session_.previewCenterDisplayMode_);
         session_.scene_->setBackgroundBrightnessOuter(session_.previewBackgroundBrightnessOuter_);
@@ -381,8 +398,14 @@ VideoExportTask miacode::runtime::VideoExportHost::buildVideoExportSeedTask(int 
         miacode::chart_clock::clockCountFromDocument(session_.applicationServices_.workspace().document()),
         miacode::preview::scene::normalizedMeasureLineMode(task.measureLineMode), task.measureLineCustomBeats,
         session_.parsedFirstSeconds());
+    task.timingPoints = session_.state_.timeline_.lastTimelineParseResult_.timingPoints;
+    for (auto& point : task.timingPoints) point.second += session_.parsedFirstSeconds();
     task.showObjectStatsHud = session_.exportShowObjectStatsHud_;
     task.showChartInfoHud = session_.exportShowChartInfoHud_;
+    task.showBpmHud = session_.exportShowBpmHud_;
+    task.showCpsHud = session_.exportShowCpsHud_;
+    task.showMeterHud = session_.exportShowMeterHud_;
+    task.showModsHud = session_.exportShowModsHud_;
     task.centerDisplayMode = session_.previewCenterDisplayMode_;
 
     const QFileInfo chartInfo(session_.currentFilePath_);
@@ -430,6 +453,7 @@ void miacode::runtime::VideoExportHost::beginExportPreviewSession(const VideoExp
     // user sees the real exported look, ignoring the "暂停时显示判定区" pause-hide option.
     session_.exportPreviewActive_ = true;
     if (session_.previewStageMediaHost_ != nullptr) {
+        session_.previewStageMediaHost_->setExportIncludePv(task.includePv);
         session_.previewStageMediaHost_->setMissingMediaFallbackEnabled(true);
     }
     session_.applyEffectivePreviewOutlineVariantToCanvas();
@@ -455,6 +479,10 @@ void miacode::runtime::VideoExportHost::applyExportPreviewChartInfo(const VideoE
     session_.scene_->setChartInfo(
         task.chartTitle, task.chartArtist, task.chartDifficultyLabel, task.chartDesigner);
     session_.scene_->setShowChartInfoHud(session_.previewShowChartInfoHud_);
+    session_.scene_->setShowBpmHud(session_.previewShowBpmHud_);
+    session_.scene_->setShowCpsHud(session_.previewShowCpsHud_);
+    session_.scene_->setShowMeterHud(session_.previewShowMeterHud_);
+    session_.scene_->setShowModsHud(session_.previewShowModsHud_);
 }
 
 void miacode::runtime::VideoExportHost::endExportPreviewSession()
@@ -471,11 +499,16 @@ void miacode::runtime::VideoExportHost::endExportPreviewSession()
             session_.state_.previewShowJudgementSkeleton_, session_.state_.previewMeasureLineMode_,
             session_.state_.previewMeasureLineCustomBeats_);
         session_.scene_->setShowChartInfoHud(false);
+        session_.scene_->setShowBpmHud(session_.previewShowBpmHud_);
+        session_.scene_->setShowCpsHud(session_.previewShowCpsHud_);
+        session_.scene_->setShowMeterHud(session_.previewShowMeterHud_);
+        session_.scene_->setShowModsHud(session_.previewShowModsHud_);
         session_.scene_->setChartInfo(QString(), QString(), QString(), QString());
     }
     // Restore normal paused-preview behaviour — the pause-hide option applies again.
     session_.exportPreviewActive_ = false;
     if (session_.previewStageMediaHost_ != nullptr) {
+        session_.previewStageMediaHost_->setExportIncludePv(std::nullopt);
         session_.previewStageMediaHost_->setMissingMediaFallbackEnabled(false);
     }
     session_.applyEffectivePreviewOutlineVariantToCanvas();
@@ -585,8 +618,11 @@ bool miacode::runtime::VideoExportHost::runBatchExport(
                 + qtTrId(trackPath.isEmpty() ? "dialog.batch_export.error.missing_track_file" : "dialog.batch_export.error.missing_chart_file"));
             continue;
         }
+        const QString currentPath = QFileInfo(session_.currentFilePath_).canonicalFilePath();
+        const bool isCurrentChart = !currentPath.isEmpty() && currentPath == QFileInfo(chartPath).canonicalFilePath();
         bool usedSystemEncoding = false;
-        const QString chartText = readTextFileWithFallbackEncoding(chartPath, &usedSystemEncoding);
+        const QString chartText = isCurrentChart ? session_.applicationServices_.workspace().document().toText()
+            : readTextFileWithFallbackEncoding(chartPath, &usedSystemEncoding);
         if (chartText.isNull()) {
             result->failedCharts.append(QDir::toNativeSeparators(chartDirectory) + QStringLiteral(" - ")
                 + qtTrId("dialog.batch_export.error.read_chart_failed")
@@ -677,6 +713,32 @@ bool miacode::runtime::VideoExportHost::runBatchExport(
         for (const auto& outputPath : videoExportOutputPaths(snapshot.outputPath, snapshot.outputMode)) {
             result->exportedFiles.append(QFileInfo(outputPath).fileName());
         }
+        if (callbacks.cancellationRequested && callbacks.cancellationRequested()) {
+            result->canceled = true;
+            break;
+        }
+        if (callbacks.exportCover) {
+            if (callbacks.progressChanged) {
+                callbacks.progressChanged(qRound(static_cast<double>(index) * 100.0 / totalJobs),
+                    qtTrId("cover.export_cover") + QStringLiteral("\n") + job.displayName);
+            }
+            VideoExportTask coverTask;
+            QString coverError;
+            QStringList adjustments;
+            QStringList coverPaths;
+            if (buildVideoExportTaskFromSnapshot(snapshot, &coverTask, &coverError)) {
+                coverPaths = callbacks.exportCover(coverTask, snapshot.outputPath, &coverError, &adjustments);
+            }
+            if (!coverError.isEmpty()) {
+                for (const auto& error : coverError.split(QLatin1Char('\n'), Qt::SkipEmptyParts))
+                    result->failedCovers.append(job.displayName + QStringLiteral(" - ") + error);
+            }
+            result->coverSuccessCount += coverPaths.size();
+            for (const auto& coverPath : coverPaths) result->exportedFiles.append(QFileInfo(coverPath).fileName());
+            for (const auto& adjustment : adjustments) {
+                result->coverAdjustments.append(job.displayName + QStringLiteral(" - ") + adjustment);
+            }
+        }
     }
     if (callbacks.progressChanged) {
         callbacks.progressChanged(100, QString());
@@ -722,6 +784,14 @@ bool miacode::runtime::VideoExportHost::startQmlExportAudition(int difficultyId,
         return false;
     }
     session_.playback_->pausePlayback();
+    auto& services = session_.applicationServices_;
+    const auto prepared = miacode::automatic_chart::prepare(
+        services.workspace(), services.files(), miacode::automatic_chart::Trigger::Render);
+    if (!prepared.accepted) {
+        services.uiRequests().postNotice(miacode::NoticeSeverity::Error,
+            miacode::localizedText("dialog.video_export.title"), miacode::LocalizedText(prepared.error));
+        return false;
+    }
 
     beginExportPreviewSession(visualTask);
     const double aspectRatio =
@@ -750,6 +820,10 @@ bool miacode::runtime::VideoExportHost::startQmlExportAudition(int difficultyId,
             visualTask.measureLineMode, visualTask.measureLineCustomBeats);
         session_.scene_->setShowObjectStatsHud(visualTask.showObjectStatsHud);
         session_.scene_->setShowChartInfoHud(visualTask.showChartInfoHud);
+        session_.scene_->setShowBpmHud(visualTask.showBpmHud);
+        session_.scene_->setShowCpsHud(visualTask.showCpsHud);
+        session_.scene_->setShowMeterHud(visualTask.showMeterHud);
+        session_.scene_->setShowModsHud(visualTask.showModsHud);
     }
     if (const SimaiDifficultyData* difficulty = session_.applicationServices_.workspace().document().difficulty(difficultyId);
         difficulty != nullptr) {
@@ -774,6 +848,13 @@ bool miacode::runtime::VideoExportHost::launchQmlVideoExport(
     QString* errorMessage)
 {
     session_.playback_->pausePlayback();
+    auto& services = session_.applicationServices_;
+    const auto prepared = miacode::automatic_chart::prepare(
+        services.workspace(), services.files(), miacode::automatic_chart::Trigger::Render);
+    if (!prepared.accepted) {
+        if (errorMessage) *errorMessage = prepared.error;
+        return false;
+    }
     VideoExportTask task = requestedTask;
     applySharedExportTaskSettings(task);
     VideoExportSnapshot snapshot;

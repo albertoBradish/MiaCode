@@ -1,3 +1,4 @@
+#include "common/RuntimePaths.h"
 #include "common/LocalizedText.h"
 
 #include "app/runtime/export/VideoExportHost.h"
@@ -587,10 +588,10 @@ bool miacode::runtime::VideoExportHost::startVideoExportWorkerProcess(
 
     process->setProcessChannelMode(QProcess::SeparateChannels);
     QProcessEnvironment workerEnvironment = QProcessEnvironment::systemEnvironment();
-    const QString runtimeLogDirectory = miacode::runtime_paths::logDirectory();
-    if (!runtimeLogDirectory.isEmpty()) {
-        workerEnvironment.insert(QStringLiteral("MIACODE_LOG_DIR"), runtimeLogDirectory);
-    }
+    workerEnvironment.insert(QStringLiteral("MIACODE_HAND_ORDER_RUNTIME_ROOT"), miacode::runtime_paths::root());
+    workerEnvironment.insert(QStringLiteral("MIACODE_LOG_DIR"), miacode::runtime_paths::directory("logs"));
+    for (const char* name : {"TEMP", "TMP", "TMPDIR"})
+        workerEnvironment.insert(QString::fromLatin1(name), miacode::runtime_paths::directory("temp"));
     if (forceDisableOffscreenPbo) {
         workerEnvironment.insert(QStringLiteral("MIACODE_EXPORT_DISABLE_OFFSCREEN_PBO"), QStringLiteral("1"));
     }
@@ -1181,6 +1182,7 @@ void miacode::runtime::VideoExportHost::handleVideoExportWorkerProcessFinished(i
                     QDesktopServices::openUrl(QUrl::fromLocalFile(outputDir));
                 }
             });
+        emit session_.applicationServices_.shellNotifications().videoExportSucceeded(session_.videoExportWorkerOutputPath_);
         emit session_.applicationServices_.shellNotifications().videoExportCompleted();
     } else {
         miacode::LocalizedText details = session_.videoExportWorkerResultDetails_.trimmed();

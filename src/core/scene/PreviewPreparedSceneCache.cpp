@@ -194,6 +194,11 @@ bool PreviewPreparedSceneCache::sync(const PreviewFrameState& state)
     nextKey.touchFlowSpeed = state.render.touchFlowSpeed;
     nextKey.renderMode = state.muriRenderOptions.renderMode;
     nextKey.showSlideTracks = state.muriRenderOptions.showSlideTracks;
+    nextKey.showSlideJudgementTiming = state.render.showSlideJudgementTiming;
+    nextKey.slideTimingFromLaunchBeat = state.render.slideTimingFromLaunchBeat;
+    nextKey.slideTimingEarlyPerfectFromHead = state.render.slideTimingEarlyPerfectFromHead;
+    nextKey.slideTimingLaunchBeatIdentity = state.render.slideTimingFromLaunchBeat
+        ? reinterpret_cast<quintptr>(state.slideTimingLaunchBeats.get()) : 0;
     nextKey.showJudgeMarkers = state.muriRenderOptions.showJudgeMarkers;
     nextKey.showTouchTrail = state.muriRenderOptions.showTouchTrail;
     nextKey.showSlideJudgementTiming = state.render.showSlideJudgementTiming;

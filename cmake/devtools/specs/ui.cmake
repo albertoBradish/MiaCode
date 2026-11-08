@@ -102,6 +102,8 @@ miacode_add_dev_tool(qml_chart_drop_bridge_spec TEST
 miacode_add_dev_tool(document_model_save_spec TEST
     SOURCES
         src/tools/ui/DocumentModelSaveSpec.cpp
+        src/app/services/AutomaticChartPreparation.cpp
+        src/app/ui/document/DocumentModel.AdvancedMetadata.cpp
         src/app/ui/document/DocumentModel.cpp
         src/app/ui/document/DocumentModel.h
         src/app/ui/preferences/LocaleService.cpp
@@ -110,6 +112,7 @@ miacode_add_dev_tool(document_model_save_spec TEST
         src/app/services/PreferenceDocument.cpp
         src/app/services/ChartWorkspace.cpp
         src/app/services/ChartWorkspace.h
+        src/app/services/ChartFileSafety.cpp
         src/app/services/ChartWorkspaceFileService.cpp
         src/app/services/DocumentProjection.cpp
         src/app/services/AnalysisService.cpp
@@ -210,6 +213,7 @@ miacode_add_dev_tool(cover_export_session_spec TEST
     INCLUDES src
 )
 target_compile_definitions(cover_export_session_spec PRIVATE
+    "MIACODE_TEST_OUTPUT_ROOT=\"${CMAKE_CURRENT_BINARY_DIR}\""
     "MIACODE_SOURCE_ROOT=\"${CMAKE_CURRENT_SOURCE_DIR}\"")
 
 miacode_add_dev_tool(qml_export_video_page_spec TEST
@@ -336,3 +340,12 @@ miacode_add_dev_tool(latency_model_spec TEST
 set_tests_properties(latency_model_spec PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 target_compile_definitions(latency_model_spec PRIVATE
     "MIACODE_QML_SPEC_IMPORT_ROOT=\"${MIACODE_QML_SPEC_IMPORT_ROOT}\"")
+
+# LocaleService also updates the native application menu after language changes.
+foreach(locale_spec IN ITEMS qml_app_background_model_spec document_model_save_spec timeline_surface_ready_spec cover_export_session_spec export_file_picker_spec qml_preview_rate_feedback_spec)
+    target_sources(${locale_spec} PRIVATE src/app/ui/preferences/ApplicationMenuTranslation.cpp)
+    if(APPLE)
+        target_sources(${locale_spec} PRIVATE src/app/ui/preferences/ApplicationMenuTranslationMac.mm)
+        target_link_libraries(${locale_spec} PRIVATE "-framework AppKit")
+    endif()
+endforeach()

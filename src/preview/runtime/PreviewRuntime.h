@@ -164,6 +164,7 @@ public:
     void setRetainedVideoFallbackFrame(const QImage& frame);
     void setNoteMarkers(const QVector<TimelineNoteMarker>& notes);
     void setVisualAidChartTiming(const SimaiParseResult& parsed, int clockCount, double firstSeconds);
+    const QVector<TimelineTimingPoint>& timingPoints() const { return frameState_.timingPoints; }
     void setVisualAidSettings(bool measureLines, bool skeleton, int mode, int customBeats);
     void setSlideJudgementTiming(bool enabled);
     void setSlideTimingFromLaunchBeat(bool enabled);
@@ -225,6 +226,15 @@ public:
     bool showTimestamp() const;
     bool showObjectStatsHud() const;
     bool showChartInfoHud() const;
+    void setShowBpmHud(bool show);
+    bool showBpmHud() const;
+    void setShowCpsHud(bool show);
+    bool showCpsHud() const;
+    void setShowMeterHud(bool show);
+    bool showMeterHud() const;
+    void setShowModsHud(bool show);
+    bool showModsHud() const;
+
     bool useMineSkin() const;
     miacode::preview_gameplay::CenterDisplayMode centerDisplayMode() const;
 

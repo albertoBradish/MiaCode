@@ -49,17 +49,21 @@ bool VideoExportQuickRenderBackend::bootstrap(
     QString* errorMessage)
 {
     assets_.setOutlineSelection(task.outlineVariant, task.outlineImagePath);
-    stageMediaPath_ = stageMediaPath;
+    const BackgroundPolicy policy = backgroundPolicyForRenderMode(task.muriRenderOptions.renderMode);
+    stageMediaPath_.clear();
+    if (usesBackgroundMedia(policy)) {
+        stageMediaPath_ = task.includePv || !miacode::chart_assets::isVideoBackgroundPath(stageMediaPath)
+            ? stageMediaPath
+            : miacode::chart_assets::resolvePreferredBackgroundMediaPath(task.chartPath, stageMediaPath, false);
+    }
     QString mediaError;
-    if (!stageMedia_.open(stageMediaPath, frameSize, &mediaError)) {
+    if (!stageMedia_.open(stageMediaPath_, frameSize, &mediaError)) {
         if (errorMessage) *errorMessage = mediaError;
         return false;
     }
-    const bool stageMediaAvailable = !stageMediaPath.isEmpty();
+    const bool stageMediaAvailable = !stageMediaPath_.isEmpty();
     backgroundFade_ = task.fullRangeExport && task.intro.enabled;
-    introPvPreview_ = backgroundFade_ && task.intro.pvPreview && !stageMedia_.isStaticImage()
-        && stageMediaAvailable;
-    introPvStartSecond_ = task.intro.pvPreviewStartSeconds;
+    intro_ = task.intro;
     assets_.setStageMediaAvailable(stageMediaAvailable);
     if (!assets_.loadSkinDirectorySync(task.skinDirectory)) {
         if (errorMessage != nullptr) {
@@ -69,10 +73,12 @@ bool VideoExportQuickRenderBackend::bootstrap(
     }
 
     frameState_ = miacode::preview::scene::PreviewFrameState();
+    frameState_.render.backgroundPolicy = policy;
     frameState_.hudFontSettings = task.hudFontSettings;
     frameState_.noteMarkers = noteMarkers;
     if (task.slideTimingFromLaunchBeat)
         frameState_.slideTimingLaunchBeats=std::make_shared<const miacode::slide_judge::LaunchBeatIndex>(task.noteMarkers);
+    frameState_.timingPoints = task.timingPoints;
     frameState_.measureLineSeconds = task.measureLineSeconds;
     frameState_.render.showMeasureLines = task.showMeasureLines;
     frameState_.render.showJudgementSkeleton = task.showJudgementSkeleton;
@@ -101,6 +107,10 @@ bool VideoExportQuickRenderBackend::bootstrap(
     frameState_.render.showHandOrderAnnotations = task.showHandOrderAnnotations;
     frameState_.render.showObjectStatsHud = task.showObjectStatsHud;
     frameState_.render.showChartInfoHud = task.showChartInfoHud;
+    frameState_.render.showBpmHud = task.showBpmHud;
+    frameState_.render.showCpsHud = task.showCpsHud;
+    frameState_.render.showMeterHud = task.showMeterHud;
+    frameState_.render.showModsHud = task.showModsHud;
     frameState_.chartTitle = task.chartTitle;
     frameState_.chartArtist = task.chartArtist;
     frameState_.chartDifficultyLabel = task.chartDifficultyLabel;
@@ -125,8 +135,7 @@ bool VideoExportQuickRenderBackend::copyRenderStateFrom(const VideoExportQuickRe
     stageMediaPath_ = source.stageMediaPath_;
     if (!stageMedia_.open(stageMediaPath_, source.session_.frameSize(), errorMessage)) return false;
     backgroundFade_ = source.backgroundFade_;
-    introPvPreview_ = source.introPvPreview_;
-    introPvStartSecond_ = source.introPvStartSecond_;
+    intro_ = source.intro_;
     assets_.setOutlineSelection(
         source.assets_.outlineVariant(),
         source.assets_.outlineImagePath(),
@@ -340,7 +349,9 @@ bool VideoExportQuickRenderBackend::setupIntro(const IntroBannerSpec& intro, boo
         return false;
     }
     const QVariantMap track = introBannerTrackMap(intro);
-    const QUrl jacketUrl = miacode::chart_assets::displayBackgroundImageUrl(intro.jacketPath);
+    const auto policy = frameState_.render.backgroundPolicy;
+    const QUrl jacketUrl = usesBackgroundMedia(policy)
+        ? miacode::chart_assets::displayBackgroundImageUrl(intro.jacketPath) : QUrl();
 
     // Load + parse the banner template here (C++), not via the QML's async
     // XMLHttpRequest: the headless export render loop never pumps the event
@@ -365,7 +376,7 @@ bool VideoExportQuickRenderBackend::setupIntro(const IntroBannerSpec& intro, boo
         templateMap, intro.fontDisplayPath, intro.fontBodyPath);
 
     const QUrl logoUrl(QString::fromLatin1(miacode::intro::kLogoFallbackUrl));
-    const QVariantMap styleMap = introBannerStyleMap(intro, pvVideoUnderlay);
+    const QVariantMap styleMap = introBannerStyleMap(intro, pvVideoUnderlay, policy);
     if (d3d11Active) {
         d3d11Session_.setIntroBannerData(track, templateMap, jacketUrl, logoUrl, styleMap);
     } else {
@@ -383,14 +394,17 @@ void VideoExportQuickRenderBackend::setChartLayersVisible(bool visible)
     session_.setChartLayersVisible(visible);
 }
 
+bool VideoExportQuickRenderBackend::introSegmentVisible() const
+{
+    return introActive_ && intro_.pvPreview && introAuthoringFrame_ < miacode::intro::kPvPreviewHoldFrames;
+}
+
 void VideoExportQuickRenderBackend::setIntroFrame(int authoringFrame, bool active, double outputSecond)
 {
     introAuthoringFrame_ = authoringFrame;
     introOutputSecond_ = outputSecond;
     introActive_ = active;
-    if (introPvPreview_) {
-        setChartLayersVisible(!(active && authoringFrame < miacode::intro::kPvPreviewHoldFrames));
-    }
+    setChartLayersVisible(!introSegmentVisible() || intro_.chartPreview);
     if (sessionBackend_ == ExportQuickRenderSessionBackend::D3D11Qrhi) {
         d3d11Session_.setIntroFrame(authoringFrame, active);
         return;
@@ -584,6 +598,10 @@ void VideoExportQuickRenderBackend::updateFrameStateForRender(
     bool showObjectStatsHud,
     double hudPlayheadSecondsOverride)
 {
+    if (introSegmentVisible() && intro_.chartPreview) {
+        playheadSeconds = introPreviewMediaSecond(intro_, introOutputSecond_);
+        hudPlayheadSecondsOverride = std::numeric_limits<double>::quiet_NaN();
+    }
     if (sessionBackend_ == ExportQuickRenderSessionBackend::D3D11Qrhi) {
         d3d11Session_.applyExportFrameTick(
             playheadSeconds,
@@ -610,10 +628,9 @@ void VideoExportQuickRenderBackend::updateFrameStateForRender(
 
 bool VideoExportQuickRenderBackend::updateBackgroundForRender(double playheadSeconds, QString* errorMessage)
 {
-    const bool fullFrame = introPvPreview_ && introActive_
-        && introAuthoringFrame_ < miacode::intro::kPvPreviewHoldFrames;
+    const bool fullFrame = introSegmentVisible();
     const double mediaSecond = fullFrame
-        ? qMax(0.0, introPvStartSecond_) + introOutputSecond_
+        ? introPreviewMediaSecond(intro_, introOutputSecond_)
         : playheadSeconds;
     QString mediaError;
     const QImage image = stageMedia_.frameAt(mediaSecond, &mediaError);
@@ -621,10 +638,11 @@ bool VideoExportQuickRenderBackend::updateBackgroundForRender(double playheadSec
         if (errorMessage) *errorMessage = mediaError;
         return false;
     }
-    const qreal brightness = backgroundFade_ && !fullFrame
-        ? qBound(0.0, (playheadSeconds + miacode::intro::kBgFadeDurationSeconds)
-                         / miacode::intro::kBgFadeDurationSeconds, 1.0)
-        : 1.0;
+    const qreal brightness = fullFrame && intro_.chartPreview ? intro_.pvPreviewBrightness
+        : backgroundFade_ && !fullFrame
+            ? qBound(0.0, (playheadSeconds + miacode::intro::kBgFadeDurationSeconds)
+                             / miacode::intro::kBgFadeDurationSeconds, 1.0)
+            : 1.0;
     frameState_.media.resolvedStageImage = image;
     frameState_.media.resolvedStageImageCacheable = stageMedia_.isStaticImage();
     frameState_.media.stageMediaSerial = image.cacheKey();

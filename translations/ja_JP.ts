@@ -42,8 +42,8 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
         <translation>設定を完了</translation>
     </message>
     <message id="setup.welcome">
-        <source>Welcome to MiaCode</source>
-        <translation>MiaCode へようこそ</translation>
+        <source>Welcome to MiaCode Hand Order</source>
+        <translation>MiaCode Hand Order へようこそ</translation>
     </message>
     <message id="setup.configure">
         <source>Set up appearance, layout, navigation and the editor. You can change these later in Preferences.</source>
@@ -143,7 +143,7 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
     </message>
     <message id="action.about">
         <source>About</source>
-        <translation>MiaCode について</translation>
+        <translation>MiaCode Hand Order について</translation>
     </message>
     <message id="action.audio_settings">
         <source>Audio Settings</source>
@@ -426,8 +426,8 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
         <translation>--export-video モードには --chart が必要です</translation>
     </message>
     <message id="cli.video_export.description">
-        <source>MiaCode CLI video export</source>
-        <translation>MiaCode コマンドライン動画エクスポート</translation>
+        <source>MiaCode Hand Order CLI video export</source>
+        <translation>MiaCode Hand Order コマンドライン動画エクスポート</translation>
     </message>
     <message id="cli.video_export.difficulty">
         <source>Difficulty short name or id (ESY/BAS/ADV/EXP/MAS/REM/UTG or 1..7).</source>
@@ -570,8 +570,8 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
         <translation>エクスポートプロセスが対応していないコマンドです</translation>
     </message>
     <message id="cli.worker.description">
-        <source>MiaCode export worker</source>
-        <translation>MiaCode エクスポートプロセス</translation>
+        <source>MiaCode Hand Order export worker</source>
+        <translation>MiaCode Hand Order エクスポートプロセス</translation>
     </message>
     <message id="cli.worker.dispatch_error">
         <source>internal CLI dispatch error: --export-video-worker not set</source>
@@ -1008,8 +1008,8 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
         <translation>この難易度にはレンダリングできる譜面ノーツがありません。</translation>
     </message>
     <message id="cover.this_file_is_not_a">
-        <source>This file is not a MiaCode cover layout.</source>
-        <translation>このファイルは MiaCode のカバーレイアウトファイルではありません。</translation>
+        <source>This file is not a MiaCode Hand Order cover layout.</source>
+        <translation>このファイルは MiaCode Hand Order のカバーレイアウトファイルではありません。</translation>
     </message>
     <message id="cover.this_preset_needs_a_renderable">
         <source>This preset needs a renderable chart frame</source>
@@ -1734,10 +1734,10 @@ Failed: %2</source>
         <translation>表示設定</translation>
     </message>
     <message id="dialog.restore_backup.abnormal_exit_confirm">
-        <source>MiaCode did not exit normally last time.
+        <source>MiaCode Hand Order did not exit normally last time.
 
 Restore the backup from %1?</source>
-        <translation>前回 MiaCode は正常に終了しませんでした。
+        <translation>前回 MiaCode Hand Order は正常に終了しませんでした。
 
 %1 の予備を復元しますか？</translation>
     </message>
@@ -1802,8 +1802,8 @@ Restore the backup from %1?</source>
         <translation>ダウンロードページを開く</translation>
     </message>
     <message id="dialog.update.message">
-        <source>MiaCode %1 has been released.</source>
-        <translation>MiaCode %1 がリリースされました。</translation>
+        <source>MiaCode Hand Order %1 has been released.</source>
+        <translation>MiaCode Hand Order %1 がリリースされました。</translation>
     </message>
     <message id="dialog.update.released">
         <source>Released: %1</source>
@@ -1830,8 +1830,8 @@ Restore the backup from %1?</source>
         <translation>イントロ背景を選択</translation>
     </message>
     <message id="dialog.video_export.error.executable_missing">
-        <source>Failed to locate MiaCode executable.</source>
-        <translation>MiaCode の実行ファイルが見つかりません。</translation>
+        <source>Failed to locate MiaCode Hand Order executable.</source>
+        <translation>MiaCode Hand Order の実行ファイルが見つかりません。</translation>
     </message>
     <message id="dialog.video_export.error.failed">
         <source>Export failed.</source>
@@ -3266,8 +3266,8 @@ The file may be open in preview, a media player, File Explorer preview pane, or 
         <translation>Touch</translation>
     </message>
     <message id="pet.accessible_name">
-        <source>MiaCode desktop pet</source>
-        <translation>MiaCode デスクトップペット</translation>
+        <source>MiaCode Hand Order desktop pet</source>
+        <translation>MiaCode Hand Order デスクトップペット</translation>
     </message>
     <message id="pet.camera_mirror">
         <source>Mirror Camera</source>
@@ -3294,8 +3294,8 @@ The file may be open in preview, a media player, File Explorer preview pane, or 
         <translation>デスクトップペットを縮小</translation>
     </message>
     <message id="pet.window_title">
-        <source>MiaCode Desktop Pet</source>
-        <translation>MiaCode デスクトップペット</translation>
+        <source>MiaCode Hand Order Desktop Pet</source>
+        <translation>MiaCode Hand Order デスクトップペット</translation>
     </message>
     <message id="preferences.auto_completion">
         <source>Auto-completion</source>
@@ -3410,8 +3410,8 @@ The file may be open in preview, a media player, File Explorer preview pane, or 
         <translation>%1倍</translation>
     </message>
     <message id="qml.about_miacode">
-        <source>About MiaCode</source>
-        <translation>MiaCode について</translation>
+        <source>About MiaCode Hand Order</source>
+        <translation>MiaCode Hand Order について</translation>
     </message>
     <message id="qml.add">
         <source>Add</source>
@@ -5051,10 +5051,264 @@ Error: %1</source>
         <source>The prepended PV exceeds its size budget or the 20 MB limit.</source>
         <translation>黒画面を追加した PV がサイズ予算または 20 MB の上限を超えています。</translation>
     </message>
+    <message id="action.play_selection">
+        <source>Play Selection</source>
+        <translation>選択範囲を再生</translation>
+    </message>
+    <message id="preview.canvas.show_measure_lines">
+        <source>Show Measure Lines</source>
+        <translation>小節線を表示</translation>
+    </message>
+    <message id="preview.canvas.show_judgement_skeleton">
+        <source>Show Judgement Skeleton</source>
+        <translation>判定骨格を表示</translation>
+    </message>
+    <message id="preview.canvas.slide_timing_from_launch_beat">
+        <source>Start on a matching launch beat</source>
+        <translation>始動拍から補間を開始</translation>
+    </message>
+    <message id="preview.canvas.slide_timing_early_perfect_from_head">
+        <source>Fully bright from star head when Perfect starts before launch beat</source>
+        <translation>開始拍より前に Perfect に入る場合、星の頭拍から全点灯</translation>
+    </message>
+    <message id="preview.canvas.show_slide_judgement_timing">
+        <source>Show Slide Judgement Timing</source>
+        <translation>スライド判定タイミングを表示</translation>
+    </message>
+    <message id="preview.canvas.measure_mode">
+        <source>Measure Line Mode</source>
+        <translation>小節線モード</translation>
+    </message>
+    <message id="preview.canvas.measure_chart_clock">
+        <source>Chart clock_count (default 4 beats)</source>
+        <translation>譜面 clock_count（既定 4 拍）</translation>
+    </message>
+    <message id="preview.canvas.measure_custom_beats">
+        <source>Custom beats per measure</source>
+        <translation>1 小節の拍数を指定</translation>
+    </message>
+    <message id="preview.canvas.measure_text_lines">
+        <source>Text line starts</source>
+        <translation>テキスト行頭</translation>
+    </message>
+    <message id="dialog.render_settings.gameplay.judge_line.none">
+        <source>None</source>
+        <translation>なし</translation>
+    </message>
+    <message id="dialog.video_export.option.show_bpm_hud">
+        <source>Show BPM (widescreen)</source>
+        <translation>BPM を表示（ワイド画面）</translation>
+    </message>
+    <message id="dialog.video_export.option.show_cps_hud">
+        <source>Show CPS (widescreen)</source>
+        <translation>CPS を表示（ワイド画面）</translation>
+    </message>
+    <message id="dialog.video_export.option.show_meter_hud">
+        <source>Show explicit meter (widescreen)</source>
+        <translation>明示された拍子を表示（ワイド画面）</translation>
+    </message>
+    <message id="dialog.video_export.option.show_mods_hud">
+        <source>Show Mods (widescreen)</source>
+        <translation>Mods を表示（ワイド画面）</translation>
+    </message>
+    <message id="tools.bpm.title">
+        <source>Export BPM</source>
+        <translation>BPM 読み込み / 書き出し</translation>
+    </message>
+    <message id="tools.bpm.sequence">
+        <source>BPM sequence (xx.xx-xx.xx)</source>
+        <translation>BPM 順（xx.xx-xx.xx）</translation>
+    </message>
+    <message id="tools.bpm.audio_time">
+        <source>Audio timestamps (mm:ss:fff)</source>
+        <translation>音声時刻（mm:ss:fff）</translation>
+    </message>
+    <message id="tools.bpm.empty_maidata">
+        <source>Empty maidata with timing</source>
+        <translation>タイミングを保つ空の maidata</translation>
+    </message>
+    <message id="tools.bpm.preview">
+        <source>BPM export preview</source>
+        <translation>BPM 出力プレビュー</translation>
+    </message>
+    <message id="tools.bpm.copy">
+        <source>Copy</source>
+        <translation>コピー</translation>
+    </message>
+    <message id="tools.bpm.save">
+        <source>Save as…</source>
+        <translation>名前を付けて保存…</translation>
+    </message>
+    <message id="tools.bpm.save_error">
+        <source>Could not save BPM export: %1</source>
+        <translation>BPM の保存に失敗しました：%1</translation>
+    </message>
+    <message id="tools.chart.invalid_first">
+        <source>Invalid &amp;first value</source>
+        <translation>&amp;first の値が無効です</translation>
+    </message>
+    <message id="tools.chart.parse_error">
+        <source>The chart contains parse errors</source>
+        <translation>譜面に解析エラーがあります</translation>
+    </message>
+    <message id="tools.dx_loss.title">
+        <source>DX achievement loss</source>
+        <translation>DX 達成率の減点</translation>
+    </message>
+    <message id="tools.dx_loss.attributes">
+        <source>Break, Ex and Firework are attributes, not extra objects. Total counts scoring objects; Mine is listed separately. Capacities assume all other objects are Critical Perfect and respect reachable EX judgments (long EX holds can lose grades on release).</source>
+        <translation>Break・Ex・Firework は属性で重複加算しません。Total は得点対象数、Mine は別集計です。最大数はほかがすべて Critical Perfect で、EX が到達できる判定に限定します（長い EX Hold は離すと降格します）。</translation>
+    </message>
+    <message id="tools.dx_loss.object">
+        <source>Object</source>
+        <translation>オブジェクト</translation>
+    </message>
+    <message id="tools.dx_loss.judgment">
+        <source>Judgment</source>
+        <translation>判定</translation>
+    </message>
+    <message id="tools.dx_loss.single">
+        <source>Loss per judgment</source>
+        <translation>1判定の減点</translation>
+    </message>
+    <message id="tools.dx_loss.empty">
+        <source>The chart has no scoring objects</source>
+        <translation>得点対象のオブジェクトがありません</translation>
+    </message>
+    <message id="tools.dx_loss.extensions">
+        <source>Unofficial extensions: counts are available; DX calculation is disabled</source>
+        <translation>非公式拡張を含むため、集計のみ表示し DX 減点計算を無効にします</translation>
+    </message>
+    <message id="tools.dx_loss.maximum_break">
+        <source>Maximum achievement: 101%. Other objects are assumed Critical Perfect.</source>
+        <translation>満点は101%。ほかのオブジェクトは Critical Perfect として計算します。</translation>
+    </message>
+    <message id="tools.dx_loss.maximum_no_break">
+        <source>Maximum achievement: 100% (no Break). Other objects are assumed Critical Perfect.</source>
+        <translation>満点は100%（Break なし）。ほかのオブジェクトは Critical Perfect として計算します。</translation>
+    </message>
+    <message id="tools.bpm.empty_timing_note">
+        <source>The empty maidata preserves BPM changes, explicit meters, &amp;first and the source terminal beat. Removing long notes also removes their tail duration; no extra BPM changes are added.</source>
+        <translation>空の maidata は BPM 変更・明示拍子・&amp;first・元譜面の終端拍を保持します。ロングノーツを削除すると尾部の長さもなくなり、架空の BPM 変更は追加しません。</translation>
+    </message>
+    <message id="cover.text_stroke">
+        <source>Text outline</source>
+        <translation>文字の縁取り</translation>
+    </message>
+    <message id="cover.text_stroke_color">
+        <source>Outline color</source>
+        <translation>縁取りの色</translation>
+    </message>
+    <message id="cover.text_stroke_width">
+        <source>Outline width</source>
+        <translation>縁取りの幅</translation>
+    </message>
+    <message id="cover.text_shadow">
+        <source>Text shadow</source>
+        <translation>文字の影</translation>
+    </message>
+    <message id="cover.text_shadow_color">
+        <source>Shadow color</source>
+        <translation>影の色</translation>
+    </message>
+    <message id="cover.text_shadow_opacity">
+        <source>Shadow opacity</source>
+        <translation>影の不透明度</translation>
+    </message>
+    <message id="cover.text_shadow_blur">
+        <source>Shadow blur</source>
+        <translation>影のぼかし</translation>
+    </message>
+    <message id="cover.text_shadow_x">
+        <source>Shadow X offset</source>
+        <translation>影の横方向オフセット</translation>
+    </message>
+    <message id="cover.text_shadow_y">
+        <source>Shadow Y offset</source>
+        <translation>影の縦方向オフセット</translation>
+    </message>
+    <message id="dialog.video_export.cover_preset">
+        <source>Companion cover</source>
+        <translation>カバーを同時に出力</translation>
+    </message>
+    <message id="dialog.video_export.cover_failed_video_kept">
+        <source>Cover export failed. The video was kept.</source>
+        <translation>カバー出力に失敗しました。動画は保存されています。</translation>
+    </message>
+    <message id="cli.settings.title">
+        <source>Command line</source>
+        <translation>コマンドライン</translation>
+    </message>
+    <message id="cli.settings.enable">
+        <source>Enable command-line support</source>
+        <translation>コマンドラインを有効にする</translation>
+    </message>
+    <message id="dialog.video_export.cover_source_changed">
+        <source>The chart changed while preparing the cover. Export again.</source>
+        <translation>カバーの準備中に譜面が変更されました。再度出力してください。</translation>
+    </message>
     <message id="file_picker.native_failed">
         <source>Could not open the system folder picker.</source>
         <translation>システムのフォルダー選択画面を開けませんでした。</translation>
     </message>
+
+    <!-- ID translations use the unnamed context for qtTrId in Qt 6.11. -->
+
+<message id="dialog.video_export.range.play_clip">
+        <source>Play Range</source>
+        <translation>範囲を再生</translation>
+    </message>
+<message id="dialog.batch_export.cover_preset">
+        <source>Cover preset</source>
+        <translation>カバープリセット</translation>
+    </message>
+<message id="dialog.batch_export.cover_none">
+        <source>Cover export off</source>
+        <translation>カバー出力をオフ</translation>
+    </message>
+<message id="dialog.batch_export.cover_summary">
+        <source>Covers: %1 succeeded, %2 failed</source>
+        <translation>カバー出力：成功 %1 件、失敗 %2 件</translation>
+    </message>
+<message id="dialog.batch_export.cover_preset_unavailable">
+        <source>The cover preset cannot be applied to this chart</source>
+        <translation>この譜面にカバープリセットを適用できません</translation>
+    </message>
+<message id="dialog.batch_export.cover_frame_adjusted">
+        <source>%1: frame time adjusted from %2 s to %3 s</source>
+        <translation>%1：フレーム時間を %2 秒から %3 秒に調整</translation>
+    </message>
+    <message id="video_template.title"><source>Video templates</source><translation>動画テンプレート</translation></message>
+    <message id="video_template.export"><source>Export current template…</source><translation>現在のテンプレートを書き出す…</translation></message>
+    <message id="video_template.import"><source>Import and apply template…</source><translation>テンプレートを読み込んで適用…</translation></message>
+    <message id="video_template.invalid"><source>This video template is invalid or uses an unsupported version.</source><translation>動画テンプレートが無効か、未対応のバージョンです。</translation></message>
+    <message id="video_cover.multiple"><source>Companion covers</source><translation>同時に出力するカバー</translation></message>
+    <message id="video_size.target30">
+        <source>30 MB (video %1 kbps, audio %2 kbps)</source>
+        <translation>30 MB（映像 %1 kbps、音声 %2 kbps）</translation>
+    </message>
+    <message id="video_size.target100"><source>100 MB (video %1 kbps, audio %2 kbps)</source><translation>100 MB（動画 %1 kbps、音声 %2 kbps）</translation></message>
+    <message id="video_size.target200"><source>200 MB (video %1 kbps, audio %2 kbps)</source><translation>200 MB（動画 %1 kbps、音声 %2 kbps）</translation></message>
+    <message id="video_size.parameters"><source> (video %1 kbps, audio %2 kbps)</source><translation>（動画 %1 kbps、音声 %2 kbps）</translation></message>
+    <message id="video_size.adaptive_parameters"><source> (adaptive; hardware reference %1 kbps, audio %2 kbps)</source><translation>（自動；HW 目安 %1 kbps、音声 %2 kbps）</translation></message>
+    <message id="tools.dx_loss.simple_summary"><source>Tap Great budget: SSS %1 · SSS+ %2</source><translation>Tap Great 許容数：SSS %1 · SSS+ %2</translation></message>
+    <message id="tools.dx_loss.unreachable"><source>unreachable</source><translation>到達不可</translation></message>
+    <message id="tools.bpm.import"><source>Import BPM…</source><translation>BPM を読み込む…</translation></message>
+    <message id="tools.bpm.paste"><source>Paste BPM</source><translation>BPM を貼り付け</translation></message>
+    <message id="tools.bpm.apply"><source>Apply to current chart</source><translation>現在の譜面に適用</translation></message>
+    <message id="tools.bpm.import_hint"><source>Import audio timestamps or an empty maidata. Existing note times and durations are preserved.</source><translation>音声時刻形式とノーツのない maidata に対応。既存ノーツの時刻と長さを維持します。</translation></message>
+    <message id="tools.bpm.import_placeholder"><source>Paste audio timestamps or empty maidata here</source><translation>音声時刻形式か空の maidata を貼り付け</translation></message>
+    <message id="tools.bpm.import_summary"><source>Preview: %1 timing states, %2 note objects. Apply as one undoable edit.</source><translation>プレビュー：時刻点 %1 個、ノーツ %2 個。1 回の操作で元に戻せます。</translation></message>
+    <message id="tools.bpm.import_invalid"><source>Invalid BPM input. Use audio timestamps or an empty maidata.</source><translation>BPM データが無効です。音声時刻形式か空の maidata を使用してください。</translation></message>
+    <message id="tools.bpm.import_one_difficulty"><source>The timing maidata must contain exactly one difficulty.</source><translation>時刻データの maidata は難易度を 1 つだけ含む必要があります。</translation></message>
+    <message id="tools.bpm.import_empty_required"><source>The imported maidata must be valid and contain no notes.</source><translation>読み込む maidata は有効で、ノーツを含まない必要があります。</translation></message>
+    <message id="tools.bpm.import_chart_invalid"><source>Fix the current chart syntax before importing BPM.</source><translation>BPM を読み込む前に現在の譜面の構文エラーを修正してください。</translation></message>
+    <message id="tools.bpm.import_precision"><source>The timing cannot be embedded without changing note times. The chart was not modified.</source><translation>ノーツの時刻を維持して適用できないため、譜面を変更しませんでした。</translation></message>
+    <message id="tools.bpm.import_stale"><source>The chart changed. Import or paste the timing again.</source><translation>譜面が変更されました。時刻データを再度読み込むか貼り付けてください。</translation></message>
+    <message id="tools.bpm.import_applied"><source>BPM applied. Undo in the source editor to restore the chart.</source><translation>BPM を適用しました。ソースエディターで元に戻せます。</translation></message>
+<message id="tools.bpm.import_preview"><source>Chart preview after applying BPM</source><translation>BPM 適用後の譜面プレビュー</translation></message>
+<message id="tools.bpm.back_export"><source>Back to export</source><translation>書き出しに戻る</translation></message>
+<message id="tools.bpm.import_subdivisions"><source>Keeping note times requires subdivisions %1; check chart-converter compatibility.</source><translation>元の時刻を維持するため分拍 %1 を使用します。譜面変換時の互換性をご確認ください。</translation></message>
     <message id="dialog.preferences.font.family">
         <source>Chart text font</source>
         <translation>譜面テキストのフォント</translation>
@@ -5371,33 +5625,424 @@ Error: %1</source>
         <source>Split native Break segments retain Break, which may change Break counts and scoring.</source>
         <translation>分割されたネイティブ Break 区間も Break を保つため、Break の物量と得点が変わる可能性があります。</translation>
     </message>
-    <message id="action.play_selection">
-        <source>Play Selection</source>
-        <translation>選択範囲を再生</translation>
+
+
+
+
+
+
+
+    <message id="preferences.low_performance">
+        <source>Low performance mode (prioritize 60 Hz preview)</source>
+        <translation>低負荷モード（60 Hz プレビューを優先）</translation>
     </message>
-    <message id="preview.canvas.show_measure_lines">
-        <source>Show Measure Lines</source>
-        <translation>小節線を表示</translation>
+    <message id="preferences.space_guard">
+        <source>Prevent accidental spaces (press 3 times to unlock)</source>
+        <translation>スペース誤入力防止（3 回押して解除）</translation>
     </message>
-    <message id="preview.canvas.show_judgement_skeleton">
-        <source>Show Judgement Skeleton</source>
-        <translation>判定骨格を表示</translation>
+    <message id="preferences.auto_normalize">
+        <source>Automatically normalize charts</source>
+        <translation>譜面を自動整形する</translation>
     </message>
-    <message id="preview.canvas.measure_mode">
-        <source>Measure Line Mode</source>
-        <translation>小節線モード</translation>
+    <message id="preferences.warn_empty_difficulty">
+        <source>Warn before exporting empty difficulties</source>
+        <translation>空の難易度を ZIP 出力する前に確認する</translation>
     </message>
-    <message id="preview.canvas.measure_chart_clock">
-        <source>Chart clock_count (default 4 beats)</source>
-        <translation>譜面 clock_count（既定 4 拍）</translation>
+    <message id="editor.space_unlocked">
+        <source>Space input unlocked · relocks on focus loss</source>
+        <translation>スペース入力解除中・フォーカスを外すと再ロック</translation>
     </message>
-    <message id="preview.canvas.measure_custom_beats">
-        <source>Custom beats per measure</source>
-        <translation>1 小節の拍数を指定</translation>
+    <message id="metadata.advanced.title">
+        <source>Advanced chart information</source>
+        <translation>高度な譜面情報</translation>
     </message>
-    <message id="preview.canvas.measure_text_lines">
-        <source>Text line starts</source>
-        <translation>テキスト行頭</translation>
+    <message id="metadata.advanced.song">
+        <source>Song identifiers</source>
+        <translation>楽曲識別子</translation>
+    </message>
+    <message id="metadata.advanced.artist_id">
+        <source>Artist ID</source>
+        <translation>アーティスト ID</translation>
+    </message>
+    <message id="metadata.advanced.song_id">
+        <source>Song ID</source>
+        <translation>楽曲 ID</translation>
+    </message>
+    <message id="metadata.advanced.timing">
+        <source>Timing and demo</source>
+        <translation>タイミングとデモ</translation>
+    </message>
+    <message id="metadata.advanced.whole_bpm">
+        <source>BPM metadata</source>
+        <translation>BPM メタデータ</translation>
+    </message>
+    <message id="metadata.advanced.demo_start">
+        <source>Demo start (seconds)</source>
+        <translation>デモ開始（秒）</translation>
+    </message>
+    <message id="metadata.advanced.demo_length">
+        <source>Demo length (seconds)</source>
+        <translation>デモの長さ（秒）</translation>
+    </message>
+    <message id="metadata.advanced.compatibility">
+        <source>Legacy compatibility</source>
+        <translation>旧形式との互換性</translation>
+    </message>
+    <message id="metadata.advanced.legacy_seek">
+        <source>Legacy seek (seconds)</source>
+        <translation>旧 seek（秒）</translation>
+    </message>
+    <message id="metadata.advanced.legacy_wait">
+        <source>Legacy wait (seconds)</source>
+        <translation>旧 wait（秒）</translation>
+    </message>
+    <message id="metadata.advanced.legacy_warning">
+        <source>The current Fanmade Portal form does not support seek/wait. Keep existing values when needed; use first for timing adjustment.</source>
+        <translation>現在の Fanmade Portal フォームは seek/wait 非対応です。既存値は必要に応じて保持し、時間調整には first を使用してください。</translation>
+    </message>
+    <message id="metadata.advanced.catalog">
+        <source>Category and version</source>
+        <translation>カテゴリとバージョン</translation>
+    </message>
+    <message id="metadata.advanced.genre">
+        <source>Genre</source>
+        <translation>ジャンル</translation>
+    </message>
+    <message id="metadata.advanced.genre_id">
+        <source>Genre ID</source>
+        <translation>ジャンル ID</translation>
+    </message>
+    <message id="metadata.advanced.cabinet">
+        <source>Cabinet (SD / DX)</source>
+        <translation>譜面形式（SD / DX）</translation>
+    </message>
+    <message id="metadata.advanced.version">
+        <source>Version</source>
+        <translation>バージョン</translation>
+    </message>
+    <message id="metadata.advanced.author">
+        <source>Creator information</source>
+        <translation>制作者情報</translation>
+    </message>
+    <message id="metadata.advanced.video_url">
+        <source>Chart video URL</source>
+        <translation>譜面動画 URL</translation>
+    </message>
+    <message id="metadata.advanced.created">
+        <source>Creation date (YYYYMMDD)</source>
+        <translation>作成日（YYYYMMDD）</translation>
+    </message>
+    <message id="metadata.advanced.comment">
+        <source>Creator comment</source>
+        <translation>制作者コメント</translation>
+    </message>
+    <message id="metadata.advanced.difficulty">
+        <source>Difficulty metadata</source>
+        <translation>難易度の情報</translation>
+    </message>
+    <message id="metadata.advanced.creator_id">
+        <source>Creator IDs (comma separated)</source>
+        <translation>制作者 ID（複数はカンマ区切り）</translation>
+    </message>
+    <message id="metadata.advanced.constant">
+        <source>Chart constant</source>
+        <translation>譜面定数</translation>
+    </message>
+    <message id="metadata.advanced.regulation">
+        <source>Regulation</source>
+        <translation>レギュレーション</translation>
+    </message>
+    <message id="metadata.advanced.single_line">
+        <source>This field accepts one line only.</source>
+        <translation>この項目は 1 行で入力してください。</translation>
+    </message>
+    <message id="metadata.advanced.embedded_field">
+        <source>A field value cannot contain another &amp;key= assignment.</source>
+        <translation>値の中に別の &amp;key= 定義は記述できません。</translation>
+    </message>
+    <message id="metadata.advanced.invalid_date">
+        <source>Enter a valid date as YYYYMMDD.</source>
+        <translation>有効な日付を YYYYMMDD 形式で入力してください。</translation>
+    </message>
+    <message id="metadata.advanced.invalid_url">
+        <source>Enter a valid HTTP or HTTPS URL.</source>
+        <translation>有効な HTTP または HTTPS URL を入力してください。</translation>
+    </message>
+    <message id="metadata.advanced.invalid_id">
+        <source>Use digits for IDs; separate collaborating creator IDs with commas.</source>
+        <translation>ID は数字を使用し、合作制作者 ID はカンマで区切ってください。</translation>
+    </message>
+    <message id="metadata.advanced.positive_number">
+        <source>Enter a finite number greater than zero.</source>
+        <translation>0 より大きい有限の数値を入力してください。</translation>
+    </message>
+    <message id="metadata.advanced.nonnegative_number">
+        <source>Enter a finite number of zero or greater.</source>
+        <translation>0 以上の有限の数値を入力してください。</translation>
+    </message>
+    <message id="metadata.advanced.no_document">
+        <source>No chart is open.</source>
+        <translation>譜面が開かれていません。</translation>
+    </message>
+    <message id="metadata.advanced.unknown_field">
+        <source>Unsupported advanced field.</source>
+        <translation>未対応の高度な項目です。</translation>
+    </message>
+    <message id="metadata.advanced.update_failed">
+        <source>The metadata change could not be applied.</source>
+        <translation>メタデータを変更できませんでした。</translation>
+    </message>
+    <message id="timeline.layout.horizontal">
+        <source>Horizontal</source>
+        <translation>横向き</translation>
+    </message>
+    <message id="timeline.layout.before_editor">
+        <source>Before editor</source>
+        <translation>エディターの左</translation>
+    </message>
+    <message id="timeline.layout.after_editor">
+        <source>After editor</source>
+        <translation>エディターの右</translation>
+    </message>
+    <message id="timeline.layout.direction">
+        <source>Vertical note direction</source>
+        <translation>縦タイムラインの方向</translation>
+    </message>
+    <message id="timeline.layout.falling">
+        <source>Falling (later notes above)</source>
+        <translation>下落（上が後の時刻）</translation>
+    </message>
+    <message id="timeline.layout.rising">
+        <source>Rising (later notes below)</source>
+        <translation>上昇（下が後の時刻）</translation>
+    </message>
+    <message id="timeline.layout.lane_order">
+        <source>Lane order</source>
+        <translation>レーンの順序</translation>
+    </message>
+    <message id="timeline.drop_region">
+        <source>Drop</source>
+        <translation>ドロップ区間</translation>
+    </message>
+    <message id="export.document_changed_retry">
+        <source>The chart changed while the export dialog was open. Please export again.</source>
+        <translation>出力ダイアログの表示中に譜面が変更されました。再度出力してください。</translation>
+    </message>
+    <message id="export.empty_difficulty_warning">
+        <source>Empty difficulties were detected. Continue exporting?</source>
+        <translation>空の難易度が見つかりました。出力を続けますか？</translation>
+    </message>
+    <message id="export.empty_difficulty_continue">
+        <source>I know what I am doing!</source>
+        <translation>承知の上で続行！</translation>
+    </message>
+    <message id="qml.debug_rendering">
+        <source>Debug rendering</source>
+        <translation>デバッグ描画</translation>
+    </message>
+    <message id="qml.debug_labeled_judge_area">
+        <source>Labeled judgement areas</source>
+        <translation>番号付き判定エリア</translation>
+    </message>
+    <message id="qml.debug_muri_markers">
+        <source>Muri judgement markers</source>
+        <translation>無理押し判定マーカー</translation>
+    </message>
+    <message id="qml.debug_touch_trail">
+        <source>Touch trails</source>
+        <translation>タッチ軌跡</translation>
+    </message>
+    <message id="dialog.video_export.less_display">
+        <source>Show less</source>
+        <translation>表示を折りたたむ</translation>
+    </message>
+    <message id="video_size.custom">
+        <source>Custom</source>
+        <translation>カスタム</translation>
+    </message>
+    <message id="video_size.target_mbps">
+        <source>Target video bitrate (Mbps)</source>
+        <translation>目標映像ビットレート（Mbps）</translation>
+    </message>
+    <message id="video_size.estimated_mb">
+        <source>Estimated size: %1 MB</source>
+        <translation>推定サイズ：%1 MB</translation>
+    </message>
+    <message id="video_export.include_pv">
+        <source>Export PV</source>
+        <translation>PV を出力</translation>
+    </message>
+    <message id="video_export.intro_style_chart_preview">
+        <source>Chart preview</source>
+        <translation>譜面プレビュー</translation>
+    </message>
+    <message id="video_export.drop_range">
+        <source>Drop: %1 – %2</source>
+        <translation>ドロップ：%1 – %2</translation>
+    </message>
+    <message id="video_export.use_drop_range">
+        <source>Use drop range</source>
+        <translation>ドロップ区間を使用</translation>
+    </message>
+    <message id="video_export.intro_automatic_segment">
+        <source>Use recommended segment</source>
+        <translation>おすすめ区間を使用</translation>
+    </message>
+    <message id="video_template.file_filter">
+        <source>MiaCode video template (*.miatemplate)</source>
+        <translation>MiaCode 動画テンプレート (*.miatemplate)</translation>
+    </message>
+    <message id="video_template.compatible_file_filter">
+        <source>MiaCode video template (*.miatemplate *.json)</source>
+        <translation>MiaCode 動画テンプレート (*.miatemplate *.json)</translation>
+    </message>
+    <message id="video_export.intro_source_manual">
+        <source>Custom segment</source>
+        <translation>カスタム区間</translation>
+    </message>
+    <message id="video_export.intro_source_demo">
+        <source>Chart demo</source>
+        <translation>譜面デモ</translation>
+    </message>
+    <message id="video_export.intro_source_drop">
+        <source>Drop</source>
+        <translation>ドロップ</translation>
+    </message>
+    <message id="video_export.intro_source_default">
+        <source>Default segment</source>
+        <translation>既定の区間</translation>
+    </message>
+    <message id="video_export.intro_follow_drop">
+        <source>Follow drop</source>
+        <translation>ドロップに追従</translation>
+    </message>
+    <message id="video_export.intro_automatic">
+        <source>Automatic</source>
+        <translation>自動</translation>
+    </message>
+    <message id="structure.session_only">
+        <source>Drop changes are in this session only</source>
+        <translation>ドロップの変更はこのセッションのみ</translation>
+    </message>
+    <message id="structure.manual_outside">
+        <source>Manual drop is outside the media duration</source>
+        <translation>手動ドロップがメディア範囲外です</translation>
+    </message>
+    <message id="structure.manual_audio_changed">
+        <source>Audio changed. Review the manual drop</source>
+        <translation>音声が変更されました。手動ドロップを確認してください</translation>
+    </message>
+    <message id="structure.manual">
+        <source>Manual drop</source>
+        <translation>手動ドロップ</translation>
+    </message>
+    <message id="structure.detected">
+        <source>Detected drop</source>
+        <translation>ドロップを検出しました</translation>
+    </message>
+    <message id="structure.analyzing">
+        <source>Analyzing chart and audio…</source>
+        <translation>譜面と音声を解析中…</translation>
+    </message>
+    <message id="structure.canceled">
+        <source>Structure analysis canceled</source>
+        <translation>構成解析を中止しました</translation>
+    </message>
+    <message id="structure.wait_for_pause">
+        <source>Analysis waits for playback to pause</source>
+        <translation>再生の一時停止後に解析します</translation>
+    </message>
+    <message id="structure.syntax_estimate">
+        <source>Pressure estimate from a chart with syntax errors</source>
+        <translation>構文エラーのある譜面からの負荷推定</translation>
+    </message>
+    <message id="structure.no_audio">
+        <source>Pressure estimate · Audio unavailable</source>
+        <translation>負荷推定・音声を読み込めません</translation>
+    </message>
+    <message id="structure.candidates">
+        <source>Drop candidates · Select a range to confirm</source>
+        <translation>ドロップ候補・区間を選択して確定</translation>
+    </message>
+    <message id="structure.no_clear_drop">
+        <source>Pressure estimate · No clear drop</source>
+        <translation>負荷推定・明確なドロップなし</translation>
+    </message>
+    <message id="structure.cancel_analysis">
+        <source>Cancel analysis</source>
+        <translation>解析を中止</translation>
+    </message>
+    <message id="structure.edit_button">
+        <source>Drop…</source>
+        <translation>ドロップ…</translation>
+    </message>
+    <message id="structure.pressure_tooltip">
+        <source>%1 s · Relative chart pressure
+Density %2 · Simultaneous %3 · Held %4
+Slides %5 · Movement %6 · Rhythm %7</source>
+        <translation>%1 秒・相対譜面負荷
+密度 %2・同時 %3・保持 %4
+スライド %5・移動 %6・リズム %7</translation>
+    </message>
+    <message id="structure.edit_title">
+        <source>Edit drop range</source>
+        <translation>ドロップ区間を編集</translation>
+    </message>
+    <message id="structure.start_seconds">
+        <source>Start (seconds)</source>
+        <translation>開始（秒）</translation>
+    </message>
+    <message id="structure.end_seconds">
+        <source>End (seconds)</source>
+        <translation>終了（秒）</translation>
+    </message>
+    <message id="structure.recommendation">
+        <source>Recommendation · %1–%2 s</source>
+        <translation>おすすめ・%1–%2 秒</translation>
+    </message>
+    <message id="structure.candidate">
+        <source>Candidate · %1–%2 s</source>
+        <translation>候補・%1–%2 秒</translation>
+    </message>
+    <message id="structure.undo">
+        <source>Undo drop edit</source>
+        <translation>区間編集を元に戻す</translation>
+    </message>
+    <message id="structure.redo">
+        <source>Redo drop edit</source>
+        <translation>区間編集をやり直す</translation>
+    </message>
+    <message id="structure.clear">
+        <source>Clear drop</source>
+        <translation>ドロップを消去</translation>
+    </message>
+    <message id="structure.analyze_again">
+        <source>Analyze again</source>
+        <translation>再解析</translation>
+    </message>
+    <message id="structure.save_drop">
+        <source>Save drop</source>
+        <translation>ドロップを保存</translation>
+    </message>
+    <message id="structure.apply_manual">
+        <source>Apply manual drop</source>
+        <translation>手動ドロップを適用</translation>
+    </message>
+    <message id="editor.slide_component_edit_rejected">
+        <source>This edit would change an unselected Slide component. Select the whole Slide and try again.</source>
+        <translation>この編集は選択していないスライドの部分にも影響します。スライド全体を選択して再試行してください。</translation>
+    </message>
+    <message id="metadata.advanced.conflict_warning">
+        <source>The original file contains conflicting fields: %1. Review the complete source before saving; automatic metadata saves are blocked.</source>
+        <translation>元ファイルに値の異なる重複項目があります：%1。全文を確認してから保存してください。自動メタデータ保存は停止しています。</translation>
+    </message>
+    <message id="export.syntax_before_zip">
+        <source>The chart contains syntax errors. Fix them before exporting ZIP.</source>
+        <translation>譜面に構文エラーがあります。修正してから ZIP 出力してください。</translation>
+    </message>
+    <message id="video_template.path_exists">
+        <source>A template with that name already exists.</source>
+        <translation>同じ名前のテンプレートが既に存在します。</translation>
     </message>
 </context>
 <context>
@@ -5509,17 +6154,20 @@ Error: %1</source>
 
 <context>
     <name>HandOrderSlideTiming</name>
-    <message id="preview.canvas.slide_timing_from_launch_beat">
-        <source>Start on a matching launch beat</source>
-        <translation>始動拍から補間を開始</translation>
-    </message>
-    <message id="preview.canvas.slide_timing_early_perfect_from_head">
-        <source>Fully bright from star head when Perfect starts before launch beat</source>
-        <translation>開始拍より前に Perfect に入る場合、星の頭拍から全点灯</translation>
-    </message>
-    <message id="preview.canvas.show_slide_judgement_timing">
-        <source>Show Slide Judgement Timing</source>
-        <translation>スライド判定タイミングを表示</translation>
+
+
+
+</context>
+
+
+
+<context>
+    <name>HandOrderPressure</name>
+    <message id="structure.hand_order_tooltip">
+        <source>Annotated hands · Load L %1 / R %2
+Movement L %3 / R %4 · Alternation %5</source>
+        <translation>手動運指 · 占有 左 %1 / 右 %2
+移動 左 %3 / 右 %4 · 交替 %5</translation>
     </message>
 </context>
 </TS>

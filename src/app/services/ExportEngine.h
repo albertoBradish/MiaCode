@@ -20,6 +20,9 @@ public:
         int successCount = 0;
         QStringList failedCharts;
         QStringList exportedFiles;
+        int coverSuccessCount = 0;
+        QStringList failedCovers;
+        QStringList coverAdjustments;
     };
 
     // Batch runs synchronously on the UI thread, so it reports and asks about
@@ -28,6 +31,7 @@ public:
         std::function<void(int percent, const QString& label)> progressChanged;
         std::function<bool()> cancellationRequested;
         std::function<void()> retrying;
+        std::function<QStringList(const VideoExportTask&, const QString&, QString*, QStringList*)> exportCover;
     };
 
     virtual ~ExportEngine() = default;

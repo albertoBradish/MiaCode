@@ -152,5 +152,56 @@ int main(int argc, char** argv)
     expect(recovered.contains(QStringLiteral("3~r,4~l")) && recovered.count(',') == cluster.count(',')
         && SimaiParser::parseForTimeline(recovered).annotationErrors.isEmpty(),
         "source-length recovery never deletes a legal neighbour's suffix or beat separator");
+
+    const QString token = QStringLiteral("1bx-3[4:1]*w5[8:1]~[head=l;branch0=0:r|0.25:l;branch1=split:0:l|0.5:r&0:r]");
+    const QString branches = QStringLiteral("(120){4}") + token + QStringLiteral("/2~m,\nE");
+    model.rebuildFromText(branches, 0.0);
+    const auto objects = model.noteObjects();
+    const auto branchNotes = model.noteSourceRanges();
+    const auto parsedBranches = SimaiParser::parseForTimeline(branches);
+    expect(objects.size() == 4 && parsedBranches.noteMarkers.size() == 3
+        && parsedBranches.annotationErrors.isEmpty(), "annotated branches expose separate head and track objects");
+    if (objects.size() == 4 && parsedBranches.noteMarkers.size() == 3) {
+        const auto& slide = parsedBranches.noteMarkers[0];
+        const auto& wifi = parsedBranches.noteMarkers[1];
+        expect(objects[0].component == NoteComponent::SlideHead
+            && objects[1].trackIndex == 0 && objects[2].trackIndex == 1
+            && objects[1].location == sourceLocationId(slide.sourceLine, slide.slideTrackSourceCol)
+            && objects[2].location == sourceLocationId(wifi.sourceLine, wifi.slideTrackSourceCol)
+            && objects[2].highlight.end == wifi.handOrderAnnotationCol - 1,
+            "preview and timeline agree on track identity and highlight stops before the suffix");
+
+        const NoteObjects head{objects[0]}, firstTrack{objects[1]}, wifiTrack{objects[2]};
+        const auto assignment = transformSlideComponents(token, wifiTrack, u"hand_order.set_either");
+        expect(assignment.supported && assignment.text.contains(QStringLiteral(
+            "~[head=l;branch0=0:r|0.25:l;branch1=split:0:m|0.5:m&0:m]")),
+            "assigning a hand to one track leaves the head, sibling and Wifi handoff positions intact");
+        const auto swappedWifi = transformSlideComponents(token, wifiTrack, u"hand_order.swap_hands");
+        expect(swappedWifi.supported && swappedWifi.text.contains(QStringLiteral(
+            "~[head=l;branch0=0:r|0.25:l;branch1=split:0:r|0.5:l&0:l]")),
+            "swap affects only the selected track and keeps its sectors");
+        const auto brokenWifi = transformSlideComponents(token, wifiTrack, u"transform.toggle_break");
+        expect(brokenWifi.supported && brokenWifi.text == QStringLiteral("1bx-3[4:1]*w5b[8:1]")
+            + token.mid(token.indexOf(QLatin1Char('~'))), "changing a property leaves the complete suffix untouched");
+
+        const auto removedSlide = deleteSelectedNoteObjects(branches, firstTrack, branchNotes);
+        const auto removedHead = deleteSelectedNoteObjects(branches, head, branchNotes);
+        const auto copiedHead = copySelectedNoteObjects(branches, head, branchNotes);
+        const auto copiedWifi = copySelectedNoteObjects(branches, wifiTrack, branchNotes);
+        expect(removedSlide.supported && removedSlide.text.contains(QStringLiteral("1bxw5[8:1]~[head=l;track=split:0:l|0.5:r&0:r]"))
+            && SimaiParser::validateSyntax(removedSlide.text).annotationErrors.isEmpty(),
+            "deleting one branch remaps the surviving Wifi clause to track");
+        expect(removedHead.supported && removedHead.text.contains(QStringLiteral("1?-3[4:1]*w5[8:1]~[branch0=0:r|0.25:l;branch1=split:0:l|0.5:r&0:r]")),
+            "deleting the shared head retains both track annotations without a head clause");
+        expect(copiedHead.supported && copiedHead.text.contains(QStringLiteral("1bx$$~l,"))
+            && copiedWifi.supported && copiedWifi.text.contains(QStringLiteral("1?w5[8:1]~[track=split:0:l|0.5:r&0:r],"))
+            && SimaiParser::validateSyntax(copiedWifi.text + QStringLiteral("E")).annotationErrors.isEmpty(),
+            "copy isolates the chosen component and retains its hand annotation");
+
+        const QString unannotated = QStringLiteral("1bx-3[4:1]*w5[8:1]");
+        const auto unsupported = transformSlideComponents(unannotated, wifiTrack, u"hand_order.set_left");
+        expect(!unsupported.supported && unsupported.text == unannotated,
+            "partial assignment refuses to assign an unselected branch implicitly");
+    }
     return failures ? 1 : 0;
 }

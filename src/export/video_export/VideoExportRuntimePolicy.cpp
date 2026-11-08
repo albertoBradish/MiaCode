@@ -1,11 +1,41 @@
 #include "export/video_export/VideoExportRuntimePolicy.h"
+#include <cmath>
 
 namespace miacode::video_export {
+
+double normalizedCustomVideoBitrateMbps(double value)
+{
+    return std::isfinite(value)
+        ? qBound(kCustomVideoBitrateMinMbps, value, kCustomVideoBitrateMaxMbps)
+        : kCustomVideoBitrateDefaultMbps;
+}
+
+bool legacySizePresetOmitsPv(VideoExportSizePreset preset)
+{
+    return preset == VideoExportSizePreset::Target30Mb || preset == VideoExportSizePreset::UltraCompact;
+}
+
+double legacySizePresetVideoBitrateMbps(VideoExportSizePreset preset, int width, int height, int fps)
+{
+    const auto policy = videoExportSizePolicy(preset);
+    const double pixelsPerSecond = static_cast<double>(width) * height * fps;
+    return policy.bitrateCoefficient > 0.0
+        ? qBound(policy.minBitrateKbps,
+                 qRound64(pixelsPerSecond * policy.bitrateCoefficient / 1000.0),
+                 policy.maxBitrateKbps) / 1000.0
+        : 0.0;
+}
 
 VideoExportSizePolicy videoExportSizePolicy(VideoExportSizePreset preset)
 {
     VideoExportSizePolicy policy;
     switch (preset) {
+    case VideoExportSizePreset::Target30Mb:
+    case VideoExportSizePreset::Target100Mb:
+    case VideoExportSizePreset::Target200Mb:
+        policy.maxAudioBitrateKbps = preset == VideoExportSizePreset::Target30Mb ? 128 : 192;
+        policy.usePeakConstrainedVbr = true;
+        return policy;
     case VideoExportSizePreset::Compact:
         policy.bitrateCoefficient = 0.070;
         policy.minBitrateKbps = 1800;
@@ -27,7 +57,6 @@ VideoExportSizePolicy videoExportSizePolicy(VideoExportSizePreset preset)
         policy.gopSeconds = 6;
         policy.maxAudioBitrateKbps = 128;
         policy.x264CrfAdjustment = 3;
-        policy.disableVideoBackground = preset == VideoExportSizePreset::UltraCompact;
         policy.usePeakConstrainedVbr = true;
         return policy;
     case VideoExportSizePreset::Standard:
@@ -39,6 +68,10 @@ VideoExportSizePolicy videoExportSizePolicy(VideoExportSizePreset preset)
 QString videoExportSizePresetToken(VideoExportSizePreset preset)
 {
     switch (preset) {
+    case VideoExportSizePreset::Target30Mb: return QStringLiteral("target_30mb");
+    case VideoExportSizePreset::Target100Mb: return QStringLiteral("target_100mb");
+    case VideoExportSizePreset::Target200Mb: return QStringLiteral("target_200mb");
+    case VideoExportSizePreset::Custom: return QStringLiteral("custom");
     case VideoExportSizePreset::Compact:
         return QStringLiteral("compact");
     case VideoExportSizePreset::UltraCompact:
@@ -49,6 +82,36 @@ QString videoExportSizePresetToken(VideoExportSizePreset preset)
     default:
         return QStringLiteral("standard");
     }
+}
+
+VideoExportSizePreset videoExportSizePresetFromToken(const QString& token, VideoExportSizePreset fallback)
+{
+    const QString normalized = token.trimmed().toLower();
+    for (const auto preset : {VideoExportSizePreset::Standard, VideoExportSizePreset::Compact,
+            VideoExportSizePreset::UltraCompactWithPv, VideoExportSizePreset::UltraCompact,
+            VideoExportSizePreset::Target30Mb, VideoExportSizePreset::Target100Mb,
+            VideoExportSizePreset::Target200Mb, VideoExportSizePreset::Custom}) {
+        if (normalized == videoExportSizePresetToken(preset)) return preset;
+    }
+    return fallback;
+}
+
+qint64 videoExportTargetBytes(VideoExportSizePreset preset)
+{
+    switch (preset) {
+    case VideoExportSizePreset::Target30Mb: return 30000000;
+    case VideoExportSizePreset::Target100Mb: return 100000000;
+    case VideoExportSizePreset::Target200Mb: return 200000000;
+    default: return 0;
+    }
+}
+
+qint64 videoExportTargetBitrateKbps(VideoExportSizePreset preset, double seconds, int audioKbps)
+{
+    const qint64 bytes = videoExportTargetBytes(preset);
+    if (!bytes || !std::isfinite(seconds) || seconds <= 0) return 0;
+    // MB is decimal. Reserve mux/metadata space before allocating video bits.
+    return qMax<qint64>(0, static_cast<qint64>(bytes * 0.975 * 8 / (1000 * seconds)) - audioKbps - 16);
 }
 
 int effectiveVideoExportAudioBitrateKbps(VideoExportSizePreset preset, int requestedKbps)

@@ -252,3 +252,7 @@ miacode_add_dev_tool(hand_order_pressure_adapter_spec TEST
     LIBS miacode_analysis Qt6::Core
     INCLUDES src
 )
+miacode_add_dev_tool(video_export_background_policy_spec TEST
+    SOURCES src/tools/video_export/VideoExportBackgroundPolicySpec.cpp
+    LIBS miacode_export Qt6::Quick Qt6::Gui
+    INCLUDES src)

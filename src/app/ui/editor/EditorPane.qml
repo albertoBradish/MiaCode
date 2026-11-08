@@ -394,6 +394,7 @@ Item {
         analysisSession: root.analysisSession
         preferences: root.preferences
         shortcuts: root.shortcuts
+        onPlaybackToggleRequested: root.previewSession.togglePlayback()
         onNormalizeChartRequested: root.pages.openNormalizeWholeChart()
         onCompletionSettingsRequested: function(group) { root.completionSettingsRequested(group) }
     }
@@ -595,6 +596,12 @@ Item {
                         onClicked: root.documentSession.removeChartPv()
                     }
                 }
+            }
+
+            AdvancedMetadataForm {
+                Layout.fillWidth: true
+                visible: root.preferences.advancedMetadataEnabled
+                documentSession: root.documentSession
             }
 
             SettingsSection {

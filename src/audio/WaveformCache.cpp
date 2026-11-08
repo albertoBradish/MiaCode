@@ -1,3 +1,4 @@
+#include "common/RuntimePaths.h"
 #include "audio/WaveformCache.h"
 
 #include <cmath>

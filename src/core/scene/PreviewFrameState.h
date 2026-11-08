@@ -237,6 +237,7 @@ struct PreviewAssetState {
 };
 
 struct PreviewRenderState {
+    BackgroundPolicy backgroundPolicy = BackgroundPolicy::Normal;
     double backgroundBrightnessOuter = miacode::preview_video::kBackgroundBrightnessDefault;
     double backgroundBrightnessInner = miacode::preview_video::kBackgroundBrightnessInnerDefault;
     double layoutSquareScale = miacode::preview_video::kLayoutSquareScaleDefault;
@@ -258,6 +259,10 @@ struct PreviewRenderState {
     bool showTimestamp = true;
     bool showObjectStatsHud = false;
     bool showChartInfoHud = false;
+    bool showBpmHud = false;
+    bool showCpsHud = false;
+    bool showMeterHud = false;
+    bool showModsHud = false;
     // Presentation-only switch exposed to extensions. Mine semantics remain
     // intact while their dedicated sprites/guides are replaced by normal art.
     bool useMineSkin = true;
@@ -272,6 +277,7 @@ struct PreviewFrameState {
     // Export may crop render markers before a future launch cue. Preserve its
     // immutable full-chart lookup independently of the visible marker range.
     std::shared_ptr<const miacode::slide_judge::LaunchBeatIndex> slideTimingLaunchBeats;
+    QVector<TimelineTimingPoint> timingPoints;
     QVector<double> measureLineSeconds;
     // Editor-only transient projection; never written into chart/render settings.
     QSet<quint64> selectedNoteLocations;

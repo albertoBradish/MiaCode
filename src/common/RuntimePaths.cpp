@@ -5,6 +5,8 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QSettings>
+#include <QCoreApplication>
+#include <QUuid>
 
 namespace miacode::runtime_paths {
 namespace {
@@ -120,6 +122,42 @@ QString cacheDirectory() { return childDirectory(QStringLiteral("cache")); }
 QString dataDirectory() { return childDirectory(QStringLiteral("data")); }
 QString logDirectory() { return childDirectory(QStringLiteral("logs")); }
 QString tempDirectory() { return childDirectory(QStringLiteral("temp")); }
+
+bool configureProcessEnvironment(QString* error)
+{
+    if (initializedRoot.isEmpty()) return fail(error, QStringLiteral("Hand-order runtime is not initialized"));
+    for (const char* name : {"MIACODE_OPLOG_SHADOW_PATH", "MIACODE_RUNTIME_LOG_PATH", "MIACODE_AUDIO_LOG_PATH",
+        "MIACODE_EXPORT_LOG_PATH", "MIACODE_STARTUP_LOG_PATH", "MIACODE_FATAL_LOG_PATH",
+        "MIACODE_OPERATION_LOG_PATH", "MIACODE_PV_MEMORY_LOG_PATH", "MIACODE_PREVIEW_PROFILE_PATH"}) {
+        if (!qunsetenv(name)) return fail(error, QStringLiteral("Cannot clear inherited log override"));
+    }
+    if (!qputenv("MIACODE_LOG_DIR", logDirectory().toUtf8()))
+        return fail(error, QStringLiteral("Cannot set the hand-order log directory"));
+    for (const char* name : {"TEMP", "TMP", "TMPDIR"}) {
+        if (!qputenv(name, tempDirectory().toUtf8()))
+            return fail(error, QStringLiteral("Cannot set the hand-order temporary directory"));
+    }
+    QCoreApplication::setOrganizationName(QStringLiteral("MiaCodeHandOrder"));
+    QCoreApplication::setOrganizationDomain(QStringLiteral("handorder.miacode.local"));
+    QCoreApplication::setApplicationName(QStringLiteral("MiaCodeHandOrder"));
+    return true;
+}
+
+QString directory(const char* name)
+{
+    return childDirectory(QString::fromLatin1(name));
+}
+
+QString configFile(const char* name)
+{
+    return initializedRoot.isEmpty() ? QString() : QDir(configDirectory()).filePath(QString::fromLatin1(name));
+}
+
+QString temporaryFile(const QString& fileName)
+{
+    return initializedRoot.isEmpty() ? QString() : QDir(tempDirectory()).filePath(
+        QUuid::createUuid().toString(QUuid::WithoutBraces) + '-' + QFileInfo(fileName).fileName());
+}
 QString exportsDirectory()
 {
     const QString workspace = workspaceDirectory();

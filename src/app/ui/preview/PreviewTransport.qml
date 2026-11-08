@@ -25,6 +25,7 @@ Item {
     function closeMenus() {
         rateMenu.close()
         canvasMenu.close()
+        structureMarkers.closeEditor()
     }
 
 
@@ -184,6 +185,14 @@ Item {
             root.previewSession.endScrub(root.activeScrubSecond)
             root.scrubActive = false
         }
+    }
+
+    ChartStructureStrip {
+        id: structureMarkers
+        anchors.fill: progress
+        slider: progress
+        structure: root.dataAvailable ? root.previewSession.structure || null : null
+        positionSeconds: root.displayedSeconds
     }
 
     RowLayout {

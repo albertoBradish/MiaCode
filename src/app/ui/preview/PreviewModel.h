@@ -30,6 +30,8 @@ namespace miacode::ui {
 class PreviewModel final : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(double quarterBeat READ quarterBeat NOTIFY positionChanged)
+    Q_PROPERTY(QObject* structure READ structure CONSTANT)
     Q_PROPERTY(double positionSeconds READ positionSeconds WRITE setPositionSeconds NOTIFY positionChanged)
     Q_PROPERTY(double durationSeconds READ durationSeconds NOTIFY transportChanged)
     Q_PROPERTY(double lowerBoundSeconds READ lowerBoundSeconds NOTIFY transportChanged)
@@ -38,6 +40,7 @@ class PreviewModel final : public QObject
     Q_PROPERTY(QString renderMode READ renderMode NOTIFY renderModeChanged)
     Q_PROPERTY(QString renderModeLabel READ renderModeLabel NOTIFY renderModeChanged)
     Q_PROPERTY(bool muriCheckEnabled READ muriCheckEnabled NOTIFY renderModeChanged)
+    Q_PROPERTY(bool debugRendering READ debugRendering NOTIFY renderModeChanged)
     Q_PROPERTY(bool smoothStarErase READ smoothStarErase NOTIFY renderModeChanged)
     // 无理检测 parameters: 手部半径 (1080 px reference) and 撞尾阈值 (ms), plus the
     // slider ranges, so the menu states no limits of its own.
@@ -59,6 +62,9 @@ public:
                              QObject* parent = nullptr);
 
     double positionSeconds() const;
+    QObject* structure() const { return structure_; }
+    void setStructure(QObject* model) { structure_ = model; }
+    double quarterBeat() const { return quarterBeat_; }
     double durationSeconds() const;
     double lowerBoundSeconds() const;
     double rate() const;
@@ -66,6 +72,7 @@ public:
     QString renderMode() const;
     QString renderModeLabel() const;
     bool muriCheckEnabled() const;
+    bool debugRendering() const { return renderMode_ == QLatin1String("debug"); }
     bool smoothStarErase() const;
     int muriHandRadiusPx() const;
     int muriTapOnSlideThresholdMs() const;
@@ -84,6 +91,7 @@ public:
     void setPlaying(bool value);
     Q_INVOKABLE void toggleRenderMode();
     Q_INVOKABLE void setMuriCheckEnabled(bool enabled);
+    Q_INVOKABLE void setDebugRendering();
     Q_INVOKABLE void setSmoothStarErase(bool enabled);
     Q_INVOKABLE void setMuriHandRadiusPx(int radiusPx);
     Q_INVOKABLE void setMuriTapOnSlideThresholdMs(int thresholdMs);
@@ -121,6 +129,7 @@ private:
     void appendV2UiProbeSummary() const;
 
     miacode::ShellNotifications* notifications_ = nullptr;
+    QObject* structure_ = nullptr;
     // Bound to the assembly's slot, not a snapshot.
     miacode::PreviewSurface** surfaceSlot_ = nullptr;
     miacode::PreviewSurface* surface() const
@@ -136,6 +145,7 @@ private:
         return controlSlot_ != nullptr ? *controlSlot_ : nullptr;
     }
     double positionSeconds_ = 0.0;
+    double quarterBeat_ = 0.0;
     double durationSeconds_ = 0.0;
     double lowerBoundSeconds_ = 0.0;
     double rate_ = 1.0;

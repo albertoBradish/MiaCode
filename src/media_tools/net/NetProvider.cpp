@@ -1,3 +1,4 @@
+#include "common/RuntimePaths.h"
 #include "media_tools/net/NetProvider.h"
 
 #include "media_tools/net/NetClient.h"

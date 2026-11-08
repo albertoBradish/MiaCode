@@ -50,6 +50,8 @@ struct VideoExportSnapshot {
     int audioBitrateKbps = 192;
     VideoExportPreset preset = VideoExportPreset::HighQuality;
     VideoExportSizePreset sizePreset = VideoExportSizePreset::Standard;
+    double targetVideoBitrateMbps = miacode::video_export::kCustomVideoBitrateDefaultMbps;
+    bool includePv = true;
     bool fullRangeExport = true;
     QString outputPath;
     VideoExportOutputMode outputMode = VideoExportOutputMode::Mp4;
@@ -64,6 +66,10 @@ struct VideoExportSnapshot {
     int measureLineCustomBeats = 4;
     bool showObjectStatsHud = false;
     bool showChartInfoHud = false;
+    bool showBpmHud = false;
+    bool showCpsHud = false;
+    bool showMeterHud = false;
+    bool showModsHud = false;
     // Count-in on/off. The clock_count VALUE is always re-derived from the chart;
     // only this gate is serialized. Default true so legacy / CLI / batch snapshots
     // keep emitting the count-in; the video dialog's checkbox toggles it.

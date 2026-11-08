@@ -76,6 +76,28 @@ Rectangle {
         }
     }
 
+    component CoverChecks: SettingsSection {
+        id: coverChecks
+        property bool batch: false
+        title: qsTrId("video_cover.multiple")
+        enabled: root.session && !root.session.exportRunning
+        Layout.fillWidth: true
+        Flow {
+            Layout.fillWidth: true
+            spacing: 12
+            Repeater {
+                model: root.session ? root.session.singleCoverPresetOptions : []
+                delegate: AppCheckBox {
+                    required property var modelData
+                    readonly property var selected: root.session ? (coverChecks.batch ? root.session.batchCoverPresets : root.session.singleCoverPresets) : []
+                    text: modelData.label
+                    checked: modelData.value === "" ? selected.length === 0 : selected.indexOf(modelData.value) >= 0
+                    onToggled: if (root.session) root.session.setCoverPresetChecked(modelData.value, checked, coverChecks.batch)
+                }
+            }
+        }
+    }
+
     ColumnLayout {
         anchors.fill: parent
         anchors.bottomMargin: Theme.dialogPadding
@@ -88,6 +110,14 @@ Rectangle {
             sidebarTitle: true
             showMore: false
 
+            AppButton {
+                id: videoTemplateButton
+                objectName: "videoTemplateButton"
+                text: qsTrId("video_template.title")
+                selected: videoTemplateMenu.active
+                enabled: root.settingsAvailable && !root.session.exportRunning
+                onClicked: videoTemplateMenu.active ? videoTemplateMenu.close() : videoTemplateMenu.openAt(videoTemplateButton)
+            }
             AppChoiceButton {
                 text: qsTrId("action.batch_export")
                 enabled: root.session !== null
@@ -223,13 +253,18 @@ Rectangle {
                                 objectName: "batchOutputDirectoryField"
                                 Layout.fillWidth: true
                                 text: root.session ? root.session.batchOutputDirectory : ""
-                                onEditingFinished: if (root.session) root.session.batchOutputDirectory = text
+                                onEditingFinished: {
+                                    if (root.session) root.session.batchOutputDirectory = text
+                                    text = Qt.binding(() => root.session ? root.session.batchOutputDirectory : "")
+                                }
                             }
                             AppButton {
                                 text: qsTrId("action.browse")
                                 onClicked: if (root.session) root.session.browseBatchOutputDirectory()
                             }
                         }
+
+                        CoverChecks { batch: true }
 
                         SettingsSection {
                             title: qsTrId("dialog.batch_export.chart_folders")
@@ -394,6 +429,8 @@ Rectangle {
                             }
                         }
 
+                        CoverChecks { visible: root.session && root.session.activeTab === "export" }
+
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: 12
@@ -511,6 +548,72 @@ Rectangle {
                             }
                         }
 
+                        AppCheckBox {
+                            text: qsTrId("video_export.include_pv")
+                            enabled: root.session && root.session.outputModeIndex !== 1
+                            checked: root.session ? root.session.includePv : true
+                            onToggled: if (root.session) root.session.includePv = checked
+                        }
+
+                        ColumnLayout {
+                            visible: root.session && root.session.customBitrate
+                                && root.session.outputModeIndex !== 1
+                            Layout.fillWidth: true
+                            spacing: Theme.settingsLabelSpacing
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Text {
+                                    text: qsTrId("video_size.target_mbps")
+                                    color: Theme.colors.text.secondary
+                                    font.family: Theme.uiFont
+                                    font.pixelSize: Theme.uiFontSize
+                                }
+                                AppSlider {
+                                    id: bitrateSlider
+                                    Layout.fillWidth: true
+                                    Accessible.name: qsTrId("video_size.target_mbps")
+                                    from: 0.1
+                                    to: 100
+                                    stepSize: 0.1
+                                    onMoved: if (root.session) root.session.targetVideoBitrateMbps = value
+                                    Binding {
+                                        target: bitrateSlider
+                                        property: "value"
+                                        value: root.session ? root.session.targetVideoBitrateMbps : 8
+                                        when: !bitrateSlider.pressed
+                                        restoreMode: Binding.RestoreNone
+                                    }
+                                }
+                                AppTextField {
+                                    id: bitrateField
+                                    Layout.preferredWidth: 76
+                                    Accessible.name: qsTrId("video_size.target_mbps")
+                                    text: root.session ? root.session.targetVideoBitrateMbps.toFixed(3) : "8"
+                                    validator: DoubleValidator {
+                                        locale: "C"
+                                        bottom: 0.1
+                                        top: 100
+                                        decimals: 3
+                                        notation: DoubleValidator.StandardNotation
+                                    }
+                                    onEditingFinished: {
+                                        if (root.session && acceptableInput)
+                                            root.session.targetVideoBitrateMbps = Number(text)
+                                        text = Qt.binding(() => root.session
+                                            ? root.session.targetVideoBitrateMbps.toFixed(3) : "8")
+                                    }
+                                }
+                            }
+                            Text {
+                                text: qsTrId("video_size.estimated_mb")
+                                    .arg(root.session ? root.session.estimatedCustomSizeMb.toFixed(1) : "0")
+                                color: Theme.colors.text.secondary
+                                font.family: Theme.uiFont
+                                font.pixelSize: Theme.uiFontSize
+                            }
+                        }
+
                         SettingsSection {
                             title: qsTrId("video_export.export_range")
 
@@ -522,6 +625,31 @@ Rectangle {
                                 Layout.fillWidth: true
                                 exportSession: root.session
                                 previewSession: root.previewSession
+                                highlightRange: root.session && root.session.dropAvailable
+                                highlightStartSeconds: root.session ? root.session.dropStartSeconds : 0
+                                highlightEndSeconds: root.session ? root.session.dropEndSeconds : 0
+                            }
+                            RowLayout {
+                                Layout.fillWidth: true
+                                visible: root.session && root.session.dropAvailable
+                                Text {
+                                    Layout.fillWidth: true
+                                    wrapMode: Text.WordWrap
+                                    text: root.session ? qsTrId("video_export.drop_range")
+                                        .arg(exportRangeSelector.formatSecond(root.session.dropStartSeconds))
+                                        .arg(exportRangeSelector.formatSecond(root.session.dropEndSeconds)) : ""
+                                    color: Theme.colors.text.secondary
+                                    font.family: Theme.uiFont
+                                    font.pixelSize: Theme.uiFontSize
+                                }
+                                AppButton {
+                                    text: qsTrId("video_export.use_drop_range")
+                                    enabled: root.settingsAvailable && root.session.rangePreviewAvailable
+                                    onClicked: {
+                                        root.session.adoptDropRange()
+                                        exportRangeSelector.seekToSelectedStart()
+                                    }
+                                }
                             }
                             RowLayout {
                                 Layout.fillWidth: true
@@ -613,7 +741,9 @@ Rectangle {
                             AppButton {
                                 id: moreDisplayButton
                                 objectName: "exportMoreDisplayButton"
-                                text: qsTrId("dialog.video_export.more_display")
+                                text: checked ? qsTrId("dialog.video_export.less_display")
+                                              : qsTrId("dialog.video_export.more_display")
+                                Accessible.name: text
                                 checkable: true
                                 checked: false
                                 selected: checked
@@ -624,6 +754,26 @@ Rectangle {
                                 visible: moreDisplayButton.checked
                                 Layout.fillWidth: true
                                 spacing: Theme.settingsRowSpacing
+                                AppSwitch {
+                                    text: qsTrId("dialog.video_export.option.show_bpm_hud")
+                                    checked: root.session ? root.session.showBpmHud : false
+                                    onToggled: if (root.session) root.session.showBpmHud = checked
+                                }
+                                AppSwitch {
+                                    text: qsTrId("dialog.video_export.option.show_cps_hud")
+                                    checked: root.session ? root.session.showCpsHud : false
+                                    onToggled: if (root.session) root.session.showCpsHud = checked
+                                }
+                                AppSwitch {
+                                    text: qsTrId("dialog.video_export.option.show_meter_hud")
+                                    checked: root.session ? root.session.showMeterHud : false
+                                    onToggled: if (root.session) root.session.showMeterHud = checked
+                                }
+                                AppSwitch {
+                                    text: qsTrId("dialog.video_export.option.show_mods_hud")
+                                    checked: root.session ? root.session.showModsHud : false
+                                    onToggled: if (root.session) root.session.showModsHud = checked
+                                }
                                 AppSwitch {
                                     objectName: "exportShowMeasureLinesSwitch"
                                     text: qsTrId("preview.canvas.show_measure_lines")
@@ -711,9 +861,10 @@ Rectangle {
                                     objectName: "introStyleCombo"
                                     Layout.fillWidth: true
                                     model: [qsTrId("video_export.intro_style_classic"),
-                                            qsTrId("video_export.intro_style_pv_preview")]
-                                    currentIndex: root.session && root.session.introPvPreview ? 1 : 0
-                                    onActivated: if (root.session) root.session.introPvPreview = currentIndex === 1
+                                            qsTrId("video_export.intro_style_pv_preview"),
+                                            qsTrId("video_export.intro_style_chart_preview")]
+                                    currentIndex: root.session ? root.session.introStyleIndex : 0
+                                    onActivated: if (root.session) root.session.introStyleIndex = currentIndex
                                 }
                             }
                             RowLayout {
@@ -797,6 +948,26 @@ Rectangle {
                                    : qsTrId("video_export.intro_pv_segment")
                             visible: !!root.session && root.session.introPvPreview
                             enabled: root.introSettingsEnabled
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                AppComboBox {
+                                    Layout.fillWidth: true
+                                    model: [qsTrId("video_export.intro_automatic"), qsTrId("video_export.intro_follow_drop")]
+                                    currentIndex: root.session ? root.session.introWindowModeIndex : 0
+                                    onActivated: if (root.session) root.session.introWindowModeIndex = currentIndex
+                                }
+                                AppButton {
+                                    text: qsTrId("video_export.intro_automatic_segment")
+                                    onClicked: if (root.session) root.session.clearIntroWindowOverride()
+                                }
+                            }
+                            Text {
+                                text: root.session ? root.session.introSourceLabel : ""
+                                color: Theme.colors.text.secondary
+                                font.family: Theme.uiFont
+                                font.pixelSize: Theme.uiFontSize
+                            }
 
                             // The lane is the song. While the intro's music plays the
                             // playhead is the segment position (start + intro elapsed);
@@ -1043,4 +1214,48 @@ Rectangle {
                 exportRangeEndField.text = root.session.exportEndSeconds.toFixed(3)
         }
     }
+    AppMenu {
+        id: videoTemplateMenu
+        hugContent: true
+        AppMenuItem { text: qsTrId("video_template.export"); onTriggered: root.session.exportVideoTemplate() }
+        AppMenuItem { text: qsTrId("video_template.import"); onTriggered: root.session.importVideoTemplate() }
+        AppMenuItem { text: qsTrId("cover.manage_presets"); onTriggered: videoTemplateDialog.open() }
+        AppMenuSeparator {}
+        Instantiator {
+            model: root.session ? root.session.videoTemplates : []
+            delegate: AppMenuItem {
+                required property var modelData
+                text: modelData.name
+                onTriggered: root.session.applyVideoTemplate(modelData.name)
+            }
+            onObjectAdded: (index, item) => videoTemplateMenu.insertItem(index + 4, item)
+            onObjectRemoved: (index, item) => videoTemplateMenu.removeItem(item)
+        }
+    }
+    AppDialog {
+        id: videoTemplateDialog
+        title: qsTrId("video_template.title")
+        preferredWidth: 560
+        preferredHeight: 400
+        footer: DialogFooter { acceptText: qsTrId("action.close"); onAccepted: videoTemplateDialog.close() }
+        body: ColumnLayout {
+            spacing: Theme.settingsRowSpacing
+            RowLayout {
+                AppTextField { id: templateName; Layout.fillWidth: true; placeholderText: qsTrId("cover.preset_name") }
+                AppButton { text: qsTrId("cover.save_preset"); enabled: templateName.text.trim().length > 0; onClicked: root.session.saveVideoTemplate(templateName.text) }
+            }
+            Repeater {
+                model: root.session ? root.session.videoTemplates : []
+                delegate: RowLayout {
+                    required property var modelData
+                    Layout.fillWidth: true
+                    AppTextField { id: savedName; Layout.fillWidth: true; text: modelData.name }
+                    AppButton { text: qsTrId("cover.apply_preset"); onClicked: root.session.applyVideoTemplate(modelData.name) }
+                    AppButton { text: qsTrId("cover.rename_preset"); onClicked: root.session.renameVideoTemplate(modelData.name, savedName.text) }
+                    AppButton { text: qsTrId("cover.delete_preset"); onClicked: root.session.removeVideoTemplate(modelData.name) }
+                }
+            }
+        }
+    }
+
 }

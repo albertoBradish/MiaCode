@@ -7,6 +7,8 @@
 #include "app/services/EditorSyncController.h"
 #include <QtQmlIntegration/qqmlintegration.h>
 #include <optional>
+#include <QElapsedTimer>
+#include "editor/SpaceInputGuard.h"
 
 namespace miacode::ui {
 struct ScintillaQuickForeign
@@ -52,6 +54,8 @@ class ScintillaEditorBridge : public ScintillaQuick_item
     Q_PROPERTY(int overviewDisplayLineCount READ overviewDisplayLineCount NOTIFY overviewChanged)
     Q_PROPERTY(int overviewCurrentDisplayLine READ overviewCurrentDisplayLine NOTIFY overviewChanged)
     Q_PROPERTY(bool overviewFollowing READ overviewFollowing NOTIFY overviewChanged)
+    Q_PROPERTY(bool spaceGuardEnabled READ spaceGuardEnabled WRITE setSpaceGuardEnabled NOTIFY spaceGuardChanged)
+    Q_PROPERTY(bool spaceInputUnlocked READ spaceInputUnlocked NOTIFY spaceGuardChanged)
     Q_PROPERTY(bool imeComposing READ imeComposing NOTIFY imeComposingChanged)
 public:
     QColor sceneBackgroundColor() const { return Qt::transparent; }
@@ -97,6 +101,10 @@ public:
     int overviewDisplayLineCount() const;
     int overviewCurrentDisplayLine() const { return overviewCurrentDisplayLine_; }
     bool overviewFollowing() const { return overviewFollowing_; }
+    bool spaceGuardEnabled() const { return spaceGuardEnabled_; }
+    bool spaceInputUnlocked() const { return spaceGuard_.unlocked(); }
+    void setSpaceGuardEnabled(bool enabled);
+    void resetSpaceGuard();
     bool imeComposing() const { return imeComposing_; }
     Q_INVOKABLE void undo();
     Q_INVOKABLE void redo();
@@ -122,16 +130,20 @@ public:
     Q_INVOKABLE bool applyHandOrderIntervals();
     Q_INVOKABLE bool prepareNativeSlideSplit();
     Q_INVOKABLE bool applyNativeSlideSplit();
+    Q_INVOKABLE bool applyBpmImport(const QString& original, const QString& replacement, int difficulty, quint64 revision);
     Q_INVOKABLE bool createBookmarkAtLine(int line, const QString& title);
     Q_INVOKABLE bool renameBookmarkAtLine(int line, const QString& title);
     Q_INVOKABLE bool deleteBookmarkAtLine(int line);
 signals:
+    void spaceGuardChanged();
+    void playbackToggleRequested();
     void bindingsChanged();
     void editorColorsChanged();
     void appearanceChanged();
     void layoutChanged();
     void scenePositionChanged();
     void selectionChanged();
+    void noteComponentEditRejected();
     void cursorRectangleChanged();
     void currentLineRectangleChanged();
     void followVisualChanged();
@@ -153,6 +165,9 @@ protected:
     void inputMethodEvent(QInputMethodEvent* event) override;
 private:
     NativeSlideSplitContext nativeSlideSplitContext() const;
+    bool spaceGuardEnabled_ = true;
+    miacode::editor::SpaceInputGuard spaceGuard_;
+    QElapsedTimer spaceGuardClock_;
     enum OverviewProjectionPart {
         OverviewMarkersDirty = 0x01,
         OverviewCurrentLineDirty = 0x02,
@@ -183,8 +198,11 @@ private:
     void beginUserInteraction();
     void publishTouchUndoAnchor();
     miacode::chart_selection::NoteRanges selectionRanges() const;
-    void selectNoteRanges(int difficulty, quint64 revision, const miacode::chart_selection::NoteRanges& ranges);
+    void selectNoteObjects(int difficulty, quint64 revision, const miacode::chart_selection::NoteObjects& objects);
+    void clearNoteSelectionState();
+    bool containsPartialNoteSelection() const;
     bool deleteNoteSelection();
+    bool copyNoteSelection();
     miacode::chart_selection::NoteTimingState noteInitialTiming() const;
     ScintillaDocumentAdapter document_;
     ScintillaDslStyler styler_;
@@ -242,6 +260,7 @@ private:
     int reportedCaret_ = -1;
     miacode::chart_selection::NoteRanges reportedRanges_;
     bool noteSelection_ = false;
+    miacode::chart_selection::NoteObjects selectedNoteObjects_;
     qreal wheelRemainder_ = 0;
     int blockSpacing_ = 0;
     bool autoWrap_ = true;

@@ -226,14 +226,14 @@ PreviewQuickD3D11ExportSession::~PreviewQuickD3D11ExportSession()
 
 void PreviewQuickD3D11ExportSession::setBackgroundFrame(const QImage& image, bool cacheable, bool fullFrame, qreal brightness)
 {
-    backgroundEnabled_ = true;
+    backgroundEnabled_ = usesBackgroundMedia(frameState_.render.backgroundPolicy);
     backgroundFullFrame_ = fullFrame;
     backgroundBrightness_ = brightness;
     frameState_.media.resolvedStageImage = image;
     frameState_.media.resolvedStageImageCacheable = cacheable;
     frameState_.media.stageMediaSerial = image.cacheKey();
     if (backgroundItem_) {
-        backgroundItem_->setVisible(true);
+        backgroundItem_->setVisible(backgroundEnabled_);
         backgroundItem_->setFrameState(frameState_, fullFrame, brightness);
     }
 }
@@ -669,7 +669,8 @@ bool PreviewQuickD3D11ExportSession::readbackStagingTexture(
         static_cast<const uchar*>(mapped.pData),
         lastReadbackRowPitch_,
         renderTargetPixelSize(),
-        preservePremultipliedReadback_,
+        preservePremultipliedReadback_
+            || frameState_.render.backgroundPolicy == BackgroundPolicy::Transparent,
         readbackSlot,
         &convertError);
     d3d_->context->Unmap(d3d_->staging[stagingIndex].Get(), 0);
@@ -819,15 +820,24 @@ void PreviewQuickD3D11ExportSession::applyFrameSize()
     rootItem_->setSize(QSizeF(frameSize_));
 
     backgroundItem_->setSize(QSizeF(frameSize_));
-    sceneRoot_->setPosition(QPointF(0.0, 0.0));
-    sceneRoot_->setSize(QSizeF(frameSize_));
-    sceneRoot_->update();
-
-    hudLayer_->setPosition(QPointF(0.0, 0.0));
-    hudLayer_->setSize(QSizeF(frameSize_));
-    hudLayer_->update();
+    applyChartGeometry();
 
     applyIntroGeometry();
+}
+
+void PreviewQuickD3D11ExportSession::applyChartGeometry()
+{
+    if (!sceneRoot_ || !hudLayer_) return;
+    const double x = introChartPreviewSplit_ ? frameSize_.width() * 0.5 : 0.0;
+    const QSizeF size(frameSize_.width() - x, frameSize_.height());
+    sceneRoot_->setPosition(QPointF(x, 0.0));
+    sceneRoot_->setSize(size);
+    sceneRoot_->setClip(introChartPreviewSplit_);
+    sceneRoot_->update();
+    hudLayer_->setPosition(QPointF(x, 0.0));
+    hudLayer_->setSize(size);
+    hudLayer_->setClip(introChartPreviewSplit_);
+    hudLayer_->update();
 }
 
 void PreviewQuickD3D11ExportSession::applyIntroGeometry()
@@ -836,15 +846,16 @@ void PreviewQuickD3D11ExportSession::applyIntroGeometry()
         return;
     }
     // Same 16:9 centre-crop contract as the OpenGL session (sync pair).
-    constexpr double kNativeW = 1920.0;
     constexpr double kNativeH = 1080.0;
     const double frameW = qMax(1, frameSize_.width());
     const double frameH = qMax(1, frameSize_.height());
-    introItem_->setWidth(kNativeW);
+    const double nativeWidth = introItem_->property("chartPreviewMode").toBool()
+        ? frameW * kNativeH / frameH : 1920.0;
+    introItem_->setWidth(nativeWidth);
     introItem_->setHeight(kNativeH);
     introItem_->setTransformOrigin(QQuickItem::Center);
     introItem_->setScale(frameH / kNativeH);
-    introItem_->setX(frameW / 2.0 - kNativeW / 2.0);
+    introItem_->setX(frameW / 2.0 - nativeWidth / 2.0);
     introItem_->setY(frameH / 2.0 - kNativeH / 2.0);
 }
 
@@ -854,6 +865,7 @@ void PreviewQuickD3D11ExportSession::destroyIntroOverlay()
     // window during invalidate(); here we only drop our references.
     introItem_ = nullptr;
     introActive_ = false;
+    introChartPreviewSplit_ = false;
 }
 
 bool PreviewQuickD3D11ExportSession::setupIntroOverlay(const QUrl& qmlUrl, QString* errorMessage)
@@ -924,6 +936,7 @@ void PreviewQuickD3D11ExportSession::setIntroBannerData(
     for (auto it = style.constBegin(); it != style.constEnd(); ++it) {
         introItem_->setProperty(it.key().toUtf8().constData(), it.value());
     }
+    applyIntroGeometry();
 }
 
 void PreviewQuickD3D11ExportSession::setChartLayersVisible(bool visible)
@@ -946,11 +959,21 @@ void PreviewQuickD3D11ExportSession::setIntroFrame(int authoringFrame, bool acti
         introItem_->setProperty("frame", authoringFrame);
     }
     introItem_->setVisible(active);
+    const bool split = active && introItem_->property("chartPreviewMode").toBool()
+        && authoringFrame < introItem_->property("pvPreviewHoldFrames").toInt();
+    if (introChartPreviewSplit_ != split) {
+        introChartPreviewSplit_ = split;
+        applyChartGeometry();
+    }
 }
 
 void PreviewQuickD3D11ExportSession::applyFrameState()
 {
-    if (backgroundItem_ && backgroundEnabled_) {
+    const BackgroundPolicy policy = frameState_.render.backgroundPolicy;
+    if (quickWindow_) quickWindow_->setColor(policy == BackgroundPolicy::OpaqueBlack
+        ? QColor(Qt::black) : QColor(Qt::transparent));
+    if (backgroundItem_) {
+        backgroundItem_->setVisible(backgroundEnabled_ && usesBackgroundMedia(policy));
         backgroundItem_->setFrameState(frameState_, backgroundFullFrame_, backgroundBrightness_);
     }
     bindFrameStateIfNeeded();

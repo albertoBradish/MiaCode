@@ -1,3 +1,4 @@
+#include "common/RuntimePaths.h"
 #include "AppVersion.h"
 #include "app/ui/Bootstrap.h"
 #include "app/services/PreferenceDocument.h"
@@ -54,6 +55,8 @@
 #include <d3d11.h>
 #include <dxgi.h>
 #include <psapi.h>
+#include <io.h>
+#include <fcntl.h>
 #include <cstdio>
 #include <cstring>
 #pragma comment(lib, "winmm.lib")
@@ -61,9 +64,97 @@
 #endif
 
 #include "app/MainEntrypoints.h"
+#include "app/CliRequest.h"
+#include "app/services/CliIntegration.h"
 #include "app/StartupArguments.h"
 
 namespace {
+
+#ifdef Q_OS_WIN
+// GUI-subsystem executables may inherit a parent's console without usable CRT
+// streams. Public CLI commands attach only to that existing console. Explicit
+// file/pipe redirections are retained even when AttachConsole replaces Win32's
+// standard-handle table.
+class CliConsoleAttachment final
+{
+public:
+    explicit CliConsoleAttachment(bool enabled)
+    {
+        if (!enabled) return;
+        const DWORD ids[] = {STD_INPUT_HANDLE, STD_OUTPUT_HANDLE, STD_ERROR_HANDLE};
+        FILE* streams[] = {stdin, stdout, stderr};
+        const char* devices[] = {"CONIN$", "CONOUT$", "CONOUT$"};
+        const char* modes[] = {"r", "w", "w"};
+        HANDLE savedHandles[3]{};
+        bool preserve[3]{};
+        bool reconnect[3]{};
+        bool bindRedirected[3]{};
+        for (int i = 0; i < 3; ++i) {
+            const HANDLE handle = GetStdHandle(ids[i]);
+            const int descriptor = _fileno(streams[i]);
+            const auto rawCrtHandle = descriptor >= 0 ? _get_osfhandle(descriptor) : -1;
+            const HANDLE crtHandle = rawCrtHandle >= 0 ? reinterpret_cast<HANDLE>(rawCrtHandle) : nullptr;
+            const DWORD type = valid(handle) ? GetFileType(handle) : FILE_TYPE_UNKNOWN;
+            const DWORD crtType = valid(crtHandle) ? GetFileType(crtHandle) : FILE_TYPE_UNKNOWN;
+            preserve[i] = fileOrPipe(type) || fileOrPipe(crtType);
+            savedHandles[i] = fileOrPipe(type) ? handle : crtHandle;
+            bindRedirected[i] = preserve[i] && (!valid(crtHandle) || crtType == FILE_TYPE_CHAR);
+            reconnect[i] = !preserve[i] && (!valid(handle) || !valid(crtHandle)
+                || type == FILE_TYPE_CHAR || crtType == FILE_TYPE_CHAR);
+        }
+
+        const bool attached = AttachConsole(ATTACH_PARENT_PROCESS)
+            || GetLastError() == ERROR_ACCESS_DENIED; // Already attached.
+        for (int i = 0; i < 3; ++i) {
+            if (!preserve[i]) continue;
+            if (bindRedirected[i]) bindRedirectedStream(streams[i], savedHandles[i], i == 0);
+            SetStdHandle(ids[i], savedHandles[i]);
+        }
+        if (!attached) return; // Never create a new console for a task.
+
+        inputCodePage_ = GetConsoleCP();
+        outputCodePage_ = GetConsoleOutputCP();
+        restoreInput_ = inputCodePage_ && inputCodePage_ != CP_UTF8 && SetConsoleCP(CP_UTF8);
+        restoreOutput_ = outputCodePage_ && outputCodePage_ != CP_UTF8 && SetConsoleOutputCP(CP_UTF8);
+        for (int i = 0; i < 3; ++i) {
+            if (!reconnect[i] || !std::freopen(devices[i], modes[i], streams[i])) continue;
+            const auto handle = _get_osfhandle(_fileno(streams[i]));
+            if (handle >= 0) SetStdHandle(ids[i], reinterpret_cast<HANDLE>(handle));
+        }
+    }
+    ~CliConsoleAttachment()
+    {
+        if (restoreInput_ || restoreOutput_) {
+            std::fflush(stdout);
+            std::fflush(stderr);
+            if (restoreInput_) SetConsoleCP(inputCodePage_);
+            if (restoreOutput_) SetConsoleOutputCP(outputCodePage_);
+        }
+    }
+    CliConsoleAttachment(const CliConsoleAttachment&) = delete;
+    CliConsoleAttachment& operator=(const CliConsoleAttachment&) = delete;
+private:
+    static bool valid(HANDLE handle) { return handle && handle != INVALID_HANDLE_VALUE; }
+    static bool fileOrPipe(DWORD type) { return type == FILE_TYPE_PIPE || type == FILE_TYPE_DISK; }
+    static void bindRedirectedStream(FILE* stream, HANDLE handle, bool input)
+    {
+        HANDLE duplicate = nullptr;
+        if (!DuplicateHandle(GetCurrentProcess(), handle, GetCurrentProcess(), &duplicate,
+            0, FALSE, DUPLICATE_SAME_ACCESS)) return;
+        const int descriptor = _open_osfhandle(reinterpret_cast<intptr_t>(duplicate),
+            (input ? _O_RDONLY : _O_WRONLY) | _O_BINARY);
+        if (descriptor < 0) { CloseHandle(duplicate); return; }
+        // The inherited Win32 redirection is valid, but a GUI CRT may still
+        // expose descriptor -2 (or an old console stream). Bind a duplicate of
+        // that redirection, without closing or replacing its original handle.
+        if (std::freopen("NUL", input ? "rb" : "wb", stream))
+            _dup2(descriptor, _fileno(stream));
+        _close(descriptor);
+    }
+    UINT inputCodePage_ = 0, outputCodePage_ = 0;
+    bool restoreInput_ = false, restoreOutput_ = false;
+};
+#endif
 
 QIcon applicationWindowIcon()
 {
@@ -141,37 +232,33 @@ Q_IMPORT_QML_PLUGIN(MiaCode_TimelinePlugin)
 
 int main(int argc, char* argv[])
 {
-    QString runtimePathError;
-    if (!miacode::runtime_paths::initializeFromEnvironment(&runtimePathError)) {
-        std::fprintf(stderr, "Hand-order runtime initialization failed: %s\n",
-                     runtimePathError.toUtf8().constData());
-        return 1;
+    QStringList earlyArguments;
+#ifdef Q_OS_WIN
+    int wideArgumentCount = 0;
+    LPWSTR* wideArguments = CommandLineToArgvW(GetCommandLineW(), &wideArgumentCount);
+    if (wideArguments) {
+        for (int i = 0; i < wideArgumentCount; ++i) earlyArguments.append(QString::fromWCharArray(wideArguments[i]));
+        LocalFree(wideArguments);
     }
-    // Ignore inherited official-build log overrides. Every role writes its
-    // startup beacon and channel logs under the dedicated runtime root.
-    for (const char* key : {"MIACODE_OPLOG_SHADOW_PATH", "MIACODE_RUNTIME_LOG_PATH",
-                            "MIACODE_AUDIO_LOG_PATH", "MIACODE_EXPORT_LOG_PATH",
-                            "MIACODE_STARTUP_LOG_PATH", "MIACODE_FATAL_LOG_PATH",
-                            "MIACODE_OPERATION_LOG_PATH", "MIACODE_PV_MEMORY_LOG_PATH"}) {
-        if (!qunsetenv(key)) {
-            std::fprintf(stderr, "Cannot clear inherited log override: %s\n", key);
-            return 1;
-        }
+#endif
+    if (earlyArguments.isEmpty()) {
+        for (int i = 0; i < argc; ++i) earlyArguments.append(QString::fromLocal8Bit(argv[i]));
     }
-    if (!qputenv("MIACODE_LOG_DIR", miacode::runtime_paths::logDirectory().toUtf8())) {
-        std::fputs("Cannot set hand-order log directory\n", stderr);
-        return 1;
-    }
-    const QByteArray runtimeTemp = miacode::runtime_paths::tempDirectory().toUtf8();
-    for (const char* key : {"TEMP", "TMP", "TMPDIR"}) {
-        if (!qputenv(key, runtimeTemp)) {
-            std::fprintf(stderr, "Cannot set hand-order temporary directory: %s\n", key);
-            return 1;
-        }
+    // Public text commands never initialize Qt Quick, BASS, preview workers or
+    // a document session. Metadata queries also work before runtime setup.
+    const bool publicCliRequested = isPublicCliInvocation(earlyArguments);
+#ifdef Q_OS_WIN
+    const CliConsoleAttachment cliConsole(publicCliRequested
+        || (wantsCliVideoExport(earlyArguments) && !wantsCliVideoExportWorker(earlyArguments)));
+#endif
+    if (publicCliRequested) return runPublicCli(argc, argv, earlyArguments);
+    QString runtimeError;
+    if (!miacode::runtime_paths::initializeFromEnvironment(&runtimeError)
+        || !miacode::runtime_paths::configureProcessEnvironment(&runtimeError)) {
+        std::fprintf(stderr, "Hand-order runtime initialization failed: %s\n", qPrintable(runtimeError));
+        return 78;
     }
 
-    // The beacon is written before MC_OP, crash handlers and Qt application
-    // construction, after validating the isolated runtime directory.
     miacode::oplog::writeStartupBeacon(MIACODE_DISPLAY_VERSION_STRING);
 
 #ifdef Q_OS_WIN
@@ -267,25 +354,7 @@ int main(int argc, char* argv[])
     }
 #endif
 
-    QStringList rawArgs;
-#ifdef Q_OS_WIN
-    // argv is the ANSI rendering of the command line: a chart path outside the
-    // system code page (a Japanese title on a GBK system) arrives as '?'. The
-    // launcher forwards the wide command line, so read that one.
-    int wideCount = 0;
-    if (LPWSTR* wideArgs = ::CommandLineToArgvW(::GetCommandLineW(), &wideCount)) {
-        for (int index = 0; index < wideCount; ++index) {
-            rawArgs.append(QString::fromWCharArray(wideArgs[index]));
-        }
-        ::LocalFree(wideArgs);
-    }
-#endif
-    if (rawArgs.isEmpty()) {
-        rawArgs.reserve(argc);
-        for (int index = 0; index < argc; ++index) {
-            rawArgs.append(QString::fromLocal8Bit(argv[index]));
-        }
-    }
+    const QStringList rawArgs = earlyArguments;
     const bool cliVideoExportRequested = wantsCliVideoExport(rawArgs);
     const bool cliVideoExportWorkerRequested = wantsCliVideoExportWorker(rawArgs);
     const bool forceOpenGlGraphicsApi = cliVideoExportRequested || cliVideoExportWorkerRequested;
@@ -446,6 +515,8 @@ int main(int argc, char* argv[])
     app.setOrganizationName(QStringLiteral("MiaCodeHandOrder"));
     app.setOrganizationDomain(QStringLiteral("handorder.miacode.local"));
     app.setApplicationName(QStringLiteral("MiaCodeHandOrder"));
+    app.setApplicationDisplayName(QStringLiteral("MiaCode Hand Order"));
+    app.setApplicationVersion(QStringLiteral(MIACODE_DISPLAY_VERSION_STRING));
     app.setApplicationVersion(MIACODE_DISPLAY_VERSION_STRING);
 #ifdef Q_OS_WIN
     setWindowsAppUserModelId();

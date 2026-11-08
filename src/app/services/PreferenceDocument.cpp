@@ -1,3 +1,4 @@
+#include "common/RuntimePaths.h"
 #include "app/services/PreferenceDocument.h"
 #include "app/services/PreferenceJsonFile.h"
 #include "common/RuntimePaths.h"
@@ -35,6 +36,12 @@ QString configFilePath(const QString& fileName)
 QString preferencesPath()
 {
     return configFilePath(QStringLiteral("preferences_v2.json"));
+}
+
+QStringList migrationSourcePaths()
+{
+    // The public hand-order application starts with a clean profile.
+    return {};
 }
 
 bool supportedPreferencesSchema(const QJsonObject& root)

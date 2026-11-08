@@ -38,6 +38,8 @@ class TimelineQuickStateBridge : public QObject
                WRITE setWaveformBrightness NOTIFY waveformBrightnessChanged)
     Q_PROPERTY(double measureLineBrightness READ measureLineBrightness
                WRITE setMeasureLineBrightness NOTIFY measureLineBrightnessChanged)
+    Q_PROPERTY(QString axisMode READ axisMode WRITE setAxisMode NOTIFY axisModeChanged)
+    Q_PROPERTY(QString laneOrder READ laneOrder WRITE setLaneOrder NOTIFY laneOrderChanged)
     Q_PROPERTY(double zoomScale READ zoomScale NOTIFY zoomScaleChanged)
     Q_PROPERTY(QVariantList zoomPresetValues READ zoomPresetValues CONSTANT)
 
@@ -66,6 +68,12 @@ public:
     // not a position.
     double horizontalScrollValue() const;
     void setHorizontalScrollValue(double value);
+    const QString& axisMode() const { return axisMode_; }
+    void setAxisMode(const QString& mode);
+    const QString& laneOrder() const { return laneOrder_; }
+    void setLaneOrder(const QString& order);
+    const miacode::timeline::TimelineDropRegion& dropRegion() const { return dropRegion_; }
+    Q_INVOKABLE void setDropRegion(double start, double end, const QString& label);
     double zoomScale() const;
     void setZoomScale(double scale);
     QVector<double> zoomPresets() const;
@@ -81,6 +89,7 @@ public:
     double viewportCenterSecond();
     QSize viewportSize() const;
     void setZoomScaleAnchored(double scale, double anchorSecond);
+    void zoomAtViewportPosition(double scale, qreal timePosition);
     double contentScale() const;
     void setContentScale(double scale);
     double waveformBrightness() const;
@@ -141,6 +150,8 @@ signals:
     void noteSelectionRequested(const QSet<quint64>& locations, bool additive);
     void renderStateChanged();
     void playheadChanged(double second);
+    void axisModeChanged();
+    void laneOrderChanged();
     void zoomScaleChanged(double scale);
     // Emitted once per timeline frame from TimelineQuickItem's afterAnimating hook, on the
     // GUI thread, immediately before the render thread syncs that frame. Playback samples
@@ -164,6 +175,8 @@ private:
     void refreshLayoutMetrics();
     int maxHorizontalScrollValue() const;
     bool centerOnSecond(double second);
+    void applyZoomScale(double scale, double anchorSecond, qreal anchorPosition);
+    bool placeSecondAt(double second, qreal position);
     void bumpAllRevisions();
     void bumpHeaderRevision();
     void bumpNotesRevision();
@@ -181,7 +194,10 @@ private:
     QVector<double> zoomPresets_;
     QStringList zoomInWheelShortcuts_{QStringLiteral("Ctrl+WheelUp")};
     QStringList zoomOutWheelShortcuts_{QStringLiteral("Ctrl+WheelDown")};
-    int zoomPresetIndex_ = 1;
+    QString axisMode_ = QStringLiteral("horizontal");
+    QString laneOrder_ = QStringLiteral("natural");
+    miacode::timeline::TimelineDropRegion dropRegion_;
+    double zoomScale_ = 0.5;
     double horizontalScrollValue_ = 0.0;
     bool playbackCadenceActive_ = false;
     double contentScale_ = 1.0;

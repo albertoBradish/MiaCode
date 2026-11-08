@@ -1,3 +1,4 @@
+#include "core/chart/transform/ChartNormalization.h"
 #include "timeline/TimelineQuickModel.h"
 #include "app/runtime/ContentDurationConfig.h"
 #include "timeline/TimelineQuickModelPrivate.h"
@@ -828,18 +829,18 @@ int main(int argc, char** argv)
             QStringLiteral("src/app/runtime/playback/Tick.cpp"));
         const QString editorDisplay = qmlSource(
             QStringLiteral("src/app/runtime/editor/EditorDisplay.cpp"));
-        const QString zoomMenu = qmlSource(QStringLiteral("src/app/ui/timeline/TimelineZoomMenu.qml"));
         const QString settingsMenu = qmlSource(QStringLiteral("src/app/ui/timeline/TimelineSettingsMenu.qml"));
         expect(!panel.isEmpty() && !tabBar.isEmpty() && !splitView.isEmpty()
                    && !viewState.isEmpty() && !timelineSession.isEmpty() && !timelineTick.isEmpty()
-                   && !editorDisplay.isEmpty() && !zoomMenu.isEmpty() && !settingsMenu.isEmpty(),
+                   && !editorDisplay.isEmpty() && !settingsMenu.isEmpty(),
                QStringLiteral("v2 timeline control QML sources are available to the developer spec"));
         const QString controls = panel + tabBar + settingsMenu;
-        expect(zoomMenu.contains(QStringLiteral("applyZoomPreset"))
+        expect(!panel.contains(QStringLiteral("TimelineZoomControl"))
+                   && !panel.contains(QStringLiteral("TimelineZoomMenu"))
                    && settingsMenu.contains(QStringLiteral("waveformBrightness"))
                    && settingsMenu.contains(QStringLiteral("measureLineBrightness"))
                    && controls.contains(QStringLiteral("followPreviewToggled")),
-               QStringLiteral("v2 timeline zoom and brightness menus are QML and follow-code stays on the session"));
+               QStringLiteral("timeline keeps the brightness menu and session follow controls without a visible zoom selector"));
         expect(!timelineSession.contains(QStringLiteral("openTimelineZoomMenu"))
                    && !timelineSession.contains(QStringLiteral("openTimelineBrightnessMenu"))
                    && !timelineSession.contains(QStringLiteral("TimelineBrightnessSliderItem")),
@@ -854,23 +855,37 @@ int main(int argc, char** argv)
                    && !splitView.contains(QStringLiteral("activeBottomTab"))
                    && !viewState.contains(QStringLiteral("activeBottomTab")),
                QStringLiteral("v2 bottom tabs select through the timeline session instead of ViewState"));
-        expect(splitView.contains(QStringLiteral("persistBottomPanelHeightRatio"))
-                   && splitView.contains(QStringLiteral("bottomPanelHeightRatio"))
+        const int persistStart = splitView.indexOf(QStringLiteral("function persistBottomPanelSize("));
+        const int persistEnd = splitView.indexOf(QStringLiteral("function undo()"), persistStart);
+        const QString persistSize = persistStart >= 0 && persistEnd > persistStart
+            ? splitView.mid(persistStart, persistEnd - persistStart) : QString();
+        const int verticalWrite = persistSize.indexOf(QStringLiteral(
+            "root.preferences.timelineVerticalWidthRatio = finalSize / centerSplit.width"));
+        const int horizontalWrite = persistSize.indexOf(QStringLiteral("root.preferences.bottomPanelHeightRatio ="));
+        const int verticalReturn = persistSize.indexOf(QStringLiteral("return"), verticalWrite);
+        expect(persistSize.contains(QStringLiteral("if (root.verticalTimeline)"))
+                   && verticalWrite >= 0 && verticalReturn > verticalWrite && horizontalWrite > verticalReturn
+                   && persistSize.contains(QStringLiteral("height / centerSplit.height"))
                    && splitView.contains(QStringLiteral("bottomPanelMinimumHeightRatio"))
                    && splitView.contains(QStringLiteral("bottomPanelMaximumHeightRatio"))
                    && splitView.contains(QStringLiteral("onReleased: bottomPanelSnap.finishDrag(true)"))
-                   && splitView.contains(QStringLiteral("root.persistBottomPanelHeightRatio(finalSize, sizeAtPress)"))
+                   && splitView.contains(QStringLiteral("root.persistBottomPanelSize(finalSize, sizeAtPress)"))
                    && splitView.contains(QStringLiteral("centerSplit.height * root.preferences.bottomPanelHeightRatio"))
+                   && splitView.contains(QStringLiteral("centerSplit.width * (root.preferences.timelineVerticalWidthRatio"))
+                   && splitView.contains(QStringLiteral("when: !centerSplit.resizing && !root.verticalTimeline"))
+                   && splitView.contains(QStringLiteral("when: !centerSplit.resizing && root.verticalTimeline"))
                    && !splitView.contains(QStringLiteral("queueBottomTabsHostHeight"))
                    && !splitView.contains(QStringLiteral("bottomTabsHeightFeedback"))
                    && !splitView.contains(QStringLiteral("maximumHeight: root.bottomPanelEffectivelyVisible ? 340 : 0")),
-               QStringLiteral("v2 bottom height persists one SplitView ratio after divider release without a fixed 340px cap"));
-        expect(panel.contains(QStringLiteral("headerLeftLimit: zoomButton.x + zoomButton.width + 2"))
-                   && panel.contains(QStringLiteral("headerRightLimit: Math.max(0, brightnessButton.x - 2)"))
-                   && panel.contains(QStringLiteral("headerMarkerLeftLimit: zoomButton.x + zoomButton.width + 2"))
-                   && panel.contains(QStringLiteral("headerMarkerRightLimit: Math.max(0, brightnessButton.x - 2)"))
-                   && panel.contains(QStringLiteral("timelineItem.y + Math.max(0, (timelineItem.timelineTop - height) / 2)")),
-               QStringLiteral("v2 timeline header keeps labels clear of its QML controls"));
+               QStringLiteral("divider release persists and restores independent horizontal height and vertical width ratios"));
+        expect(panel.contains(QStringLiteral(
+                   "headerRightLimit: root.verticalTimeline ? 0 : Math.max(0, brightnessButton.x - 2)"))
+                   && panel.contains(QStringLiteral("headerMarkerRightLimit: headerRightLimit"))
+                   && panel.contains(QStringLiteral("timelineItem.y + Math.max(0, (timelineItem.timelineTop - height) / 2)"))
+                   && panel.contains(QStringLiteral("tabs.y + (tabs.height - height) / 2"))
+                   && panel.contains(QStringLiteral(
+                       "rightAccessoryWidth: root.verticalTimeline && timelineItem.visible ? brightnessButton.width : 0")),
+               QStringLiteral("horizontal labels and markers avoid settings, which moves to reserved tab space in vertical mode"));
         const int playingFlushStart = timelineTick.indexOf(
             QStringLiteral("void miacode::runtime::PlaybackCoordinator::flushQtPreviewTimelinePosition()"));
         const QString playingFlush = playingFlushStart >= 0
@@ -2510,7 +2525,8 @@ int main(int argc, char** argv)
                    && selectionStart == notePosition + 1 && selectionEnd == chart.indexOf(QLatin1Char(','), notePosition),
                QStringLiteral("preview-follow selection retains the complete annotated source token"));
         const auto selectedSuffix = model.resolveNoteSelection(annotationPosition + 2, annotationPosition + 3);
-        expect(selectedSuffix.locations == QSet<quint64>{timelineRenderLocationId(1, notePosition + 1)},
+        expect(selectedSuffix.locations == QSet<quint64>{timelineRenderLocationId(1, notePosition + 1),
+                   timelineRenderLocationId(1, notePosition + 2)},
                QStringLiteral("selection inside a hand-order suffix selects its complete native slide"));
         const auto range = model.resolveExportRangeForSelection(chart, annotationPosition + 2, annotationPosition + 3);
         expect(range.resolved && range.startPosition == notePosition
@@ -2551,6 +2567,8 @@ int main(int argc, char** argv)
                 QStringLiteral("every duration/modifier character selects the whole hold"));
         const int chain = chart.indexOf(QStringLiteral("1-5-3[4:4]"));
         const auto selectedChain = one(chain);
+        expect(selectedChain.locations.size() == 2,
+            QStringLiteral("text selection of a Slide projects its head and complete chain"));
         for (int i=0; i<QStringLiteral("1-5-3[4:4]").size(); ++i)
             expect(one(chain+i).locations == selectedChain.locations,
                 QStringLiteral("a chained slide stays one selected source object"));
@@ -2568,7 +2586,7 @@ int main(int argc, char** argv)
                     QStringLiteral("selection audition includes visible lead-in and the complete hold/effect tail across later notes"));
             }
         }
-        expect(model.resolveNoteSelection(first,chain+1).locations.size() == 7,
+        expect(model.resolveNoteSelection(first,chain+1).locations.size() == 8,
             QStringLiteral("selection crossing several independent notes returns only actual note objects"));
         model.updateFromText(QStringLiteral("\n")+chart,5.0,{});
         expect(model.resolveNoteSelection(hold+1,hold+2).locations
@@ -2590,10 +2608,30 @@ int main(int argc, char** argv)
             const int calls = paint.count(consume);
             expect(calls == allocated.captured(1).toInt(),
                 QStringLiteral("every unconditional scene layer has an allocated QSG slot; selection cannot silently fall off the end"));
-            const int selection = paint.indexOf(QStringLiteral("return selectionLayer_.updateNode("));
-            expect(selection>=0 && paint.left(selection).count(consume) == calls,
-                QStringLiteral("the terminal transient selection layer occupies the final allocated slot"));
+            const int outlines = paint.indexOf(QStringLiteral("return selectionLayer_.updateNode("));
+            const int dragBox = paint.indexOf(QStringLiteral("\"selection_box\", layerStatsForFrame"));
+            expect(outlines >= 0 && dragBox > outlines
+                       && paint.left(outlines).count(consume) == calls - 1
+                       && paint.left(dragBox).count(consume) == calls
+                       && paint.mid(outlines, dragBox - outlines).contains(
+                           QStringLiteral("runtime_ != nullptr && selectionDragActive_")),
+                QStringLiteral("selection outlines occupy the penultimate slot and the live drag box paints above them"));
         }
+    }
+
+    {
+        const QString chart = QStringLiteral("(120){4}1,2,3,4,E");
+        const auto normalized = miacode::chart_transform::normalizeChartText(chart, {}, {true, false, true});
+        TimelineQuickModel originalModel, normalizedModel;
+        originalModel.rebuildFromText(chart, 0.0);
+        normalizedModel.rebuildFromText(normalized.text, 0.0);
+        expect(normalized.ok && qAbs(originalModel.snapshot().durationSeconds - normalizedModel.snapshot().durationSeconds) < 1e-8,
+            QStringLiteral("normalization preserves rendered timeline duration despite empty-comma sampling changes"));
+        const auto a = SimaiParser::parseForTimeline(chart), b = SimaiParser::parseForTimeline(normalized.text);
+        double lastA = 0.0, lastB = 0.0;
+        for (const auto& marker : a.noteMarkers) lastA = qMax(lastA, qMax(marker.second, marker.endSecond));
+        for (const auto& marker : b.noteMarkers) lastB = qMax(lastB, qMax(marker.second, marker.endSecond));
+        expect(qAbs(lastA - lastB) < 1e-8, QStringLiteral("normalization preserves export's last gameplay-event time"));
     }
 
     if (failed > 0) {

@@ -42,8 +42,8 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
         <translation>完成设置</translation>
     </message>
     <message id="setup.welcome">
-        <source>Welcome to MiaCode</source>
-        <translation>欢迎使用 MiaCode</translation>
+        <source>Welcome to MiaCode Hand Order</source>
+        <translation>欢迎使用 MiaCode Hand Order</translation>
     </message>
     <message id="setup.configure">
         <source>Set up appearance, layout, navigation and the editor. You can change these later in Preferences.</source>
@@ -426,8 +426,8 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
         <translation>--export-video 模式需要 --chart</translation>
     </message>
     <message id="cli.video_export.description">
-        <source>MiaCode CLI video export</source>
-        <translation>MiaCode 命令行视频导出</translation>
+        <source>MiaCode Hand Order CLI video export</source>
+        <translation>MiaCode Hand Order 命令行视频导出</translation>
     </message>
     <message id="cli.video_export.difficulty">
         <source>Difficulty short name or id (ESY/BAS/ADV/EXP/MAS/REM/UTG or 1..7).</source>
@@ -570,8 +570,8 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
         <translation>导出进程不支持此命令</translation>
     </message>
     <message id="cli.worker.description">
-        <source>MiaCode export worker</source>
-        <translation>MiaCode 导出进程</translation>
+        <source>MiaCode Hand Order export worker</source>
+        <translation>MiaCode Hand Order 导出进程</translation>
     </message>
     <message id="cli.worker.dispatch_error">
         <source>internal CLI dispatch error: --export-video-worker not set</source>
@@ -1008,8 +1008,8 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
         <translation>当前难度没有可渲染的谱面音符。</translation>
     </message>
     <message id="cover.this_file_is_not_a">
-        <source>This file is not a MiaCode cover layout.</source>
-        <translation>该文件不是 MiaCode 封面布局文件。</translation>
+        <source>This file is not a MiaCode Hand Order cover layout.</source>
+        <translation>该文件不是 MiaCode Hand Order 封面布局文件。</translation>
     </message>
     <message id="cover.this_preset_needs_a_renderable">
         <source>This preset needs a renderable chart frame</source>
@@ -1734,10 +1734,10 @@ Failed: %2</source>
         <translation>画面设置</translation>
     </message>
     <message id="dialog.restore_backup.abnormal_exit_confirm">
-        <source>MiaCode did not exit normally last time.
+        <source>MiaCode Hand Order did not exit normally last time.
 
 Restore the backup from %1?</source>
-        <translation>MiaCode 上次未正常退出。
+        <translation>MiaCode Hand Order 上次未正常退出。
 
 是否恢复 %1 的备份？</translation>
     </message>
@@ -1802,8 +1802,8 @@ Restore the backup from %1?</source>
         <translation>打开下载页</translation>
     </message>
     <message id="dialog.update.message">
-        <source>MiaCode %1 has been released.</source>
-        <translation>MiaCode %1 已发布。</translation>
+        <source>MiaCode Hand Order %1 has been released.</source>
+        <translation>MiaCode Hand Order %1 已发布。</translation>
     </message>
     <message id="dialog.update.released">
         <source>Released: %1</source>
@@ -1830,8 +1830,8 @@ Restore the backup from %1?</source>
         <translation>选择片头背景</translation>
     </message>
     <message id="dialog.video_export.error.executable_missing">
-        <source>Failed to locate MiaCode executable.</source>
-        <translation>未找到 MiaCode 可执行文件。</translation>
+        <source>Failed to locate MiaCode Hand Order executable.</source>
+        <translation>未找到 MiaCode Hand Order 可执行文件。</translation>
     </message>
     <message id="dialog.video_export.error.failed">
         <source>Export failed.</source>
@@ -3266,8 +3266,8 @@ The file may be open in preview, a media player, File Explorer preview pane, or 
         <translation>Touch</translation>
     </message>
     <message id="pet.accessible_name">
-        <source>MiaCode desktop pet</source>
-        <translation>MiaCode 桌宠</translation>
+        <source>MiaCode Hand Order desktop pet</source>
+        <translation>MiaCode Hand Order 桌宠</translation>
     </message>
     <message id="pet.camera_mirror">
         <source>Mirror Camera</source>
@@ -3294,8 +3294,8 @@ The file may be open in preview, a media player, File Explorer preview pane, or 
         <translation>缩小桌宠</translation>
     </message>
     <message id="pet.window_title">
-        <source>MiaCode Desktop Pet</source>
-        <translation>MiaCode 桌宠</translation>
+        <source>MiaCode Hand Order Desktop Pet</source>
+        <translation>MiaCode Hand Order 桌宠</translation>
     </message>
     <message id="preferences.auto_completion">
         <source>Auto-completion</source>
@@ -3410,8 +3410,8 @@ The file may be open in preview, a media player, File Explorer preview pane, or 
         <translation>%1x</translation>
     </message>
     <message id="qml.about_miacode">
-        <source>About MiaCode</source>
-        <translation>关于 MiaCode</translation>
+        <source>About MiaCode Hand Order</source>
+        <translation>关于 MiaCode Hand Order</translation>
     </message>
     <message id="qml.add">
         <source>Add</source>
@@ -5051,10 +5051,264 @@ Error: %1</source>
         <source>The prepended PV exceeds its size budget or the 20 MB limit.</source>
         <translation>插入黑屏后的 PV 超出体积预算或 20 MB 上限。</translation>
     </message>
+    <message id="action.play_selection">
+        <source>Play Selection</source>
+        <translation>播放选区</translation>
+    </message>
+    <message id="preview.canvas.show_measure_lines">
+        <source>Show Measure Lines</source>
+        <translation>显示小节线</translation>
+    </message>
+    <message id="preview.canvas.show_judgement_skeleton">
+        <source>Show Judgement Skeleton</source>
+        <translation>显示判定骨骼</translation>
+    </message>
+    <message id="preview.canvas.slide_timing_from_launch_beat">
+        <source>Start on a matching launch beat</source>
+        <translation>有启动拍时从启动拍开始</translation>
+    </message>
+    <message id="preview.canvas.slide_timing_early_perfect_from_head">
+        <source>Fully bright from star head when Perfect starts before launch beat</source>
+        <translation>启动拍前已进入 Perfect 时，从头拍全亮</translation>
+    </message>
+    <message id="preview.canvas.show_slide_judgement_timing">
+        <source>Show Slide Judgement Timing</source>
+        <translation>显示 Slide 判定时值</translation>
+    </message>
+    <message id="preview.canvas.measure_mode">
+        <source>Measure Line Mode</source>
+        <translation>小节线模式</translation>
+    </message>
+    <message id="preview.canvas.measure_chart_clock">
+        <source>Chart clock_count (default 4 beats)</source>
+        <translation>谱面 clock_count（默认 4 拍）</translation>
+    </message>
+    <message id="preview.canvas.measure_custom_beats">
+        <source>Custom beats per measure</source>
+        <translation>自定义每小节拍数</translation>
+    </message>
+    <message id="preview.canvas.measure_text_lines">
+        <source>Text line starts</source>
+        <translation>按文本行首</translation>
+    </message>
+    <message id="dialog.render_settings.gameplay.judge_line.none">
+        <source>None</source>
+        <translation>无</translation>
+    </message>
+    <message id="dialog.video_export.option.show_bpm_hud">
+        <source>Show BPM (widescreen)</source>
+        <translation>显示 BPM（宽屏）</translation>
+    </message>
+    <message id="dialog.video_export.option.show_cps_hud">
+        <source>Show CPS (widescreen)</source>
+        <translation>显示 CPS（宽屏）</translation>
+    </message>
+    <message id="dialog.video_export.option.show_meter_hud">
+        <source>Show explicit meter (widescreen)</source>
+        <translation>显示显式拍号（宽屏）</translation>
+    </message>
+    <message id="dialog.video_export.option.show_mods_hud">
+        <source>Show Mods (widescreen)</source>
+        <translation>显示 Mods（宽屏）</translation>
+    </message>
+    <message id="tools.bpm.title">
+        <source>Export BPM</source>
+        <translation>BPM 导入 / 导出</translation>
+    </message>
+    <message id="tools.bpm.sequence">
+        <source>BPM sequence (xx.xx-xx.xx)</source>
+        <translation>BPM 顺序（xx.xx-xx.xx）</translation>
+    </message>
+    <message id="tools.bpm.audio_time">
+        <source>Audio timestamps (mm:ss:fff)</source>
+        <translation>音频时间（mm:ss:fff）</translation>
+    </message>
+    <message id="tools.bpm.empty_maidata">
+        <source>Empty maidata with timing</source>
+        <translation>保留时间轨的空 maidata</translation>
+    </message>
+    <message id="tools.bpm.preview">
+        <source>BPM export preview</source>
+        <translation>BPM 导出预览</translation>
+    </message>
+    <message id="tools.bpm.copy">
+        <source>Copy</source>
+        <translation>复制</translation>
+    </message>
+    <message id="tools.bpm.save">
+        <source>Save as…</source>
+        <translation>另存为…</translation>
+    </message>
+    <message id="tools.bpm.save_error">
+        <source>Could not save BPM export: %1</source>
+        <translation>无法保存 BPM 导出：%1</translation>
+    </message>
+    <message id="tools.chart.invalid_first">
+        <source>Invalid &amp;first value</source>
+        <translation>&amp;first 数值无效</translation>
+    </message>
+    <message id="tools.chart.parse_error">
+        <source>The chart contains parse errors</source>
+        <translation>谱面含有解析错误</translation>
+    </message>
+    <message id="tools.dx_loss.title">
+        <source>DX achievement loss</source>
+        <translation>DX 达成率失分</translation>
+    </message>
+    <message id="tools.dx_loss.attributes">
+        <source>Break, Ex and Firework are attributes, not extra objects. Total counts scoring objects; Mine is listed separately. Capacities assume all other objects are Critical Perfect and respect reachable EX judgments (long EX holds can lose grades on release).</source>
+        <translation>Break、Ex、Firework 是附加属性，不重复计数。Total 为计分物件总数，Mine 单列。最大个数按其余全部 Critical Perfect 计算，并限制 EX 实际可达判定（长 EX Hold 可因松手降档）。</translation>
+    </message>
+    <message id="tools.dx_loss.object">
+        <source>Object</source>
+        <translation>物件</translation>
+    </message>
+    <message id="tools.dx_loss.judgment">
+        <source>Judgment</source>
+        <translation>判定</translation>
+    </message>
+    <message id="tools.dx_loss.single">
+        <source>Loss per judgment</source>
+        <translation>单个判定失分</translation>
+    </message>
+    <message id="tools.dx_loss.empty">
+        <source>The chart has no scoring objects</source>
+        <translation>谱面没有计分物件，无法计算</translation>
+    </message>
+    <message id="tools.dx_loss.extensions">
+        <source>Unofficial extensions: counts are available; DX calculation is disabled</source>
+        <translation>谱面含非官方扩展：显示统计，禁用 DX 失分计算</translation>
+    </message>
+    <message id="tools.dx_loss.maximum_break">
+        <source>Maximum achievement: 101%. Other objects are assumed Critical Perfect.</source>
+        <translation>实际满分：101%。其余物件按 Critical Perfect 计算。</translation>
+    </message>
+    <message id="tools.dx_loss.maximum_no_break">
+        <source>Maximum achievement: 100% (no Break). Other objects are assumed Critical Perfect.</source>
+        <translation>实际满分：100%（无 Break）。其余物件按 Critical Perfect 计算。</translation>
+    </message>
+    <message id="tools.bpm.empty_timing_note">
+        <source>The empty maidata preserves BPM changes, explicit meters, &amp;first and the source terminal beat. Removing long notes also removes their tail duration; no extra BPM changes are added.</source>
+        <translation>空 maidata 保留 BPM 变更、显式拍号、&amp;first 与原谱终止拍位。删除长音符后，其尾部时长也随之移除，不会添加虚假 BPM。</translation>
+    </message>
+    <message id="cover.text_stroke">
+        <source>Text outline</source>
+        <translation>文字描边</translation>
+    </message>
+    <message id="cover.text_stroke_color">
+        <source>Outline color</source>
+        <translation>描边颜色</translation>
+    </message>
+    <message id="cover.text_stroke_width">
+        <source>Outline width</source>
+        <translation>描边宽度</translation>
+    </message>
+    <message id="cover.text_shadow">
+        <source>Text shadow</source>
+        <translation>文字阴影</translation>
+    </message>
+    <message id="cover.text_shadow_color">
+        <source>Shadow color</source>
+        <translation>阴影颜色</translation>
+    </message>
+    <message id="cover.text_shadow_opacity">
+        <source>Shadow opacity</source>
+        <translation>阴影不透明度</translation>
+    </message>
+    <message id="cover.text_shadow_blur">
+        <source>Shadow blur</source>
+        <translation>阴影模糊</translation>
+    </message>
+    <message id="cover.text_shadow_x">
+        <source>Shadow X offset</source>
+        <translation>阴影水平偏移</translation>
+    </message>
+    <message id="cover.text_shadow_y">
+        <source>Shadow Y offset</source>
+        <translation>阴影垂直偏移</translation>
+    </message>
+    <message id="dialog.video_export.cover_preset">
+        <source>Companion cover</source>
+        <translation>同步导出封面</translation>
+    </message>
+    <message id="dialog.video_export.cover_failed_video_kept">
+        <source>Cover export failed. The video was kept.</source>
+        <translation>封面导出失败，视频已保留。</translation>
+    </message>
+    <message id="cli.settings.title">
+        <source>Command line</source>
+        <translation>命令行</translation>
+    </message>
+    <message id="cli.settings.enable">
+        <source>Enable command-line support</source>
+        <translation>开启命令行支持</translation>
+    </message>
+    <message id="dialog.video_export.cover_source_changed">
+        <source>The chart changed while preparing the cover. Export again.</source>
+        <translation>准备封面时谱面已更改，请重新导出。</translation>
+    </message>
     <message id="file_picker.native_failed">
         <source>Could not open the system folder picker.</source>
         <translation>无法打开系统文件夹选择窗口。</translation>
     </message>
+
+    <!-- ID translations use the unnamed context for qtTrId in Qt 6.11. -->
+
+<message id="dialog.video_export.range.play_clip">
+        <source>Play Range</source>
+        <translation>播放区间</translation>
+    </message>
+<message id="dialog.batch_export.cover_preset">
+        <source>Cover preset</source>
+        <translation>封面预设</translation>
+    </message>
+<message id="dialog.batch_export.cover_none">
+        <source>Cover export off</source>
+        <translation>关闭封面导出</translation>
+    </message>
+<message id="dialog.batch_export.cover_summary">
+        <source>Covers: %1 succeeded, %2 failed</source>
+        <translation>封面导出：成功 %1 项，失败 %2 项</translation>
+    </message>
+<message id="dialog.batch_export.cover_preset_unavailable">
+        <source>The cover preset cannot be applied to this chart</source>
+        <translation>封面预设无法应用到此谱面</translation>
+    </message>
+<message id="dialog.batch_export.cover_frame_adjusted">
+        <source>%1: frame time adjusted from %2 s to %3 s</source>
+        <translation>%1：截图时间从 %2 秒调整为 %3 秒</translation>
+    </message>
+    <message id="video_template.title"><source>Video templates</source><translation>视频模板</translation></message>
+    <message id="video_template.export"><source>Export current template…</source><translation>导出当前模板…</translation></message>
+    <message id="video_template.import"><source>Import and apply template…</source><translation>导入并应用模板…</translation></message>
+    <message id="video_template.invalid"><source>This video template is invalid or uses an unsupported version.</source><translation>视频模板无效或版本不受支持。</translation></message>
+    <message id="video_cover.multiple"><source>Companion covers</source><translation>同步导出封面</translation></message>
+    <message id="video_size.target30">
+        <source>30 MB (video %1 kbps, audio %2 kbps)</source>
+        <translation>30 MB（视频 %1 kbps，音频 %2 kbps）</translation>
+    </message>
+    <message id="video_size.target100"><source>100 MB (video %1 kbps, audio %2 kbps)</source><translation>100 MB（视频 %1 kbps，音频 %2 kbps）</translation></message>
+    <message id="video_size.target200"><source>200 MB (video %1 kbps, audio %2 kbps)</source><translation>200 MB（视频 %1 kbps，音频 %2 kbps）</translation></message>
+    <message id="video_size.parameters"><source> (video %1 kbps, audio %2 kbps)</source><translation>（视频 %1 kbps，音频 %2 kbps）</translation></message>
+    <message id="video_size.adaptive_parameters"><source> (adaptive; hardware reference %1 kbps, audio %2 kbps)</source><translation>（自适应；硬编参考 %1 kbps，音频 %2 kbps）</translation></message>
+    <message id="tools.dx_loss.simple_summary"><source>Tap Great budget: SSS %1 · SSS+ %2</source><translation>Tap Great 容许数：SSS %1 · SSS+ %2</translation></message>
+    <message id="tools.dx_loss.unreachable"><source>unreachable</source><translation>不可达</translation></message>
+    <message id="tools.bpm.import"><source>Import BPM…</source><translation>导入 BPM…</translation></message>
+    <message id="tools.bpm.paste"><source>Paste BPM</source><translation>粘贴 BPM</translation></message>
+    <message id="tools.bpm.apply"><source>Apply to current chart</source><translation>应用到当前谱面</translation></message>
+    <message id="tools.bpm.import_hint"><source>Import audio timestamps or an empty maidata. Existing note times and durations are preserved.</source><translation>支持音频时间格式或空 maidata，保留现有音符的音频时间与持续时长。</translation></message>
+    <message id="tools.bpm.import_placeholder"><source>Paste audio timestamps or empty maidata here</source><translation>在此粘贴音频时间格式或空 maidata</translation></message>
+    <message id="tools.bpm.import_summary"><source>Preview: %1 timing states, %2 note objects. Apply as one undoable edit.</source><translation>预览：%1 个时序点，%2 个音符对象。应用后可一次撤销。</translation></message>
+    <message id="tools.bpm.import_invalid"><source>Invalid BPM input. Use audio timestamps or an empty maidata.</source><translation>BPM 数据无效，请使用音频时间格式或空 maidata。</translation></message>
+    <message id="tools.bpm.import_one_difficulty"><source>The timing maidata must contain exactly one difficulty.</source><translation>时序 maidata 必须只包含一个难度。</translation></message>
+    <message id="tools.bpm.import_empty_required"><source>The imported maidata must be valid and contain no notes.</source><translation>导入的 maidata 必须有效且不含音符。</translation></message>
+    <message id="tools.bpm.import_chart_invalid"><source>Fix the current chart syntax before importing BPM.</source><translation>请先修复当前谱面的语法错误，再导入 BPM。</translation></message>
+    <message id="tools.bpm.import_precision"><source>The timing cannot be embedded without changing note times. The chart was not modified.</source><translation>无法在保持音符时间的条件下嵌入此时序，谱面未修改。</translation></message>
+    <message id="tools.bpm.import_stale"><source>The chart changed. Import or paste the timing again.</source><translation>谱面已更改，请重新导入或粘贴时序。</translation></message>
+    <message id="tools.bpm.import_applied"><source>BPM applied. Undo in the source editor to restore the chart.</source><translation>BPM 已应用，可在源码编辑器中撤销恢复。</translation></message>
+<message id="tools.bpm.import_preview"><source>Chart preview after applying BPM</source><translation>应用后的谱面预览</translation></message>
+<message id="tools.bpm.back_export"><source>Back to export</source><translation>返回导出</translation></message>
+<message id="tools.bpm.import_subdivisions"><source>Keeping note times requires subdivisions %1; check chart-converter compatibility.</source><translation>保持原时间需使用分音 %1；转谱兼容性请先核对。</translation></message>
     <message id="dialog.preferences.font.family">
         <source>Chart text font</source>
         <translation>谱面文本字体</translation>
@@ -5371,33 +5625,424 @@ Error: %1</source>
         <source>Split native Break segments retain Break, which may change Break counts and scoring.</source>
         <translation>拆出的原生 Break 段保留 Break，Break 物量和计分可能改变。</translation>
     </message>
-    <message id="action.play_selection">
-        <source>Play Selection</source>
-        <translation>播放选区</translation>
+
+
+
+
+
+
+
+    <message id="preferences.low_performance">
+        <source>Low performance mode (prioritize 60 Hz preview)</source>
+        <translation>低性能模式（优先保证 60 Hz 预览）</translation>
     </message>
-    <message id="preview.canvas.show_measure_lines">
-        <source>Show Measure Lines</source>
-        <translation>显示小节线</translation>
+    <message id="preferences.space_guard">
+        <source>Prevent accidental spaces (press 3 times to unlock)</source>
+        <translation>防空格误触（三连按解锁输入）</translation>
     </message>
-    <message id="preview.canvas.show_judgement_skeleton">
-        <source>Show Judgement Skeleton</source>
-        <translation>显示判定骨骼</translation>
+    <message id="preferences.auto_normalize">
+        <source>Automatically normalize charts</source>
+        <translation>自动整理谱面</translation>
     </message>
-    <message id="preview.canvas.measure_mode">
-        <source>Measure Line Mode</source>
-        <translation>小节线模式</translation>
+    <message id="preferences.warn_empty_difficulty">
+        <source>Warn before exporting empty difficulties</source>
+        <translation>导出 ZIP 前提示空难度</translation>
     </message>
-    <message id="preview.canvas.measure_chart_clock">
-        <source>Chart clock_count (default 4 beats)</source>
-        <translation>谱面 clock_count（默认 4 拍）</translation>
+    <message id="editor.space_unlocked">
+        <source>Space input unlocked · relocks on focus loss</source>
+        <translation>空格输入已解锁 · 失焦后重新锁定</translation>
     </message>
-    <message id="preview.canvas.measure_custom_beats">
-        <source>Custom beats per measure</source>
-        <translation>自定义每小节拍数</translation>
+    <message id="metadata.advanced.title">
+        <source>Advanced chart information</source>
+        <translation>高级谱面信息</translation>
     </message>
-    <message id="preview.canvas.measure_text_lines">
-        <source>Text line starts</source>
-        <translation>按文本行首</translation>
+    <message id="metadata.advanced.song">
+        <source>Song identifiers</source>
+        <translation>歌曲标识</translation>
+    </message>
+    <message id="metadata.advanced.artist_id">
+        <source>Artist ID</source>
+        <translation>曲师 ID</translation>
+    </message>
+    <message id="metadata.advanced.song_id">
+        <source>Song ID</source>
+        <translation>曲目 ID</translation>
+    </message>
+    <message id="metadata.advanced.timing">
+        <source>Timing and demo</source>
+        <translation>时间与试听</translation>
+    </message>
+    <message id="metadata.advanced.whole_bpm">
+        <source>BPM metadata</source>
+        <translation>BPM 资料</translation>
+    </message>
+    <message id="metadata.advanced.demo_start">
+        <source>Demo start (seconds)</source>
+        <translation>试听起点（秒）</translation>
+    </message>
+    <message id="metadata.advanced.demo_length">
+        <source>Demo length (seconds)</source>
+        <translation>试听长度（秒）</translation>
+    </message>
+    <message id="metadata.advanced.compatibility">
+        <source>Legacy compatibility</source>
+        <translation>旧格式兼容</translation>
+    </message>
+    <message id="metadata.advanced.legacy_seek">
+        <source>Legacy seek (seconds)</source>
+        <translation>旧 seek（秒）</translation>
+    </message>
+    <message id="metadata.advanced.legacy_wait">
+        <source>Legacy wait (seconds)</source>
+        <translation>旧 wait（秒）</translation>
+    </message>
+    <message id="metadata.advanced.legacy_warning">
+        <source>The current Fanmade Portal form does not support seek/wait. Keep existing values when needed; use first for timing adjustment.</source>
+        <translation>当前 Fanmade Portal 新版表单不支持 seek/wait。按需保留旧值；时间偏移请使用 first。</translation>
+    </message>
+    <message id="metadata.advanced.catalog">
+        <source>Category and version</source>
+        <translation>分类与版本</translation>
+    </message>
+    <message id="metadata.advanced.genre">
+        <source>Genre</source>
+        <translation>分类</translation>
+    </message>
+    <message id="metadata.advanced.genre_id">
+        <source>Genre ID</source>
+        <translation>分类 ID</translation>
+    </message>
+    <message id="metadata.advanced.cabinet">
+        <source>Cabinet (SD / DX)</source>
+        <translation>谱面制式（SD / DX）</translation>
+    </message>
+    <message id="metadata.advanced.version">
+        <source>Version</source>
+        <translation>版本</translation>
+    </message>
+    <message id="metadata.advanced.author">
+        <source>Creator information</source>
+        <translation>作者资料</translation>
+    </message>
+    <message id="metadata.advanced.video_url">
+        <source>Chart video URL</source>
+        <translation>谱面视频链接</translation>
+    </message>
+    <message id="metadata.advanced.created">
+        <source>Creation date (YYYYMMDD)</source>
+        <translation>创建日期（YYYYMMDD）</translation>
+    </message>
+    <message id="metadata.advanced.comment">
+        <source>Creator comment</source>
+        <translation>作者评论</translation>
+    </message>
+    <message id="metadata.advanced.difficulty">
+        <source>Difficulty metadata</source>
+        <translation>难度资料</translation>
+    </message>
+    <message id="metadata.advanced.creator_id">
+        <source>Creator IDs (comma separated)</source>
+        <translation>谱师 ID（多人以逗号分隔）</translation>
+    </message>
+    <message id="metadata.advanced.constant">
+        <source>Chart constant</source>
+        <translation>谱面定数</translation>
+    </message>
+    <message id="metadata.advanced.regulation">
+        <source>Regulation</source>
+        <translation>谱面规则分类</translation>
+    </message>
+    <message id="metadata.advanced.single_line">
+        <source>This field accepts one line only.</source>
+        <translation>此字段只允许一行文字。</translation>
+    </message>
+    <message id="metadata.advanced.embedded_field">
+        <source>A field value cannot contain another &amp;key= assignment.</source>
+        <translation>字段值不能包含另一条 &amp;key= 赋值。</translation>
+    </message>
+    <message id="metadata.advanced.invalid_date">
+        <source>Enter a valid date as YYYYMMDD.</source>
+        <translation>请输入有效的 YYYYMMDD 日期。</translation>
+    </message>
+    <message id="metadata.advanced.invalid_url">
+        <source>Enter a valid HTTP or HTTPS URL.</source>
+        <translation>请输入有效的 HTTP 或 HTTPS 链接。</translation>
+    </message>
+    <message id="metadata.advanced.invalid_id">
+        <source>Use digits for IDs; separate collaborating creator IDs with commas.</source>
+        <translation>ID 请使用数字；多人谱师 ID 用逗号分隔。</translation>
+    </message>
+    <message id="metadata.advanced.positive_number">
+        <source>Enter a finite number greater than zero.</source>
+        <translation>请输入大于 0 的有限数字。</translation>
+    </message>
+    <message id="metadata.advanced.nonnegative_number">
+        <source>Enter a finite number of zero or greater.</source>
+        <translation>请输入大于或等于 0 的有限数字。</translation>
+    </message>
+    <message id="metadata.advanced.no_document">
+        <source>No chart is open.</source>
+        <translation>尚未打开谱面。</translation>
+    </message>
+    <message id="metadata.advanced.unknown_field">
+        <source>Unsupported advanced field.</source>
+        <translation>不支持的高级字段。</translation>
+    </message>
+    <message id="metadata.advanced.update_failed">
+        <source>The metadata change could not be applied.</source>
+        <translation>无法应用元数据修改。</translation>
+    </message>
+    <message id="timeline.layout.horizontal">
+        <source>Horizontal</source>
+        <translation>横向</translation>
+    </message>
+    <message id="timeline.layout.before_editor">
+        <source>Before editor</source>
+        <translation>编辑区左侧</translation>
+    </message>
+    <message id="timeline.layout.after_editor">
+        <source>After editor</source>
+        <translation>编辑区右侧</translation>
+    </message>
+    <message id="timeline.layout.direction">
+        <source>Vertical note direction</source>
+        <translation>纵向音符方向</translation>
+    </message>
+    <message id="timeline.layout.falling">
+        <source>Falling (later notes above)</source>
+        <translation>下落（上方为更晚时间）</translation>
+    </message>
+    <message id="timeline.layout.rising">
+        <source>Rising (later notes below)</source>
+        <translation>上落（下方为更晚时间）</translation>
+    </message>
+    <message id="timeline.layout.lane_order">
+        <source>Lane order</source>
+        <translation>键位排列</translation>
+    </message>
+    <message id="timeline.drop_region">
+        <source>Drop</source>
+        <translation>Drop 区间</translation>
+    </message>
+    <message id="export.document_changed_retry">
+        <source>The chart changed while the export dialog was open. Please export again.</source>
+        <translation>导出对话框打开期间谱面发生了变化，请重新导出。</translation>
+    </message>
+    <message id="export.empty_difficulty_warning">
+        <source>Empty difficulties were detected. Continue exporting?</source>
+        <translation>检测到有空难度，还要继续导出吗？</translation>
+    </message>
+    <message id="export.empty_difficulty_continue">
+        <source>I know what I am doing!</source>
+        <translation>我知道我在做什么！</translation>
+    </message>
+    <message id="qml.debug_rendering">
+        <source>Debug rendering</source>
+        <translation>调试渲染</translation>
+    </message>
+    <message id="qml.debug_labeled_judge_area">
+        <source>Labeled judgement areas</source>
+        <translation>带编号的判定区</translation>
+    </message>
+    <message id="qml.debug_muri_markers">
+        <source>Muri judgement markers</source>
+        <translation>无理判定标记</translation>
+    </message>
+    <message id="qml.debug_touch_trail">
+        <source>Touch trails</source>
+        <translation>触摸轨迹</translation>
+    </message>
+    <message id="dialog.video_export.less_display">
+        <source>Show less</source>
+        <translation>收起更多</translation>
+    </message>
+    <message id="video_size.custom">
+        <source>Custom</source>
+        <translation>自定义</translation>
+    </message>
+    <message id="video_size.target_mbps">
+        <source>Target video bitrate (Mbps)</source>
+        <translation>目标视频码率（Mbps）</translation>
+    </message>
+    <message id="video_size.estimated_mb">
+        <source>Estimated size: %1 MB</source>
+        <translation>预计体积：%1 MB</translation>
+    </message>
+    <message id="video_export.include_pv">
+        <source>Export PV</source>
+        <translation>导出 PV</translation>
+    </message>
+    <message id="video_export.intro_style_chart_preview">
+        <source>Chart preview</source>
+        <translation>谱面预览</translation>
+    </message>
+    <message id="video_export.drop_range">
+        <source>Drop: %1 – %2</source>
+        <translation>Drop：%1 – %2</translation>
+    </message>
+    <message id="video_export.use_drop_range">
+        <source>Use drop range</source>
+        <translation>采用 Drop 区间</translation>
+    </message>
+    <message id="video_export.intro_automatic_segment">
+        <source>Use recommended segment</source>
+        <translation>使用推荐片段</translation>
+    </message>
+    <message id="video_template.file_filter">
+        <source>MiaCode video template (*.miatemplate)</source>
+        <translation>MiaCode 视频模板 (*.miatemplate)</translation>
+    </message>
+    <message id="video_template.compatible_file_filter">
+        <source>MiaCode video template (*.miatemplate *.json)</source>
+        <translation>MiaCode 视频模板 (*.miatemplate *.json)</translation>
+    </message>
+    <message id="video_export.intro_source_manual">
+        <source>Custom segment</source>
+        <translation>自定义片段</translation>
+    </message>
+    <message id="video_export.intro_source_demo">
+        <source>Chart demo</source>
+        <translation>谱面试听</translation>
+    </message>
+    <message id="video_export.intro_source_drop">
+        <source>Drop</source>
+        <translation>Drop</translation>
+    </message>
+    <message id="video_export.intro_source_default">
+        <source>Default segment</source>
+        <translation>默认片段</translation>
+    </message>
+    <message id="video_export.intro_follow_drop">
+        <source>Follow drop</source>
+        <translation>跟随 Drop</translation>
+    </message>
+    <message id="video_export.intro_automatic">
+        <source>Automatic</source>
+        <translation>自动</translation>
+    </message>
+    <message id="structure.session_only">
+        <source>Drop changes are in this session only</source>
+        <translation>Drop 修改仅保留在本次会话</translation>
+    </message>
+    <message id="structure.manual_outside">
+        <source>Manual drop is outside the media duration</source>
+        <translation>手动 Drop 超出媒体时长</translation>
+    </message>
+    <message id="structure.manual_audio_changed">
+        <source>Audio changed. Review the manual drop</source>
+        <translation>音频已更换，请复核手动 Drop</translation>
+    </message>
+    <message id="structure.manual">
+        <source>Manual drop</source>
+        <translation>手动 Drop</translation>
+    </message>
+    <message id="structure.detected">
+        <source>Detected drop</source>
+        <translation>已检测到 Drop</translation>
+    </message>
+    <message id="structure.analyzing">
+        <source>Analyzing chart and audio…</source>
+        <translation>正在分析谱面与音频…</translation>
+    </message>
+    <message id="structure.canceled">
+        <source>Structure analysis canceled</source>
+        <translation>已取消结构分析</translation>
+    </message>
+    <message id="structure.wait_for_pause">
+        <source>Analysis waits for playback to pause</source>
+        <translation>暂停播放后开始分析</translation>
+    </message>
+    <message id="structure.syntax_estimate">
+        <source>Pressure estimate from a chart with syntax errors</source>
+        <translation>谱面有语法错误，压力为估计值</translation>
+    </message>
+    <message id="structure.no_audio">
+        <source>Pressure estimate · Audio unavailable</source>
+        <translation>压力估计 · 无法读取音频</translation>
+    </message>
+    <message id="structure.candidates">
+        <source>Drop candidates · Select a range to confirm</source>
+        <translation>Drop 候选 · 选择区间以确认</translation>
+    </message>
+    <message id="structure.no_clear_drop">
+        <source>Pressure estimate · No clear drop</source>
+        <translation>压力估计 · 未找到明显的 Drop</translation>
+    </message>
+    <message id="structure.cancel_analysis">
+        <source>Cancel analysis</source>
+        <translation>取消分析</translation>
+    </message>
+    <message id="structure.edit_button">
+        <source>Drop…</source>
+        <translation>Drop…</translation>
+    </message>
+    <message id="structure.pressure_tooltip">
+        <source>%1 s · Relative chart pressure
+Density %2 · Simultaneous %3 · Held %4
+Slides %5 · Movement %6 · Rhythm %7</source>
+        <translation>%1 秒 · 相对谱面压力
+密度 %2 · 同押 %3 · 持续 %4
+滑键 %5 · 移动 %6 · 节奏 %7</translation>
+    </message>
+    <message id="structure.edit_title">
+        <source>Edit drop range</source>
+        <translation>编辑 Drop 区间</translation>
+    </message>
+    <message id="structure.start_seconds">
+        <source>Start (seconds)</source>
+        <translation>起点（秒）</translation>
+    </message>
+    <message id="structure.end_seconds">
+        <source>End (seconds)</source>
+        <translation>终点（秒）</translation>
+    </message>
+    <message id="structure.recommendation">
+        <source>Recommendation · %1–%2 s</source>
+        <translation>推荐 · %1–%2 秒</translation>
+    </message>
+    <message id="structure.candidate">
+        <source>Candidate · %1–%2 s</source>
+        <translation>候选 · %1–%2 秒</translation>
+    </message>
+    <message id="structure.undo">
+        <source>Undo drop edit</source>
+        <translation>撤销区间编辑</translation>
+    </message>
+    <message id="structure.redo">
+        <source>Redo drop edit</source>
+        <translation>重做区间编辑</translation>
+    </message>
+    <message id="structure.clear">
+        <source>Clear drop</source>
+        <translation>清除 Drop</translation>
+    </message>
+    <message id="structure.analyze_again">
+        <source>Analyze again</source>
+        <translation>重新分析</translation>
+    </message>
+    <message id="structure.save_drop">
+        <source>Save drop</source>
+        <translation>保存 Drop</translation>
+    </message>
+    <message id="structure.apply_manual">
+        <source>Apply manual drop</source>
+        <translation>应用手动 Drop</translation>
+    </message>
+    <message id="editor.slide_component_edit_rejected">
+        <source>This edit would change an unselected Slide component. Select the whole Slide and try again.</source>
+        <translation>这项操作会改动未选中的 Slide 组件。请选中整条 Slide 后重试。</translation>
+    </message>
+    <message id="metadata.advanced.conflict_warning">
+        <source>The original file contains conflicting fields: %1. Review the complete source before saving; automatic metadata saves are blocked.</source>
+        <translation>原文件包含值冲突的重复字段：%1。请在全文编辑中确认后保存；已阻止自动元数据覆盖。</translation>
+    </message>
+    <message id="export.syntax_before_zip">
+        <source>The chart contains syntax errors. Fix them before exporting ZIP.</source>
+        <translation>谱面存在语法错误，请修复后再导出 ZIP。</translation>
+    </message>
+    <message id="video_template.path_exists">
+        <source>A template with that name already exists.</source>
+        <translation>已存在同名模板。</translation>
     </message>
 </context>
 <context>
@@ -5509,17 +6154,20 @@ Error: %1</source>
 
 <context>
     <name>HandOrderSlideTiming</name>
-    <message id="preview.canvas.slide_timing_from_launch_beat">
-        <source>Start on a matching launch beat</source>
-        <translation>有启动拍时从启动拍开始</translation>
-    </message>
-    <message id="preview.canvas.slide_timing_early_perfect_from_head">
-        <source>Fully bright from star head when Perfect starts before launch beat</source>
-        <translation>启动拍前已进入 Perfect 时，从头拍全亮</translation>
-    </message>
-    <message id="preview.canvas.show_slide_judgement_timing">
-        <source>Show Slide Judgement Timing</source>
-        <translation>显示 Slide 判定时值</translation>
+
+
+
+</context>
+
+
+
+<context>
+    <name>HandOrderPressure</name>
+    <message id="structure.hand_order_tooltip">
+        <source>Annotated hands · Load L %1 / R %2
+Movement L %3 / R %4 · Alternation %5</source>
+        <translation>人工手序 · 占用 左 %1 / 右 %2
+移动 左 %3 / 右 %4 · 交替 %5</translation>
     </message>
 </context>
 </TS>

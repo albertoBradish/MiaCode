@@ -7,6 +7,7 @@ namespace miacode::runtime_paths {
 // The hand-order build only runs with a dedicated workspace or package runtime root.
 // Initialize this before startup diagnostics or any preference access.
 bool initializeFromEnvironment(QString* error = nullptr);
+bool configureProcessEnvironment(QString* error = nullptr);
 
 QString rootDirectory();
 QString workspaceDirectory();
@@ -17,5 +18,9 @@ QString logDirectory();
 QString tempDirectory();
 QString exportsDirectory();
 QString projectDirectoryForChart(const QString& chartFilePath);
+QString directory(const char* name);
+QString configFile(const char* name);
+QString temporaryFile(const QString& fileName);
+inline QString root() { return rootDirectory(); }
 
 }  // namespace miacode::runtime_paths

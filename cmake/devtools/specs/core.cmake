@@ -290,6 +290,27 @@ miacode_add_dev_tool(media_prepend_policy_spec TEST
     LIBS miacode_media_tools Qt6::Core
     INCLUDES src
 )
+miacode_add_dev_tool(chart_note_selection_spec TEST
+    SOURCES src/tools/chart_selection/ChartNoteSelectionSpec.cpp
+    LIBS miacode_timeline Qt6::Core Qt6::Gui
+    INCLUDES src
+)
+miacode_add_dev_tool(preview_note_hit_test_spec TEST
+    SOURCES src/tools/preview/PreviewNoteHitTestSpec.cpp
+    LIBS miacode_scene Qt6::Core Qt6::Gui
+    INCLUDES src
+)
+miacode_add_dev_tool(chart_tools_spec TEST
+    SOURCES src/tools/chart_tools/ChartToolsSpec.cpp
+    LIBS miacode_chart Qt6::Core Qt6::Gui
+    INCLUDES src
+)
+
+miacode_add_dev_tool(timeline_note_selection_interaction_spec TEST
+    SOURCES src/tools/timeline/TimelineNoteSelectionInteractionSpec.cpp
+    LIBS miacode_timeline_quick Qt6::Core Qt6::Gui Qt6::Quick Qt6::Test
+    INCLUDES src)
+set_tests_properties(timeline_note_selection_interaction_spec PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
 miacode_add_dev_tool(batch_cleanup_core_spec TEST
     SOURCES
@@ -320,18 +341,7 @@ target_compile_definitions(wifi_hand_order_render_spec PRIVATE
     "MIACODE_SOURCE_ROOT=\"${CMAKE_CURRENT_SOURCE_DIR}\""
 )
 
-miacode_add_dev_tool(chart_note_selection_spec TEST
-    SOURCES src/tools/chart_selection/ChartNoteSelectionSpec.cpp
-    LIBS miacode_timeline Qt6::Core Qt6::Gui INCLUDES src)
-miacode_add_dev_tool(preview_note_hit_test_spec TEST
-    SOURCES src/tools/preview/PreviewNoteHitTestSpec.cpp
-    LIBS miacode_scene Qt6::Core Qt6::Gui INCLUDES src)
 
-miacode_add_dev_tool(timeline_note_selection_interaction_spec TEST
-    SOURCES src/tools/timeline/TimelineNoteSelectionInteractionSpec.cpp
-    LIBS miacode_timeline_quick Qt6::Core Qt6::Gui Qt6::Quick Qt6::Test
-    INCLUDES src)
-set_tests_properties(timeline_note_selection_interaction_spec PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
 miacode_add_dev_tool(hand_order_note_selection_spec TEST
     SOURCES src/tools/chart_selection/HandOrderNoteSelectionSpec.cpp

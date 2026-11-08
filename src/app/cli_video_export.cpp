@@ -3,6 +3,7 @@
 
 #include "app/runtime/Session.h"
 #include "app/services/ApplicationServices.h"
+#include "app/services/CliIntegration.h"
 #include "export/video_export/VideoExportSnapshot.h"
 #include "common/DebugLog.h"
 #include "common/OperationLog.h"
@@ -15,6 +16,8 @@
 #include <QString>
 #include <QStringList>
 #include <QTextStream>
+#include <QTemporaryDir>
+#include <QSaveFile>
 
 #include <cmath>
 
@@ -68,10 +71,15 @@ int runCliVideoExport(QGuiApplication& app, QString* errorMessage)
     // HUD/render settings come from app-created task snapshots.
     miacode::runtime::installPreferenceDocumentProvider();
     try {
+    if (!miacode::CliIntegration::tasksEnabled()) {
+        if (errorMessage) *errorMessage = QStringLiteral("CLI tasks are disabled. Enable command-line integration in Settings > About.");
+        return 77;
+    }
     QCommandLineParser parser;
     parser.setApplicationDescription(qtTrId("cli.video_export.description"));
     parser.addHelpOption();
     parser.addVersionOption();
+    parser.addOption(QCommandLineOption(QStringLiteral("overwrite"), QStringLiteral("Atomically replace an existing output after successful export.")));
     addSharedCliDebugOption(parser);
     parser.addOption(QCommandLineOption(
         QStringLiteral("export-video"),
@@ -193,6 +201,17 @@ int runCliVideoExport(QGuiApplication& app, QString* errorMessage)
         QStringLiteral("milliseconds"),
         QStringLiteral("2000")
     ));
+
+    parser.addOption(QCommandLineOption(QStringLiteral("size-preset"),
+        QStringLiteral("Output budget: standard, 30mb, 100mb, 200mb or custom."), QStringLiteral("preset")));
+    parser.addOption(QCommandLineOption(QStringLiteral("video-bitrate"),
+        QStringLiteral("Target video bitrate in Mbps (0.1–100); selects the custom budget."), QStringLiteral("Mbps")));
+    parser.addOption(QCommandLineOption(QStringLiteral("no-pv"),
+        QStringLiteral("Use the static background in place of the PV.")));
+    parser.addOption(QCommandLineOption(QStringLiteral("debug-render"),
+        QStringLiteral("Render the chart on opaque black without background media.")));
+    parser.addOption(QCommandLineOption(QStringLiteral("intro-chart-preview"),
+        QStringLiteral("Show a chart preview alongside the intro card.")));
 
     if (!parser.parse(app.arguments())) {
         if (errorMessage != nullptr) {
@@ -342,7 +361,36 @@ int runCliVideoExport(QGuiApplication& app, QString* errorMessage)
         }
     }
 
+    const bool customBitrate = parser.isSet(QStringLiteral("video-bitrate"));
+    const QString presetToken = parser.value(QStringLiteral("size-preset")).trimmed().toLower();
+    const QHash<QString, VideoExportSizePreset> sizePresets{
+        {QStringLiteral("standard"), VideoExportSizePreset::Standard},
+        {QStringLiteral("30mb"), VideoExportSizePreset::Target30Mb},
+        {QStringLiteral("100mb"), VideoExportSizePreset::Target100Mb},
+        {QStringLiteral("200mb"), VideoExportSizePreset::Target200Mb},
+        {QStringLiteral("custom"), VideoExportSizePreset::Custom},
+    };
+    if ((parser.isSet(QStringLiteral("size-preset")) && !sizePresets.contains(presetToken))
+        || (customBitrate && !presetToken.isEmpty() && presetToken != QLatin1String("custom"))) {
+        if (errorMessage) *errorMessage = QStringLiteral("Invalid or conflicting --size-preset and --video-bitrate values.");
+        return 2;
+    }
     Session::CliVideoExportRequest request;
+    request.sizePreset = customBitrate ? VideoExportSizePreset::Custom
+        : sizePresets.value(presetToken, VideoExportSizePreset::Standard);
+    if (customBitrate) {
+        bool bitrateOk = false;
+        const double bitrate = parser.value(QStringLiteral("video-bitrate")).toDouble(&bitrateOk);
+        if (!bitrateOk || !std::isfinite(bitrate)
+            || bitrate != miacode::video_export::normalizedCustomVideoBitrateMbps(bitrate)) {
+            if (errorMessage) *errorMessage = QStringLiteral("--video-bitrate requires a value between 0.1 and 100 Mbps.");
+            return 2;
+        }
+        request.targetVideoBitrateMbps = bitrate;
+    }
+    request.includePv = !parser.isSet(QStringLiteral("no-pv"));
+    request.debugRendering = parser.isSet(QStringLiteral("debug-render"));
+    request.introChartPreview = parser.isSet(QStringLiteral("intro-chart-preview"));
     const QString handOrderMode = parser.value(QStringLiteral("hand-order")).trimmed().toLower();
     if (handOrderMode != QLatin1String("annotated")
         && handOrderMode != QLatin1String("original")) {
@@ -353,7 +401,29 @@ int runCliVideoExport(QGuiApplication& app, QString* errorMessage)
     }
     request.chartPathOrDirectory = chartInput;
     request.difficulty = parser.value(QStringLiteral("difficulty")).trimmed();
-    request.outputPath = parser.value(QStringLiteral("output")).trimmed();
+    const QString userOutput = parser.value(QStringLiteral("output")).trimmed();
+    if (userOutput.isEmpty()) {
+        if (errorMessage) *errorMessage = QStringLiteral("--output is required.");
+        return 2;
+    }
+    const QString finalOutput = QFileInfo(userOutput).absoluteFilePath();
+    const QFileInfo outputInfo(finalOutput);
+    if (outputInfo.isDir() || outputInfo.isSymLink()
+        || (outputInfo.exists() && !parser.isSet(QStringLiteral("overwrite")))) {
+        if (errorMessage) *errorMessage = QStringLiteral("Output exists or is invalid; use --overwrite for an existing regular file.");
+        return 3;
+    }
+    if (outputInfo.suffix().compare(QStringLiteral("mp4"), Qt::CaseInsensitive) != 0
+        || !QDir().mkpath(outputInfo.absolutePath())) {
+        if (errorMessage) *errorMessage = QStringLiteral("Output must be a writable .mp4 path.");
+        return 2;
+    }
+    QTemporaryDir staging(QDir(outputInfo.absolutePath()).filePath(QStringLiteral(".better-cli-XXXXXX")));
+    if (!staging.isValid()) {
+        if (errorMessage) *errorMessage = QStringLiteral("Cannot create output staging directory.");
+        return 1;
+    }
+    request.outputPath = QDir(staging.path()).filePath(outputInfo.fileName());
     request.outputWidth = outputWidth;
     request.outputHeight = outputHeight;
     request.fps = fps;
@@ -363,7 +433,7 @@ int runCliVideoExport(QGuiApplication& app, QString* errorMessage)
     request.showHandOrderAnnotations = handOrderMode == QLatin1String("annotated");
     request.showObjectStatsHud = parser.isSet(QStringLiteral("show-object-stats"));
     request.showChartInfoHud = parser.isSet(QStringLiteral("show-chart-info"));
-    request.addIntro = parser.isSet(QStringLiteral("intro")) || introPvPreview;
+    request.addIntro = parser.isSet(QStringLiteral("intro")) || introPvPreview || request.introChartPreview;
     request.introCardShadow = parser.isSet(QStringLiteral("intro-card-shadow"));
     request.introPvPreview = introPvPreview;
     request.introPvStartSeconds = introPvStartSeconds;
@@ -399,6 +469,27 @@ int runCliVideoExport(QGuiApplication& app, QString* errorMessage)
         }
         return 1;
     }
+
+    QFile exported(resolvedOutputPath);
+    QSaveFile finalFile(finalOutput);
+    finalFile.setDirectWriteFallback(false);
+    if ((QFileInfo::exists(finalOutput) && !parser.isSet(QStringLiteral("overwrite")))
+        || !exported.open(QIODevice::ReadOnly) || !finalFile.open(QIODevice::WriteOnly)) {
+        if (errorMessage) *errorMessage = QStringLiteral("Cannot publish completed export at the requested output path.");
+        return 1;
+    }
+    while (!exported.atEnd()) {
+        const QByteArray bytes = exported.read(1024 * 1024);
+        if ((bytes.isEmpty() && exported.error() != QFileDevice::NoError) || finalFile.write(bytes) != bytes.size()) {
+            if (errorMessage) *errorMessage = QStringLiteral("Cannot copy completed export; original output was preserved.");
+            return 1;
+        }
+    }
+    if (!finalFile.commit()) {
+        if (errorMessage) *errorMessage = finalFile.errorString();
+        return 1;
+    }
+    resolvedOutputPath = finalOutput;
 
     QTextStream(stdout) << qtTrId("cli.export_success").arg(QDir::toNativeSeparators(resolvedOutputPath)) << "\n";
     if (!exportDetails.trimmed().isEmpty()) {

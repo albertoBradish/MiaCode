@@ -13,6 +13,8 @@ QtObject {
     property bool canCopy: false
     property bool canPaste: false
     property bool canTransform: false
+    property bool canNormalize: false
+    property bool canPlaySelection: false
     property bool netUploadEnabled: false
     property bool renderModeMenuAvailable: false
     property bool canPlaySelection: false
@@ -34,10 +36,13 @@ QtObject {
     signal selectCurrentLineRequested()
     signal metadataRequested()
     signal latencyCalibrationRequested()
+    signal scoreLossRequested()
+    signal bpmExportRequested()
     signal netRequested()
     signal netUploadRequested()
     signal mediaToolRequested(string toolId)
     signal chartTransformRequested(string opId)
+    signal normalizeChartRequested()
     signal playSelectionRequested()
     signal aboutRequested()
     signal setupWizardRequested()

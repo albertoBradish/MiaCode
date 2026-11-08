@@ -14,6 +14,28 @@ Item {
     required property var timelineSession
     required property var previewSession
     property bool guideSettingsActive: false
+    property bool verticalTimeline: false
+    readonly property var structure: root.previewSession?.structure ?? null
+    readonly property string dropLabel: qsTrId("timeline.drop_region")
+
+    function syncDropRegion() {
+        const bridge = root.timelineSession?.stateBridge
+        if (!bridge)
+            return
+        const valid = root.structure && root.structure.dropAvailable
+        bridge.setDropRegion(valid ? root.structure.dropStartSeconds : -1,
+                             valid ? root.structure.dropEndSeconds : -1,
+                             root.dropLabel)
+    }
+
+    Component.onCompleted: syncDropRegion()
+    onStructureChanged: syncDropRegion()
+    onDropLabelChanged: syncDropRegion()
+
+    Connections {
+        target: root.structure
+        function onChanged() { root.syncDropRegion() }
+    }
     readonly property bool guideSettingsAvailable: root.guideSettingsActive
         && root.visible && timelineItem.visible
     readonly property Item timelineGuideItem: timelineItem
@@ -40,8 +62,8 @@ Item {
     }
     clip: true
     readonly property int contentTopMargin: 0
-    readonly property real minimumHeight: tabs.implicitHeight + timelineItem.minimumViewportHeight
-    readonly property real minimumWidth: tabs.minimumWidth
+    readonly property real minimumHeight: tabs.implicitHeight + (verticalTimeline ? 100 : timelineItem.minimumViewportHeight)
+    readonly property real minimumWidth: verticalTimeline ? 168 : tabs.minimumWidth
     readonly property real analysisTextLeftInset:
         Theme.panelPadding + Theme.chromePadding
     readonly property real analysisListLeftInset:
@@ -142,13 +164,27 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
+        rightAccessoryWidth: root.verticalTimeline && timelineItem.visible ? brightnessButton.width : 0
         documentSession: root.documentSession
         analysisSession: root.analysisSession
         timelineSession: root.timelineSession
     }
 
+    Binding {
+        target: root.timelineSession.stateBridge
+        property: "laneOrder"
+        value: root.preferences.timelineLaneOrder ?? "natural"
+    }
+
+    Binding {
+        target: root.timelineSession.stateBridge
+        property: "axisMode"
+        value: root.verticalTimeline ? (root.preferences.timelineVerticalDirection ?? "falling") : "horizontal"
+    }
+
     TimelineQuickItem {
         id: timelineItem
+        objectName: "timelineQuickItem"
 
         anchors.left: parent.left
         anchors.right: parent.right
@@ -157,10 +193,9 @@ Item {
         visible: root.timelineSession.currentTabId === "timeline"
         enabled: visible
         stateBridge: root.timelineSession.stateBridge
-        headerLeftLimit: zoomButton.x + zoomButton.width + 2
-        headerRightLimit: Math.max(0, brightnessButton.x - 2)
-        headerMarkerLeftLimit: zoomButton.x + zoomButton.width + 2
-        headerMarkerRightLimit: Math.max(0, brightnessButton.x - 2)
+        lowPerformanceMode: root.preferences.lowPerformanceMode ?? false
+        headerRightLimit: root.verticalTimeline ? 0 : Math.max(0, brightnessButton.x - 2)
+        headerMarkerRightLimit: headerRightLimit
         onHeaderNavigateRequested: second => root.timelineSession.headerNavigate(second)
         onTimelineWheelNavigateRequested: second => root.timelineSession.wheelNavigate(second)
         onCenterNavigateRequested: second => root.timelineSession.centerNavigate(second)
@@ -186,24 +221,15 @@ Item {
         }
     }
 
-    // Header controls share the tab row's edge inset, measured on their chrome.
-    TimelineZoomControl {
-        id: zoomButton
-
-        x: tabs.edgePadding - Theme.chromeInsetX + Theme.chromeHighlightOutset
-        y: timelineItem.y + Math.max(0, (timelineItem.timelineTop - height) / 2)
-        height: Theme.controlHighlightHeight + 2 * (Theme.chromeInsetY - Theme.chromeHighlightOutset)
-        visible: timelineItem.visible
-        stateBridge: root.timelineSession.stateBridge
-    }
-
     IconButton {
         id: brightnessButton
 
         width: implicitWidth
         height: implicitHeight
         x: root.width - tabs.edgePadding - width + horizontalInset
-        y: timelineItem.y + Math.max(0, (timelineItem.timelineTop - height) / 2)
+        y: root.verticalTimeline
+            ? tabs.y + (tabs.height - height) / 2
+            : timelineItem.y + Math.max(0, (timelineItem.timelineTop - height) / 2)
         visible: timelineItem.visible
         iconSource: Qt.resolvedUrl("icons/sliders-horizontal.svg")
         filledIconSource: Qt.resolvedUrl("icons/sliders-horizontal-fill.svg")

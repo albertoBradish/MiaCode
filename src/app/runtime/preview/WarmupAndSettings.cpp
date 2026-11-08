@@ -316,6 +316,7 @@ QString miacode::runtime::StageMediaHost::resolveDefaultTrackPath() const
 PreviewOutlineVariant miacode::runtime::StageMediaHost::previewOutlineVariantFromStorageValue(const QString& value) const
 {
     const QString normalized = value.trimmed().toLower();
+    if (normalized == QLatin1String("none")) return PreviewOutlineVariant::None;
     if (normalized == QLatin1String("point")) {
         return PreviewOutlineVariant::Point;
     }
@@ -337,6 +338,8 @@ PreviewOutlineVariant miacode::runtime::StageMediaHost::previewOutlineVariantFro
 QString miacode::runtime::StageMediaHost::previewOutlineVariantStorageValue() const
 {
     switch (previewAppearanceValues_.outlineVariant) {
+    case PreviewOutlineVariant::None:
+        return QStringLiteral("none");
     case PreviewOutlineVariant::Point:
         return QStringLiteral("point");
     case PreviewOutlineVariant::JudgeArea:
@@ -365,6 +368,7 @@ PreviewOutlineVariant miacode::runtime::StageMediaHost::autoPreviewOutlineVarian
 
 PreviewOutlineVariant miacode::runtime::StageMediaHost::effectivePreviewOutlineVariant() const
 {
+    if (previewAppearanceValues_.outlineVariant == PreviewOutlineVariant::None) return PreviewOutlineVariant::None;
     // The export-preview dialog ignores the pause-hide option so the on-screen
     // preview matches the exported video (the user's chosen outline variant, PV/BG
     // visible) instead of the paused judge-area view.
@@ -484,6 +488,11 @@ QVariantMap Session::previewRenderSettings() const
         {QStringLiteral("smoothBrightness"), state_.previewSmoothBrightness_},
         {QStringLiteral("showTimestamp"), state_.previewShowTimestamp_},
         {QStringLiteral("showHandOrderAnnotations"), state_.previewShowHandOrderAnnotations_},
+        {QStringLiteral("showBpmHud"), state_.previewShowBpmHud_},
+        {QStringLiteral("showCpsHud"), state_.previewShowCpsHud_},
+        {QStringLiteral("showMeterHud"), state_.previewShowMeterHud_},
+        {QStringLiteral("showModsHud"), state_.previewShowModsHud_},
+
         {QStringLiteral("showMeasureLines"), state_.previewShowMeasureLines_},
         {QStringLiteral("showJudgementSkeleton"), state_.previewShowJudgementSkeleton_},
         {QStringLiteral("showSlideJudgementTiming"), state_.previewShowSlideJudgementTiming_},
@@ -493,6 +502,10 @@ QVariantMap Session::previewRenderSettings() const
         {QStringLiteral("measureLineCustomBeats"), state_.previewMeasureLineCustomBeats_},
         {QStringLiteral("touchPadAuthoringShortcut"), state_.previewTouchPadAuthoringShortcutEnabled_},
         {QStringLiteral("showDebugInfo"), state_.previewShowDebugInfo_},
+        {QStringLiteral("showJudgeMarkers"), state_.showJudgeMarkers_},
+        {QStringLiteral("showTouchTrail"), state_.showTouchTrail_},
+        {QStringLiteral("labeledJudgeArea"),
+            previewAppearanceValues_.outlineVariant == PreviewOutlineVariant::JudgeAreaLabeled},
         {QStringLiteral("forceLabeledJudgeLineWhenPaused"), state_.previewForceLabeledJudgeLineWhenPaused_},
         // 玩法
         {QStringLiteral("tapFlowSpeed"), snappedFlowSpeed(state_.previewTapFlowSpeed_)},
@@ -558,6 +571,18 @@ void Session::setPreviewRenderSetting(const QString& key, const QVariant& value)
         if (canvas != nullptr) {
             canvas->setSmoothBrightness(state_.previewSmoothBrightness_);
         }
+    } else if (key == QLatin1String("showBpmHud")) {
+        state_.previewShowBpmHud_ = state_.exportShowBpmHud_ = value.toBool();
+        if (canvas != nullptr) canvas->setShowBpmHud(value.toBool());
+    } else if (key == QLatin1String("showCpsHud")) {
+        state_.previewShowCpsHud_ = state_.exportShowCpsHud_ = value.toBool();
+        if (canvas != nullptr) canvas->setShowCpsHud(value.toBool());
+    } else if (key == QLatin1String("showMeterHud")) {
+        state_.previewShowMeterHud_ = state_.exportShowMeterHud_ = value.toBool();
+        if (canvas != nullptr) canvas->setShowMeterHud(value.toBool());
+    } else if (key == QLatin1String("showModsHud")) {
+        state_.previewShowModsHud_ = state_.exportShowModsHud_ = value.toBool();
+        if (canvas != nullptr) canvas->setShowModsHud(value.toBool());
     } else if (key == QLatin1String("showTimestamp")) {
         state_.previewShowTimestamp_ = value.toBool();
         if (canvas != nullptr) {
@@ -599,6 +624,15 @@ void Session::setPreviewRenderSetting(const QString& key, const QVariant& value)
     } else if (key == QLatin1String("touchPadAuthoringShortcut")) {
         state_.previewTouchPadAuthoringShortcutEnabled_ = value.toBool();
         applyEffectivePreviewOutlineVariantToCanvas();
+    } else if (key == QLatin1String("showJudgeMarkers")) {
+        state_.showJudgeMarkers_ = value.toBool();
+        applyMuriRenderOptions();
+    } else if (key == QLatin1String("showTouchTrail")) {
+        state_.showTouchTrail_ = value.toBool();
+        applyMuriRenderOptions();
+    } else if (key == QLatin1String("labeledJudgeArea")) {
+        applyPreviewOutlineVariant(value.toBool()
+            ? PreviewOutlineVariant::JudgeAreaLabeled : PreviewOutlineVariant::JudgeArea, false, false);
     } else if (key == QLatin1String("showDebugInfo")) {
         state_.previewShowDebugInfo_ = value.toBool();
         if (canvas != nullptr) {
@@ -758,6 +792,8 @@ void miacode::runtime::StageMediaHost::applyPreviewCustomOutlineFileName(const Q
 {
     const QString normalized = QFileInfo(fileName.trimmed()).fileName();
     state_.previewCustomOutlineFileName_ = normalized;
+    if (previewAppearanceValues_.outlineVariant == PreviewOutlineVariant::None)
+        previewAppearanceValues_.outlineVariant = PreviewOutlineVariant::Line;
     state_.previewOutlineVariantUsesAutoSelection_ = false;
     applyEffectivePreviewOutlineVariantToCanvas();
     if (persistState) {

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "common/RuntimePaths.h"
+
 #include "export/video_export/EncoderProbeCache.h"
 #include "common/DebugLog.h"
 #include "common/RuntimePaths.h"

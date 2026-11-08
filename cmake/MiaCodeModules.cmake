@@ -58,6 +58,10 @@ miacode_add_module(miacode_chart
         src/core/chart/SlideJudgementTiming.cpp
         src/core/chart/SlideJudgementTiming.h
         src/core/chart/document/ChartClockCount.h
+        src/core/chart/ChartPreviewRegion.cpp
+        src/core/chart/ChartPreviewRegion.h
+        src/core/chart/document/AdvancedMetadata.cpp
+        src/core/chart/document/AdvancedMetadata.h
         src/core/chart/document/SimaiDocument.cpp
         src/core/chart/document/SimaiDocument.h
         src/core/chart/document/SimaiTimingMetadata.cpp
@@ -83,13 +87,14 @@ miacode_add_module(miacode_chart
         src/core/chart/transform/ChartBatchTransform.Subdivision.cpp
         src/core/chart/transform/ChartBatchTransform.Transform.cpp
         src/core/chart/transform/ChartBatchTransform.h
-        src/core/chart/transform/ChartNoteSelection.cpp
         src/core/chart/transform/HandOrderEdit.cpp
         src/core/chart/transform/HandOrderEdit.h
         src/core/chart/transform/NativeSlideSplit.cpp
         src/core/chart/transform/NativeSlideSplit.h
         src/core/chart/transform/ChartNormalization.cpp
         src/core/chart/transform/ChartNormalization.h
+        src/core/chart/transform/ChartNoteSelection.h
+        src/core/chart/transform/ChartNoteSelection.cpp
         src/core/chart/transform/ChartNormalizationSegmentPolicy.cpp
         src/core/chart/transform/ChartNormalizationSegmentPolicy.h
         src/core/chart/transform/Non384SnapTable.cpp
@@ -113,6 +118,8 @@ miacode_add_module(miacode_analysis
     SOURCES
         src/core/analysis/HandOrderPressureAdapter.cpp
         src/core/analysis/HandOrderPressureAdapter.h
+        src/core/analysis/ChartStructureAnalysis.cpp
+        src/core/analysis/ChartStructureAnalysis.h
         src/core/analysis/MuriAnalyzer.cpp
         src/core/analysis/MuriAnalyzer.h
         src/core/analysis/MuriAnalyzerGeometry.cpp

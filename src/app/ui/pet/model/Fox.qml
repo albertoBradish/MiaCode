@@ -7,6 +7,43 @@ PetModelNode {
     property string clip: ""
     property real phase: 0
     property real lifeTime: 0
+    property real rhythmQuarterBeat: 0
+    property real rhythmWeight: 0
+    property real rhythmDropWeight: 0
+    // One relaxed left/right head circle spans two chart beats. These are
+    // analytic, periodic pose samples: no animation timer advances the beat.
+    readonly property real rhythmPhase: ((rhythmQuarterBeat % 2) + 2) % 2
+    readonly property real rhythmStrength: Math.max(0, Math.min(1, rhythmWeight))
+        * (1 - sittingWeight) * (1 - sleepingWeight)
+    readonly property real jumpStrength: rhythmStrength * rhythmDropWeight
+    readonly property real headSwayStrength: rhythmStrength * (1 - 0.60 * rhythmDropWeight)
+    readonly property real bodyBeatAngle: rhythmPhase * Math.PI * 2
+    readonly property real bodySwayAngle: rhythmPhase * Math.PI
+    readonly property real headSwayAngle: (rhythmPhase - 0.10) * Math.PI
+    readonly property real tailSwayAngle: (rhythmPhase - 0.24) * Math.PI
+    // Each jump lands at the transport beat. Outside the drop the body stays grounded.
+    readonly property real rhythmBodyLift: jumpStrength * 0.065 * (1 - Math.cos(bodyBeatAngle))
+    readonly property vector3d rhythmBodyOffset: Qt.vector3d(
+        jumpStrength * 0.025 * Math.sin(bodySwayAngle), rhythmBodyLift,
+        jumpStrength * 0.012 * Math.sin(bodyBeatAngle - 0.25))
+    readonly property vector3d rhythmBodyRotation: Qt.vector3d(
+        jumpStrength * 3.8 * Math.sin(bodyBeatAngle - 0.20),
+        jumpStrength * 6.0 * Math.sin(bodySwayAngle),
+        jumpStrength * 4.5 * Math.sin(bodySwayAngle + 0.35))
+    readonly property vector3d rhythmHeadOffset: Qt.vector3d(
+        headSwayStrength * 0.025 * Math.sin(headSwayAngle),
+        headSwayStrength * (0.020 + 0.020 * Math.cos(headSwayAngle)),
+        -headSwayStrength * 0.018 * Math.cos(headSwayAngle))
+    readonly property vector3d rhythmHeadRotation: Qt.vector3d(
+        headSwayStrength * (12.0 + 12.0 * Math.cos(headSwayAngle + 0.25)),
+        headSwayStrength * 38.0 * Math.sin(headSwayAngle),
+        headSwayStrength * 8.0 * Math.cos(headSwayAngle + 0.80))
+    readonly property real rhythmLegFlex: jumpStrength * 12.0 * Math.sin(bodyBeatAngle - 0.15)
+    readonly property real rhythmLegStretch: 1 - 0.28 * rhythmBodyLift
+    readonly property vector3d rhythmTailRotation: Qt.vector3d(
+        jumpStrength * 7.0 * Math.cos(tailSwayAngle + 0.40),
+        jumpStrength * 18.0 * Math.sin(tailSwayAngle),
+        jumpStrength * 8.0 * Math.sin(tailSwayAngle - 0.45))
     property real sleepTime: 0
     property real wiggleTime: 0
     onClipChanged: {
@@ -23,8 +60,8 @@ PetModelNode {
     property real wiggleWeight: clip === "animation.fox.wiggle" ? 1 : 0
     readonly property int transitionDuration: clip === "animation.fox.wiggle" ? 150 : 650
     readonly property bool sleeping: sleepingWeight > 0.5
-    readonly property real idleMotion: (1 - sleepingWeight) * (1 - wiggleWeight)
-    readonly property real breathing: Math.sin(lifeTime * Math.PI / 2) * (1 - wiggleWeight)
+    readonly property real idleMotion: (1 - sleepingWeight) * (1 - wiggleWeight) * (1 - rhythmWeight)
+    readonly property real breathing: Math.sin(lifeTime * Math.PI / 2) * (1 - wiggleWeight) * (1 - rhythmWeight)
     Behavior on sittingWeight { NumberAnimation { duration: fox.transitionDuration; easing.type: Easing.InOutSine } }
     Behavior on sleepingWeight { NumberAnimation { duration: fox.transitionDuration; easing.type: Easing.InOutSine } }
     Behavior on wiggleWeight { NumberAnimation { duration: fox.transitionDuration; easing.type: Easing.InOutSine } }
@@ -50,7 +87,8 @@ PetModelNode {
             rotation: fox.rotationZYX((0 + fox.sittingWeight * (0 - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * (0 - (0))), (0 + fox.sittingWeight * (0 - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * (0 - (0))), (0 + fox.sittingWeight * (0 - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * (0 - (0))))
             PetModelNode {
                 objectName: "body"
-                position: Qt.vector3d(-(0 + (0 + fox.sittingWeight * ((0 + 0.0) - (0)) + fox.sleepingWeight * ((0 + 0.0) - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0)))) / 16, (8 + (0 + fox.sittingWeight * ((0 + 1.0) - (0)) + fox.sleepingWeight * ((0 + -4.8) - (0)) + fox.wiggleWeight * ((0 + -1.8) - (0)))) / 16, (0 + (0 + fox.sittingWeight * ((0 + 0.0) - (0)) + fox.sleepingWeight * ((0 + 0.0) - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0)))) / 16)
+                eulerRotation: fox.rhythmBodyRotation
+                position: Qt.vector3d(-(0 + (0 + fox.sittingWeight * ((0 + 0.0) - (0)) + fox.sleepingWeight * ((0 + 0.0) - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0)))) / 16, (8 + (0 + fox.sittingWeight * ((0 + 1.0) - (0)) + fox.sleepingWeight * ((0 + -4.8) - (0)) + fox.wiggleWeight * ((0 + -1.8) - (0)))) / 16, (0 + (0 + fox.sittingWeight * ((0 + 0.0) - (0)) + fox.sleepingWeight * ((0 + 0.0) - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0)))) / 16).plus(fox.rhythmBodyOffset)
                 rotation: fox.rotationZYX(((0 + (-(0))) + fox.sittingWeight * (((0 + (-(0))) + -60.0) - ((0 + (-(0))))) + fox.sleepingWeight * (((0 + (-(0))) + 0.0) - ((0 + (-(0))))) + fox.wiggleWeight * (((0 + (-(0))) + 0.0) - ((0 + (-(0)))))), ((0 + 0.0) + fox.sittingWeight * (((0 + 0.0) + 0.0) - ((0 + 0.0))) + fox.sleepingWeight * (((0 + 0.0) + 0.0) - ((0 + 0.0))) + fox.wiggleWeight * (((0 + 0.0) + ((Math.cos((((fox.lifeTime * 20.0) * 53.7)) * Math.PI / 180) * 5.0) - ((0 + 0.0)))) - ((0 + 0.0)))), ((0 + 0.0) + fox.sittingWeight * (((0 + 0.0) + 0.0) - ((0 + 0.0))) + fox.sleepingWeight * (((0 + 0.0) + -90.0) - ((0 + 0.0))) + fox.wiggleWeight * (((0 + 0.0) + 0.0) - ((0 + 0.0)))))
                 PetModelNode {
                     objectName: "body_mesh"
@@ -115,7 +153,8 @@ PetModelNode {
                 }
                 PetModelNode {
                     objectName: "head"
-                    position: Qt.vector3d(-(0 + (0 + fox.sittingWeight * ((0 + 0.0) - (0)) + fox.sleepingWeight * ((0 + 1.8) - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0)))) / 16, (0 + (0 + fox.sittingWeight * ((0 + 3.0) - (0)) + fox.sleepingWeight * ((0 + -0.4) - (0)) + fox.wiggleWeight * ((0 + -0.8) - (0)))) / 16, (-3 + (0 + fox.sittingWeight * ((0 + -3.0) - (0)) + fox.sleepingWeight * ((0 + -2.0) - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0)))) / 16)
+                    eulerRotation: fox.rhythmHeadRotation
+                    position: Qt.vector3d(-(0 + (0 + fox.sittingWeight * ((0 + 0.0) - (0)) + fox.sleepingWeight * ((0 + 1.8) - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0)))) / 16, (0 + (0 + fox.sittingWeight * ((0 + 3.0) - (0)) + fox.sleepingWeight * ((0 + -0.4) - (0)) + fox.wiggleWeight * ((0 + -0.8) - (0)))) / 16, (-3 + (0 + fox.sittingWeight * ((0 + -3.0) - (0)) + fox.sleepingWeight * ((0 + -2.0) - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0)))) / 16).plus(fox.rhythmHeadOffset)
                     rotation: fox.rotationZYX((0 + fox.sittingWeight * ((0 + 60.0) - (0)) + fox.sleepingWeight * ((0 + 0.0) - (0)) + fox.wiggleWeight * ((0 + Math.max((-5.0), Math.min(0, ((-5.0) * (fox.wiggleTime / 2.0))))) - (0))) + fox.idleMotion * Math.sin(fox.lifeTime * 1.3) * 2.5, (0 + fox.sittingWeight * ((0 + 0.0) - (0)) + fox.sleepingWeight * ((0 + -115.0) - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0))), (0 + fox.sittingWeight * ((0 + 0.0) - (0)) + fox.sleepingWeight * ((0 + ((Math.cos(((fox.sleepTime * 160.0)) * Math.PI / 180) + 90) - (0))) - (0)) + fox.wiggleWeight * ((0 + Math.max(0, Math.min(25.0, (25.0 * (fox.wiggleTime / 2.0))))) - (0))) + fox.idleMotion * Math.sin(fox.lifeTime * 0.7) * 1.5)
                     PetModelNode {
                         objectName: "head_mesh"
@@ -540,6 +579,8 @@ PetModelNode {
                 }
                 PetModelNode {
                     objectName: "leg0"
+                    eulerRotation: Qt.vector3d(fox.rhythmLegFlex, 0, -fox.rhythmBodyRotation.z * 0.65 + fox.jumpStrength * 1.5 * Math.sin(fox.bodySwayAngle))
+                    scale: Qt.vector3d(1, fox.rhythmLegStretch, 1)
                     position: Qt.vector3d(-(-3 + (0 + fox.sittingWeight * ((0 + 0.0) - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0)))) / 16, (-2 + (0 + fox.sittingWeight * ((0 + 4.0) - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * ((0 + 1.6) - (0)))) / 16, (6 + (0 + fox.sittingWeight * ((0 + 2.5) - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0)))) / 16)
                     rotation: fox.rotationZYX((0 + fox.sittingWeight * ((0 + -15.0) - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0))), (0 + fox.sittingWeight * ((0 + 0.0) - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0))), (0 + fox.sittingWeight * ((0 + 0.0) - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0))))
                     PetModelNode {
@@ -606,6 +647,8 @@ PetModelNode {
                 }
                 PetModelNode {
                     objectName: "leg1"
+                    eulerRotation: Qt.vector3d(fox.rhythmLegFlex, 0, -fox.rhythmBodyRotation.z * 0.65 - fox.jumpStrength * 1.5 * Math.sin(fox.bodySwayAngle))
+                    scale: Qt.vector3d(1, fox.rhythmLegStretch, 1)
                     position: Qt.vector3d(-(1 + (0 + fox.sittingWeight * ((0 + 0.0) - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0)))) / 16, (-2 + (0 + fox.sittingWeight * ((0 + 4.0) - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * ((0 + 1.6) - (0)))) / 16, (6 + (0 + fox.sittingWeight * ((0 + 2.5) - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0)))) / 16)
                     rotation: fox.rotationZYX((0 + fox.sittingWeight * ((0 + -15.0) - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0))), (0 + fox.sittingWeight * ((0 + 0.0) - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0))), (0 + fox.sittingWeight * ((0 + 0.0) - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0))))
                     PetModelNode {
@@ -672,6 +715,8 @@ PetModelNode {
                 }
                 PetModelNode {
                     objectName: "leg2"
+                    eulerRotation: Qt.vector3d(-fox.rhythmLegFlex, 0, -fox.rhythmBodyRotation.z * 0.65 + fox.jumpStrength * 1.5 * Math.sin(fox.bodySwayAngle))
+                    scale: Qt.vector3d(1, fox.rhythmLegStretch, 1)
                     position: Qt.vector3d(-(-3 + (0 + fox.sittingWeight * ((0 + 0.0) - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0)))) / 16, (-2 + (0 + fox.sittingWeight * ((0 + 0.75) - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * ((0 + 1.6) - (0)))) / 16, (-1 + (0 + fox.sittingWeight * ((0 + 3.5) - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0)))) / 16)
                     rotation: fox.rotationZYX((0 + fox.sittingWeight * ((0 + 40.0) - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0))), (0 + fox.sittingWeight * ((0 + 0.0) - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0))), (0 + fox.sittingWeight * ((0 + 0.0) - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0))))
                     PetModelNode {
@@ -738,6 +783,8 @@ PetModelNode {
                 }
                 PetModelNode {
                     objectName: "leg3"
+                    eulerRotation: Qt.vector3d(-fox.rhythmLegFlex, 0, -fox.rhythmBodyRotation.z * 0.65 - fox.jumpStrength * 1.5 * Math.sin(fox.bodySwayAngle))
+                    scale: Qt.vector3d(1, fox.rhythmLegStretch, 1)
                     position: Qt.vector3d(-(1 + (0 + fox.sittingWeight * ((0 + 0.0) - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0)))) / 16, (-2 + (0 + fox.sittingWeight * ((0 + 0.75) - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * ((0 + 1.6) - (0)))) / 16, (-1 + (0 + fox.sittingWeight * ((0 + 3.5) - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0)))) / 16)
                     rotation: fox.rotationZYX((0 + fox.sittingWeight * ((0 + 40.0) - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0))), (0 + fox.sittingWeight * ((0 + 0.0) - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0))), (0 + fox.sittingWeight * ((0 + 0.0) - (0)) + fox.sleepingWeight * (0 - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0))))
                     PetModelNode {
@@ -804,6 +851,7 @@ PetModelNode {
                 }
                 PetModelNode {
                     objectName: "tail"
+                    eulerRotation: fox.rhythmTailRotation
                     position: Qt.vector3d(-(0 + (0 + fox.sittingWeight * ((0 + 0.0) - (0)) + fox.sleepingWeight * ((0 + 0.0) - (0)) + fox.wiggleWeight * (0 - (0)))) / 16, (0 + (0 + fox.sittingWeight * ((0 + -0.075) - (0)) + fox.sleepingWeight * ((0 + 0.0) - (0)) + fox.wiggleWeight * (0 - (0)))) / 16, (7 + (0 + fox.sittingWeight * ((0 + -0.15) - (0)) + fox.sleepingWeight * ((0 + 1.5) - (0)) + fox.wiggleWeight * (0 - (0)))) / 16)
                     rotation: fox.rotationZYX((0 + fox.sittingWeight * ((0 + 60.0) - (0)) + fox.sleepingWeight * ((0 + -125.0) - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0))), (0 + fox.sittingWeight * ((0 + 0.0) - (0)) + fox.sleepingWeight * ((0 + 0.0) - (0)) + fox.wiggleWeight * ((0 + ((Math.cos((((fox.lifeTime * 20.0) * 53.7)) * Math.PI / 180) * 10.0) - (0))) - (0))) + fox.idleMotion * Math.sin(fox.lifeTime * 1.1) * 6, (0 + fox.sittingWeight * ((0 + 0.0) - (0)) + fox.sleepingWeight * ((0 + 0.0) - (0)) + fox.wiggleWeight * ((0 + 0.0) - (0))))
                     PetModelNode {

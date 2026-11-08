@@ -29,6 +29,7 @@ using miacode::timeline::TimelineThemeColors;
 constexpr int kPlayableLaneCount = 8;
 constexpr int kLaneCount = kPlayableLaneCount + 1;
 constexpr int kHeaderHeight = 36;
+constexpr int kVerticalHeaderWidth = 42;
 constexpr int kLaneHeight = 20;
 constexpr double kMinimumContentScale = 0.25;
 constexpr double kMinimumTextScale = 0.5;
@@ -66,10 +67,10 @@ struct HeaderLineLabel {
     int screenX = 0;
 };
 
-QString laneLabelForIndex(int laneIndex)
+QString laneLabelForIndex(miacode::timeline::TimelineLaneOrder order, int laneIndex)
 {
     if (laneIndex >= 0 && laneIndex < kPlayableLaneCount) {
-        return QString::number(laneIndex + 1);
+        return QString::number(miacode::timeline::timelineLaneForSlot(order, laneIndex + 1));
     }
     return QString();
 }
@@ -215,7 +216,8 @@ qreal muriMarkerAnchorY(
     const TimelineRenderNote& note,
     double triggerSecond)
 {
-    const int startLane = qBound(1, note.lane, kPlayableLaneCount);
+    const int startLane = miacode::timeline::timelineSlotForLane(
+        state.laneOrder, qBound(1, note.lane, kPlayableLaneCount));
     const qreal startY = static_cast<qreal>(
         state.timelineTop + (startLane - 1) * state.laneHeight + state.laneHeight / 2);
     if (note.kind != TimelineRenderNoteKind::Slide && note.kind != TimelineRenderNoteKind::Wifi) {
@@ -233,7 +235,8 @@ qreal muriMarkerAnchorY(
         return startY;
     }
 
-    const int endLane = qBound(1, note.endLane, kPlayableLaneCount);
+    const int endLane = miacode::timeline::timelineSlotForLane(
+        state.laneOrder, qBound(1, note.endLane, kPlayableLaneCount));
     const qreal endY = static_cast<qreal>(
         state.timelineTop + (endLane - 1) * state.laneHeight + state.laneHeight / 2);
     if (triggerSecond <= traceSecond) {
@@ -351,17 +354,19 @@ void appendSprite(
 
 TimelineSceneLayoutMetrics buildLayoutMetrics(const TimelineSceneBuildRequest& request)
 {
+    const int headerSize = request.axisMode == miacode::timeline::TimelineAxisMode::Horizontal
+        ? kHeaderHeight : kVerticalHeaderWidth;
     double contentScale = normalizedContentScale(request.contentScale);
     if (request.fitViewportHeight) {
         const double viewportScale =
-            static_cast<double>(request.viewportSize.height() - kHeaderHeight)
+            static_cast<double>(request.viewportSize.height() - headerSize)
                 / (kLaneCount * kLaneHeight);
         contentScale = qBound(kMinimumContentScale, viewportScale, 1.0);
     }
     TimelineSceneLayoutMetrics metrics;
     metrics.viewportSize = request.viewportSize;
     metrics.timelineLeft = kTimelineLeftMargin;
-    metrics.timelineTop = kHeaderHeight;
+    metrics.timelineTop = headerSize;
     if (request.fitViewportHeight) {
         metrics.timelineHeight = qMax<qreal>(
             0.0,
@@ -463,6 +468,8 @@ TimelineSceneState TimelineSceneStateBuilder::build(const TimelineSceneBuildRequ
     TimelineSceneState state;
     const TimelineSceneLayoutMetrics metrics = buildLayoutMetrics(request);
     applyLayoutMetrics(&state, metrics);
+    state.axisMode = request.axisMode;
+    state.laneOrder = request.laneOrder;
     state.horizontalScrollValue = qMax(0.0, request.horizontalScrollValue);
     state.headerLeftLimit = qMax(0, request.headerLeftLimit);
     state.headerRightLimit = request.headerRightLimit > 0 ? request.headerRightLimit : request.viewportSize.width();
@@ -567,7 +574,7 @@ TimelineSceneState TimelineSceneStateBuilder::build(const TimelineSceneBuildRequ
             continue;
         }
         TimelineSceneTextLabel label;
-        label.text = laneLabelForIndex(lane);
+        label.text = laneLabelForIndex(state.laneOrder, lane);
         if (label.text.isEmpty()) {
             continue;
         }
@@ -582,6 +589,30 @@ TimelineSceneState TimelineSceneStateBuilder::build(const TimelineSceneBuildRequ
             qRound(y + (state.laneHeight - laneLabelInkRect.height()) * 0.5
                    - laneLabelInkRect.top() - laneLabelMetrics.ascent() - kTimelineTextVerticalPadding));
         state.laneLabels.append(label);
+    }
+
+    if (request.dropRegion.valid() && state.timelineHeight > 0.0) {
+        const qreal start = secondToSceneXExact(state, request.dropRegion.start);
+        const qreal end = secondToSceneXExact(state, request.dropRegion.end);
+        const QColor marker = theme.base.lightnessF() < 0.5
+            ? QColor(255, 214, 112, 165) : QColor(140, 94, 0, 175);
+        state.dropRegionRects = {
+            {QRectF(start, state.timelineTop, end - start, state.timelineHeight), QColor(255, 212, 108, 58)},
+            {QRectF(start, state.timelineTop, 1, state.timelineHeight), marker},
+            {QRectF(end, state.timelineTop, 1, state.timelineHeight), marker},
+        };
+        const QString& text = request.dropRegion.label;
+        const QSizeF size = timelineTextLogicalSize(laneLabelFont, text);
+        const bool vertical = state.axisProjection().vertical();
+        const qreal timeSize = vertical ? size.height() : size.width();
+        const qreal crossSize = vertical ? size.width() : size.height();
+        if (!text.isEmpty() && end - start >= timeSize + 8 && state.timelineHeight >= crossSize + 6) {
+            const QPointF center((start + end) * 0.5, state.timelineTop + crossSize * 0.5 + 3);
+            state.dropRegionLabel = TimelineSceneTextLabel{
+                text, center - QPointF(size.width() * 0.5, size.height() * 0.5),
+                laneLabelFont, theme.label, size,
+            };
+        }
     }
 
     if (request.waveformData && request.waveformData->durationSeconds > 0.0) {
@@ -872,8 +903,9 @@ TimelineSceneState TimelineSceneStateBuilder::build(const TimelineSceneBuildRequ
     // node trees rebuild at bucket boundaries, not on every scroll tick.
     for (const HeaderLineLabel& label : collapsedHeaderLabels) {
         const QString labelText = QString::number(label.lineNumber);
-        const qreal labelHalfWidth =
-            (headerMetrics.horizontalAdvance(labelText) * 0.5) + kTimelineTextHorizontalPadding;
+        const QSizeF labelSize = timelineTextLogicalSize(headerFont, labelText);
+        const qreal labelHalfWidth = (state.axisProjection().vertical()
+            ? labelSize.height() : labelSize.width()) * 0.5;
         if (headerLabelEmitSpanFits(label.screenX, labelHalfWidth)
             && (headerLabels.isEmpty()
                 || (label.screenX - headerLabels.constLast().screenX >= headerLabelMinSpacing
@@ -888,7 +920,7 @@ TimelineSceneState TimelineSceneStateBuilder::build(const TimelineSceneBuildRequ
                     headerTextBottom - headerMetrics.height() - kTimelineTextVerticalPadding),
                 headerFont,
                 theme.textSecondary,
-                timelineTextLogicalSize(headerFont, labelText),
+                labelSize,
             });
         }
         if (markerHeight >= 2.0
@@ -1028,7 +1060,8 @@ TimelineSceneState TimelineSceneStateBuilder::build(const TimelineSceneBuildRequ
         const bool isHold = note.kind == TimelineRenderNoteKind::Hold && endSecond >= startSecond;
         const bool isTouchHold = note.kind == TimelineRenderNoteKind::TouchHold && endSecond > startSecond;
         const bool isSlideLike = note.kind == TimelineRenderNoteKind::Slide || note.kind == TimelineRenderNoteKind::Wifi;
-        const bool isSlideTrack = isSlideLike && traceSecond > startSecond && endSecond > traceSecond;
+        const bool isSlideTrack = isSlideLike && traceSecond >= startSecond && endSecond > traceSecond;
+        const quint64 trackLocation = timelineRenderTrackLocationId(line, note);
 
         const int x = secondToSceneX(state, startSecond);
         const int holdEndX = isHold ? secondToSceneX(state, endSecond) : x;
@@ -1061,7 +1094,8 @@ TimelineSceneState TimelineSceneStateBuilder::build(const TimelineSceneBuildRequ
             return;
         }
 
-        const qreal rowTop = state.timelineTop + (note.lane - 1) * state.laneHeight;
+        const int laneSlot = timelineSlotForLane(state.laneOrder, note.lane);
+        const qreal rowTop = state.timelineTop + (laneSlot - 1) * state.laneHeight;
         const qreal rowCenterY = rowTop + (state.laneHeight / 2.0);
         const qreal baseIconScale =
             request.zoomScale <= 0.25 ? qMin<qreal>(0.5, state.contentScale)
@@ -1171,8 +1205,10 @@ TimelineSceneState TimelineSceneStateBuilder::build(const TimelineSceneBuildRequ
                 return;
             }
             const auto& noteMetrics = sceneNoteMetrics(request);
-            const int startLane = qBound(1, note.lane, kPlayableLaneCount);
-            const int endLane = qBound(1, note.endLane, kPlayableLaneCount);
+            const int startLane = timelineSlotForLane(
+                state.laneOrder, qBound(1, note.lane, kPlayableLaneCount));
+            const int endLane = timelineSlotForLane(
+                state.laneOrder, qBound(1, note.endLane, kPlayableLaneCount));
             const int startY =
                 state.timelineTop + (startLane - 1) * state.laneHeight + state.laneHeight / 2;
             const int endY =
@@ -1232,9 +1268,9 @@ TimelineSceneState TimelineSceneStateBuilder::build(const TimelineSceneBuildRequ
                     trackScale,
                     angleDegrees,
                     forward);
-                if (selected) state.trackSprites.last().selected = true;
+                if (request.selectedNoteLocations.contains(trackLocation)) state.trackSprites.last().selected = true;
                 TimelineSceneGlyph hit;
-                hit.locationId = locationId;
+                hit.locationId = trackLocation;
                 const qreal hitSize = qMax(trackTargetSize.width(), trackTargetSize.height());
                 hit.rect = QRectF(cx - hitSize / 2, cy - hitSize / 2, hitSize, hitSize);
                 state.noteHitAreas.append(hit);
