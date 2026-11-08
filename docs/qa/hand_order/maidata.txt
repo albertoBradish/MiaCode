@@ -1,0 +1,27 @@
+&title=Hand Order Synthetic Acceptance
+&artist=Test Fixture
+&first=0
+&wholebpm=120
+
+&lv_3=6
+&inote_3=
+(120){4}6,4,6,2,
+E
+
+&lv_4=10
+&inote_4=
+(120){4}1-3-7[2:1],2,3,4,
+,,,
+E
+
+&lv_5=12
+&inote_5=
+(120){4}1-3-7[2:1]~[head=l;track=0:l|0.5:r],3~r,5~l,7~r,
+,,,
+E
+
+&lv_6=13
+&inote_6=
+(120){4}1w5[4:1]~[head=l;track=split:0:l&0:r],,,,
+8w4[4:1]~[track=single:0:r],,,,
+E
