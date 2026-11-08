@@ -1,4 +1,5 @@
 #include "timeline/quick/TimelineQuickTextureCache.h"
+#include "core/scene/SelectionOutlineImage.h"
 
 #include <QDir>
 #include <QQuickWindow>
@@ -285,4 +286,39 @@ TimelineQuickHoldTextureParts TimelineQuickTextureCache::holdTextureParts(
     };
     holdTextureParts_.insert(key, textures);
     return textures;
+}
+
+TimelineQuickTextureHandle TimelineQuickTextureCache::noteOutlineTexture(
+    const QString& spriteType, const QSize& targetSize, qreal rotationDegrees, bool mirrorX)
+{
+    const auto pixmap = transformedNotePixmap(spriteType, targetSize, rotationDegrees, mirrorX);
+    if (pixmap.isNull()) return {};
+    const QString key = QStringLiteral("selection|") + noteTextureKey(spriteType, targetSize, rotationDegrees, mirrorX);
+    const qreal dpr = effectiveDevicePixelRatio();
+    auto it = textures_.constFind(key);
+    const qreal padding = miacode::preview::scene::selectionOutlinePadding(dpr)/dpr;
+    const QSizeF size = QSizeF(pixmap.size()) / dpr + QSizeF(2*padding,2*padding);
+    if (it != textures_.constEnd()) return {*it, size};
+    const auto image = miacode::preview::scene::selectionOutlineImage(pixmap.toImage(), dpr);
+    return {textureForKey(key,image), QSizeF(image.size())/dpr};
+}
+
+TimelineQuickHoldTextureParts TimelineQuickTextureCache::holdOutlineTextureParts(const QString& spriteType, qreal scale)
+{
+    holdTextureParts(spriteType,scale); // seeds the same source slices as regular holds
+    const auto& entry = holdPixmapParts_[holdPartsCacheKey(spriteType,scale)];
+    const qreal dpr = effectiveDevicePixelRatio();
+    const int radius = miacode::preview::scene::selectionOutlinePadding(dpr);
+    const auto outline = [&](const QString& part, const QImage& input, bool left, bool right) {
+        const QString key = QStringLiteral("selection_hold|%1|%2").arg(holdPartsCacheKey(spriteType,scale),part);
+        const qreal padding = radius/dpr;
+        const QSizeF logical = QSizeF(input.size())/dpr + QSizeF((left?padding:0)+(right?padding:0),2*padding);
+        if (const auto it = textures_.constFind(key); it != textures_.constEnd())
+            return TimelineQuickTextureHandle{*it, logical};
+        const auto image = miacode::preview::scene::selectionOutlineImage(input,dpr,left,right);
+        return TimelineQuickTextureHandle{textureForKey(key,image), QSizeF(image.size())/dpr};
+    };
+    return {outline(QStringLiteral("left"),entry.parts.leftCap.toImage(),true,false),
+        outline(QStringLiteral("right"),entry.parts.rightCap.toImage(),false,true),
+        outline(QStringLiteral("body"),entry.parts.bodySlice,false,false)};
 }

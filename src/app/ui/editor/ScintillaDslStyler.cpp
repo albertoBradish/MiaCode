@@ -19,6 +19,7 @@ ScintillaDslStyler::ScintillaDslStyler(ScintillaQuick_item& editor, ScintillaDoc
 {
     editor_.send(SCI_SETILEXER, 0, 0);
     editor_.set_auto_line_number_margin(0, 12);
+    editor_.send(SCI_SETMARGINSENSITIVEN, 0, 1);
     editor_.send(SCI_SETMARGINTYPEN, 1, SC_MARGIN_SYMBOL);
     editor_.send(SCI_SETMARGINMASKN, 1, (1 << bookmarkMarker));
     editor_.send(SCI_SETMARGINWIDTHN, 1, 6);
@@ -132,11 +133,28 @@ void ScintillaDslStyler::style()
         const QByteArray inputStack = stack;
         QByteArray styles(text.size(), 0);
         bool comment = false;
+        bool handSuffix = false;
         for (int i = 0; i < text.size(); ++i) {
             const char ch = text[i];
-            if (ch == '\n' || ch == '\r') comment = false;
+            if (ch == '\n' || ch == '\r') { comment = false; handSuffix = false; }
             if (ch == '|' && i + 1 < text.size() && text[i + 1] == '|') comment = true;
             if (comment) { styles[i] = 3; continue; }
+            if (handSuffix) {
+                if (ch == ',' || ch == '/' || ch == '`' || ch == ' ' || ch == '\t'
+                    || ch == '\n' || ch == '\r') {
+                    handSuffix = false;
+                } else {
+                    // The annotation container is metadata, including its m and
+                    // [..] characters; it is not a Mine or duration token.
+                    styles[i] = 1;
+                    continue;
+                }
+            }
+            if (ch == '~' && stack.isEmpty()) {
+                handSuffix = true;
+                styles[i] = 1;
+                continue;
+            }
             const bool noteCharacter = (ch >= '0' && ch <= '9')
                 || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')
                 || QByteArrayLiteral("-^<>*").contains(ch);

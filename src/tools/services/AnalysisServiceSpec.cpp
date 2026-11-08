@@ -40,6 +40,22 @@ bool verifyRevisionStampedAnalysis(QTextStream& out)
     return ok;
 }
 
+bool verifyHandOrderOnlyEditInvalidatesPreview(QTextStream& out)
+{
+    miacode::ChartWorkspace workspace;
+    workspace.openSource(QStringLiteral("&lv_5=12\n&inote_5=(120){4}1-5[4:1]~[head=l;track=0:l|0.5:r],\n"));
+    const auto leftThenRight = miacode::AnalysisService::analyze(workspace);
+    workspace.replaceActiveDifficultyChart(
+        QStringLiteral("(120){4}1-5[4:1]~[head=l;track=0:r|0.5:l],"));
+    const auto rightThenLeft = miacode::AnalysisService::analyze(workspace);
+    return expect(leftThenRight.available && rightThenLeft.available
+                      && leftThenRight.noteMarkers.size() == rightThenLeft.noteMarkers.size()
+                      && leftThenRight.noteMarkerSignature != rightThenLeft.noteMarkerSignature
+                      && leftThenRight.noteMarkers.constFirst().second
+                          == rightThenLeft.noteMarkers.constFirst().second,
+                  QStringLiteral("annotation-only edits refresh preview marker identity without changing time"), out);
+}
+
 bool verifyProductionPublicationDropsStaleWork(QTextStream& out)
 {
     miacode::ChartWorkspace workspace;
@@ -94,6 +110,7 @@ int main(int argc, char** argv)
     QCoreApplication app(argc, argv);
     QTextStream out(stderr);
     if (!verifyRevisionStampedAnalysis(out)
+        || !verifyHandOrderOnlyEditInvalidatesPreview(out)
         || !verifyProductionPublicationDropsStaleWork(out)) return 1;
     QTextStream result(stdout);
     result << "Analysis service checks passed." << Qt::endl;

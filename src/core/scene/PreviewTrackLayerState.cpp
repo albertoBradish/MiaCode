@@ -1,16 +1,19 @@
 #include "core/scene/PreviewTrackLayerState.h"
 
 #include "core/scene/PreviewAnimatedSpriteHelpers.h"
+#include "core/scene/PreviewHandOrderRendering.h"
 #include "core/scene/PreviewMarkerDrawOrder.h"
 #include "core/scene/PreviewOpacityCurves.h"
 #include "core/scene/PreviewSceneConstants.h"
 #include "core/scene/PreviewSceneMath.h"
 #include "core/scene/PreviewSkinSelectors.h"
 #include "core/scene/PreviewTrackShared.h"
+#include "core/scene/PreviewSlideTiming.h"
 
 #include <QHash>
 
 #include <algorithm>
+#include <optional>
 
 namespace {
 
@@ -136,7 +139,8 @@ PreviewTrackLayerState buildPreviewTrackLayerState(
                                   qreal rotationDegrees,
                                   qreal opacity,
                                   PreviewAnimatedSpriteEffect effect,
-                                  bool cacheable
+                                  bool cacheable,
+                                  HandOrderHand handOrderHand
                               ) {
         if (image == nullptr || image->isNull() || opacity <= 0.0) {
             return;
@@ -152,6 +156,7 @@ PreviewTrackLayerState buildPreviewTrackLayerState(
         sprite.rotationDegrees = rotationDegrees;
         sprite.opacity = opacity;
         sprite.effect = effect;
+        sprite.handOrderHand = handOrderHand;
         sprite.cacheable = cacheable;
         layerState.sprites.append(sprite);
     };
@@ -170,6 +175,11 @@ PreviewTrackLayerState buildPreviewTrackLayerState(
             ? PreviewAnimatedSpriteEffect::BreakAnimate
             : PreviewAnimatedSpriteEffect::None;
     };
+
+    // Brightness decorates the native visible sprites. All existing erasure,
+    // runtime completion and tail handling stay in the original draw walk.
+    const PreviewSlideTimingGeometry* timingGeometry = nullptr;
+    std::optional<miacode::slide_judge::LaunchBeatIndex> fallbackLaunchBeats;
 
     const auto appendSlideArea = [&](const TimelineNoteMarker& marker,
                                      int segmentIndex,
@@ -204,7 +214,18 @@ PreviewTrackLayerState buildPreviewTrackLayerState(
         const int startPointIndex = trimFromTail ? 0 : clampedCut;
         const int endPointIndex = trimFromTail ? points.size() - clampedCut : points.size();
         for (int pointIndex = startPointIndex; pointIndex < endPointIndex; ++pointIndex) {
-            appendSprite(image, points[pointIndex], -rotations.value(pointIndex), opacity, effect, cacheable);
+            HandOrderHand hand = HandOrderHand::Unspecified;
+            if (state.render.showHandOrderAnnotations && !marker.handOrderTrackStops.isEmpty()) {
+                const qreal segmentProgress = previewSlideArrowSegmentProgress(
+                    marker, segmentIndex, areaIndex, pointIndex);
+                const qreal progress = previewSlideMovementProgress(marker, segmentIndex, segmentProgress);
+                hand = previewHandOrderAtProgress(marker.handOrderTrackStops, progress);
+            }
+            appendSprite(image, points[pointIndex], -rotations.value(pointIndex), opacity, effect, cacheable, hand);
+            if (timingGeometry != nullptr)
+                applyPreviewSlideTimingBrightness(&layerState.sprites.last(), *timingGeometry,
+                    timingGeometry->slideArrows[segmentIndex][areaIndex][pointIndex],
+                    state.playheadSeconds, canvasScale);
         }
     };
 
@@ -235,7 +256,31 @@ PreviewTrackLayerState buildPreviewTrackLayerState(
                 continue;
             }
 
-            appendSprite(baseImage, points[pointIndex], -rotations.value(pointIndex), opacity, effect, true);
+            HandOrderHand hand = HandOrderHand::Unspecified;
+            if (state.render.showHandOrderAnnotations) {
+                const qreal progress = previewWifiArrowMovementProgress(marker, points[pointIndex]);
+                if (marker.handOrderWifiMode == HandOrderWifiMode::Split
+                    && marker.wifiLanePoints.size() >= 3 && !marker.wifiLanePoints.at(1).isEmpty()) {
+                    for (int sector = 0; sector < 2; ++sector) {
+                        appendSprite(baseImage, points[pointIndex], -rotations.value(pointIndex), opacity,
+                            effect, true, previewWifiHandAtProgress(marker, sector, progress));
+                        auto& sprite = layerState.sprites.last();
+                        const QPointF origin = marker.wifiLanePoints.at(1).constFirst();
+                        sprite.handOrderClipOrigin = mapLogicalPointToRect(
+                            QPointF(kLogicalCanvasCenter + origin.x(), kLogicalCanvasCenter + origin.y()), playfieldRect);
+                        sprite.handOrderClipNormal = previewWifiSectorNormal(marker, sector);
+                        if (timingGeometry != nullptr)
+                            applyPreviewSlideTimingBrightness(&sprite, *timingGeometry,
+                                timingGeometry->wifiArrows[areaIndex][pointIndex], state.playheadSeconds, canvasScale);
+                    }
+                    continue;
+                }
+                hand = previewWifiHandAtProgress(marker, 0, progress);
+            }
+            appendSprite(baseImage, points[pointIndex], -rotations.value(pointIndex), opacity, effect, true, hand);
+            if (timingGeometry != nullptr)
+                applyPreviewSlideTimingBrightness(&layerState.sprites.last(), *timingGeometry,
+                    timingGeometry->wifiArrows[areaIndex][pointIndex], state.playheadSeconds, canvasScale);
         }
     };
 
@@ -246,6 +291,32 @@ PreviewTrackLayerState buildPreviewTrackLayerState(
         const TimelineNoteMarker& marker = usesPreparedDrawOrder
             ? markers.markerForPreparedIndex(preparedIndex)
             : markers.markerAt(markerViewIndex);
+        PreviewSlideTimingGeometry uncachedTiming;
+        timingGeometry = nullptr;
+        if (state.render.showSlideJudgementTiming
+            && (marker.type == QLatin1String("slide") || marker.type == QLatin1String("wifi"))) {
+            if (!state.muriRenderOptions.showSlideTracks) continue;
+            const auto trackTiming = markerTrackTiming(marker.hsMultiplier);
+            if (state.playheadSeconds < marker.second - trackTiming.appearLeadInSeconds
+                || state.playheadSeconds >= marker.endSecond) continue;
+            const auto* entry = markers.preparedEntry(preparedIndex);
+            timingGeometry = entry && entry->slideTimingGeometry
+                ? entry->slideTimingGeometry.get() : nullptr;
+            if (timingGeometry == nullptr) {
+                const auto* launchIndex=state.render.slideTimingFromLaunchBeat
+                    ? state.slideTimingLaunchBeats.get() : nullptr;
+                if (state.render.slideTimingFromLaunchBeat && launchIndex==nullptr) {
+                    if (!fallbackLaunchBeats) fallbackLaunchBeats.emplace(state.noteMarkers);
+                    launchIndex=&*fallbackLaunchBeats;
+                }
+                uncachedTiming = buildPreviewSlideTimingGeometry(marker,launchIndex,state.render.slideTimingEarlyPerfectFromHead);
+                timingGeometry = &uncachedTiming;
+            }
+            if (!timingGeometry->isValid()) {
+                ++layerState.missingSlideTimingCount;
+                continue;
+            }
+        }
         if (marker.type == QLatin1String("slide")) {
             if (!state.muriRenderOptions.showSlideTracks) {
                 continue;
@@ -661,6 +732,7 @@ PreviewTrackLayerState buildPreviewTrackLayerState(
         }
     }
 
+    applyHandOrderSkinArtwork(state.skin, &layerState.sprites);
     return layerState;
 }
 

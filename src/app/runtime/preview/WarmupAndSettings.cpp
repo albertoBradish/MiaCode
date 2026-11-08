@@ -1,3 +1,5 @@
+#include <cmath>
+#include <limits>
 #include "app/runtime/preview/StageMediaHost.h"
 #include "app/runtime/Shared.h"
 
@@ -42,7 +44,7 @@ bool hasBlockingPreviewWindow()
 }
 
 // Project-preferences key holding the per-chart preview mixer
-// (<chartDir>/.miacode/preferences.json).
+// (<runtime>/data/projects/<chart-folder-hash>/preferences.json).
 constexpr auto kProjectAudioPreferencesKey = "preview_audio";
 
 struct PreviewMediaWarmupResult {
@@ -481,6 +483,14 @@ QVariantMap Session::previewRenderSettings() const
         {QStringLiteral("fireworkStyle"), static_cast<int>(state_.previewFireworkStyle_)},
         {QStringLiteral("smoothBrightness"), state_.previewSmoothBrightness_},
         {QStringLiteral("showTimestamp"), state_.previewShowTimestamp_},
+        {QStringLiteral("showHandOrderAnnotations"), state_.previewShowHandOrderAnnotations_},
+        {QStringLiteral("showMeasureLines"), state_.previewShowMeasureLines_},
+        {QStringLiteral("showJudgementSkeleton"), state_.previewShowJudgementSkeleton_},
+        {QStringLiteral("showSlideJudgementTiming"), state_.previewShowSlideJudgementTiming_},
+        {QStringLiteral("slideTimingFromLaunchBeat"), state_.previewSlideTimingFromLaunchBeat_},
+        {QStringLiteral("slideTimingEarlyPerfectFromHead"), state_.previewSlideTimingEarlyPerfectFromHead_},
+        {QStringLiteral("measureLineMode"), state_.previewMeasureLineMode_},
+        {QStringLiteral("measureLineCustomBeats"), state_.previewMeasureLineCustomBeats_},
         {QStringLiteral("touchPadAuthoringShortcut"), state_.previewTouchPadAuthoringShortcutEnabled_},
         {QStringLiteral("showDebugInfo"), state_.previewShowDebugInfo_},
         {QStringLiteral("forceLabeledJudgeLineWhenPaused"), state_.previewForceLabeledJudgeLineWhenPaused_},
@@ -553,6 +563,39 @@ void Session::setPreviewRenderSetting(const QString& key, const QVariant& value)
         if (canvas != nullptr) {
             canvas->setShowTimestamp(state_.previewShowTimestamp_);
         }
+    } else if (key == QLatin1String("showHandOrderAnnotations")) {
+        state_.previewShowHandOrderAnnotations_ = value.toBool();
+        if (canvas != nullptr) {
+            canvas->setShowHandOrderAnnotations(state_.previewShowHandOrderAnnotations_);
+        }
+        if (state_.timeline_.timelineQuickStateBridge_ != nullptr) {
+            state_.timeline_.timelineQuickStateBridge_->setShowHandOrderAnnotations(
+                state_.previewShowHandOrderAnnotations_);
+        }
+    } else if (key == QLatin1String("slideTimingFromLaunchBeat")) {
+        state_.previewSlideTimingFromLaunchBeat_ = value.toBool();
+        if (canvas != nullptr) canvas->setSlideTimingFromLaunchBeat(state_.previewSlideTimingFromLaunchBeat_);
+    } else if (key == QLatin1String("slideTimingEarlyPerfectFromHead")) {
+        state_.previewSlideTimingEarlyPerfectFromHead_ = value.toBool();
+        if (canvas != nullptr) canvas->setSlideTimingEarlyPerfectFromHead(state_.previewSlideTimingEarlyPerfectFromHead_);
+    } else if (key == QLatin1String("showSlideJudgementTiming")) {
+        state_.previewShowSlideJudgementTiming_ = value.toBool();
+        if (canvas != nullptr) canvas->setSlideJudgementTiming(state_.previewShowSlideJudgementTiming_);
+    } else if (key == QLatin1String("showMeasureLines") || key == QLatin1String("showJudgementSkeleton")
+               || key == QLatin1String("measureLineMode") || key == QLatin1String("measureLineCustomBeats")) {
+        if (key == QLatin1String("showMeasureLines")) state_.previewShowMeasureLines_ = value.toBool();
+        else if (key == QLatin1String("showJudgementSkeleton")) state_.previewShowJudgementSkeleton_ = value.toBool();
+        else if (key == QLatin1String("measureLineMode")) state_.previewMeasureLineMode_ =
+            static_cast<int>(miacode::preview::scene::normalizedMeasureLineMode(value.toInt()));
+        else {
+            bool ok = false;
+            const double beats = value.toDouble(&ok);
+            if (!ok || !qIsFinite(beats) || beats <= 0 || std::floor(beats) != beats
+                || beats > std::numeric_limits<int>::max()) return;
+            state_.previewMeasureLineCustomBeats_ = static_cast<int>(beats);
+        }
+        if (canvas != nullptr) canvas->setVisualAidSettings(state_.previewShowMeasureLines_,
+            state_.previewShowJudgementSkeleton_, state_.previewMeasureLineMode_, state_.previewMeasureLineCustomBeats_);
     } else if (key == QLatin1String("touchPadAuthoringShortcut")) {
         state_.previewTouchPadAuthoringShortcutEnabled_ = value.toBool();
         applyEffectivePreviewOutlineVariantToCanvas();
@@ -825,7 +868,7 @@ void miacode::runtime::StageMediaHost::applyPreviewAudioSettingsToRuntime()
 void miacode::runtime::StageMediaHost::loadProjectAudioPreferences()
 {
     // The mixer is PROJECT-scoped: every chart remembers the volumes and mutes
-    // it was last edited with, in <chartDir>/.miacode/preferences.json. A
+    // it was last edited with, in isolated runtime project preferences. A
     // project that has never stored one — a brand-new chart, or one authored
     // before the mixer became project-scoped — starts from the app-level
     // 本地预设 (softwarePreviewAudioSettings_). Seeding is the preset's only

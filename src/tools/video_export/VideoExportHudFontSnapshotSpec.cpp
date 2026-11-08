@@ -5,6 +5,9 @@
 #include "export/session/PreviewQuickD3D11ExportSession.h"
 #include "preview/runtime/PreviewRuntime.h"
 #include "preview/quick_scene/PreviewQuickHudLayer.h"
+#include "core/scene/PreviewSlideMotionLayerState.h"
+#include "core/scene/PreviewTrackLayerState.h"
+#include "core/scene/PreviewActiveMarkerView.h"
 
 #include <QGuiApplication>
 #include <QDir>
@@ -187,6 +190,7 @@ int main(int argc, char** argv)
     source.originalChartPath = QStringLiteral("C:/charts/hud/maidata.txt");
     source.outputPath = QStringLiteral("C:/charts/hud/out.mp4");
     source.contentDurationSeconds = 1.0;
+    source.showHandOrderAnnotations = false;
     for (int area = 0; area < 5; ++area) source.hudFontSettings.paths[area] = QStringLiteral("C:/fonts/area-%1.ttf").arg(area);
     VideoExportSnapshot restored;
     QString error;
@@ -196,11 +200,40 @@ int main(int argc, char** argv)
     ok &= require(!source.toJson().value(QStringLiteral("render")).toObject()
         .contains(QStringLiteral("fix_hud_text_layout")), "new snapshots omit obsolete HUD layout flag", err);
     ok &= require(restored.hudFontSettings == source.hudFontSettings, "all five area paths round-trip", err);
+    ok &= require(!restored.showHandOrderAnnotations, "resolved hand-order mode round-trips", err);
     VideoExportTask task;
     const bool taskOk = buildVideoExportTaskFromSnapshot(restored, &task, &error);
     if (!taskOk) err << "worker task error: " << error << Qt::endl;
     ok &= require(taskOk, "worker task reconstructs", err);
     ok &= require(task.hudFontSettings == source.hudFontSettings, "worker receives captured fonts", err);
+    ok &= require(!task.showHandOrderAnnotations, "worker receives resolved hand-order mode", err);
+
+    VideoExportSnapshot invalidHandOrder = source;
+    invalidHandOrder.chartTextUtf8 = QStringLiteral(
+        "&title=HUD Spec\n&first=0\n&lv_5=12\n&inote_5=(120){4}1~z,\n");
+    invalidHandOrder.showHandOrderAnnotations = true;
+    ok &= require(!buildVideoExportTaskFromSnapshot(invalidHandOrder, &task, &error)
+                      && error.contains(QStringLiteral("hand-order annotation")),
+                  "worker rejects invalid hand-order output", err);
+    invalidHandOrder.showHandOrderAnnotations = false;
+    ok &= require(buildVideoExportTaskFromSnapshot(invalidHandOrder, &task, &error),
+                  "original output can ignore invalid hand-order annotation", err);
+
+    VideoExportSnapshot wifiSnapshot = source;
+    wifiSnapshot.showHandOrderAnnotations = true;
+    wifiSnapshot.chartTextUtf8 = QStringLiteral("&title=Wifi Spec\n&first=0\n&lv_5=12\n&inote_5=(120){4}"
+        "1w5[4:1]~[track=split:0:l|0.5:r&0:r|0.75:l],2w6[4:1]~[track=single:0:m],\n");
+    ok &= require(VideoExportSnapshot::fromJson(wifiSnapshot.toJson(), &restored, &error)
+        && buildVideoExportTaskFromSnapshot(restored, &task, &error)
+        && task.noteMarkers.size() == 2
+        && task.noteMarkers.at(0).handOrderWifiMode == HandOrderWifiMode::Split
+        && task.noteMarkers.at(0).handOrderWifiSectorStops.size() == 2
+        && task.noteMarkers.at(1).handOrderWifiMode == HandOrderWifiMode::Single
+        && task.noteMarkers.at(1).handOrderTrackStops.constFirst().hand == HandOrderHand::Either,
+        "snapshot worker rebuilds native Wifi sectors and explicit single-hand mode from source text", err);
+    wifiSnapshot.chartTextUtf8.replace(QStringLiteral("single:0:m"), QStringLiteral("single:0:m|0.5:l"));
+    ok &= require(!buildVideoExportTaskFromSnapshot(wifiSnapshot, &task, &error),
+        "worker refuses a single-hand Wifi that changes hand", err);
 
     AmbientPreferences ambient;
     miacode::preferences::installPreferenceProvider(&ambient);
@@ -208,6 +241,7 @@ int main(int argc, char** argv)
     QJsonObject legacyJson = source.toJson();
     legacyJson.remove(QStringLiteral("hud_fonts"));
     QJsonObject oldRender = legacyJson.value(QStringLiteral("render")).toObject();
+    oldRender.remove(QStringLiteral("show_hand_order_annotations"));
     oldRender.insert(QStringLiteral("fix_hud_text_layout"), true);
     legacyJson.insert(QStringLiteral("render"), oldRender);
     VideoExportSnapshot legacy;
@@ -215,6 +249,7 @@ int main(int argc, char** argv)
     if (!legacyOk) err << "old snapshot error: " << error << Qt::endl;
     ok &= require(legacyOk, "old snapshot restores", err);
     ok &= require(legacy.hudFontSettings == PreviewHudFontSettings{}, "old snapshot uses bundled defaults regardless of ambient preferences", err);
+    ok &= require(legacy.showHandOrderAnnotations, "old snapshot keeps hand-order display default", err);
 
     const QString fontA = QStringLiteral(MIACODE_SOURCE_ROOT "/assets/fonts/XiaolaiMono-Regular.subset.ttf");
     const QString fontB = QStringLiteral(MIACODE_SOURCE_ROOT "/assets/fonts/MapleMonoNormalNL-CN-Regular.ttf");

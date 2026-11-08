@@ -1,13 +1,13 @@
 #include "media_tools/net/NetProvider.h"
 
 #include "media_tools/net/NetClient.h"
+#include "common/RuntimePaths.h"
 
 #include <QJsonDocument>
 #include <QPointer>
 #include <QTimer>
 #include <QUuid>
 #include <QUrlQuery>
-#include <QStandardPaths>
 #include <QDir>
 
 namespace miacode::net {
@@ -177,9 +177,11 @@ NetProvider::NetProvider(NetTransportPort& transport, QObject* parent, QUrl base
     : QObject(parent), transport_(transport), baseUrl_(std::move(baseUrl)), cache_([this] { return clock_.elapsed(); })
 {
     clock_.start();
-    const QString cacheRoot = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
-    QDir().mkpath(cacheRoot);
-    previewRoot_ = std::make_unique<QTemporaryDir>(QDir(cacheRoot).filePath(QStringLiteral("net-preview-XXXXXX")));
+    const QString cacheRoot = miacode::runtime_paths::cacheDirectory();
+    if (!cacheRoot.isEmpty() && QDir().mkpath(cacheRoot)) {
+        previewRoot_ = std::make_unique<QTemporaryDir>(
+            QDir(cacheRoot).filePath(QStringLiteral("net-preview-XXXXXX")));
+    }
 }
 
 NetProvider::~NetProvider()

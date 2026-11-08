@@ -119,6 +119,9 @@ public:
     Q_INVOKABLE void exportSelectionRange();
     Q_INVOKABLE bool applyNormalization(const QVariantMap& options);
     Q_INVOKABLE bool applyChartTransform(const QString& operation);
+    Q_INVOKABLE bool applyHandOrderIntervals();
+    Q_INVOKABLE bool prepareNativeSlideSplit();
+    Q_INVOKABLE bool applyNativeSlideSplit();
     Q_INVOKABLE bool createBookmarkAtLine(int line, const QString& title);
     Q_INVOKABLE bool renameBookmarkAtLine(int line, const QString& title);
     Q_INVOKABLE bool deleteBookmarkAtLine(int line);
@@ -149,6 +152,7 @@ protected:
     void wheelEvent(QWheelEvent* event) override;
     void inputMethodEvent(QInputMethodEvent* event) override;
 private:
+    NativeSlideSplitContext nativeSlideSplitContext() const;
     enum OverviewProjectionPart {
         OverviewMarkersDirty = 0x01,
         OverviewCurrentLineDirty = 0x02,
@@ -178,6 +182,10 @@ private:
     void touchAuthoring(const QString& pad, QChar separator, int difficulty, qulonglong revision, int anchor, int position);
     void beginUserInteraction();
     void publishTouchUndoAnchor();
+    miacode::chart_selection::NoteRanges selectionRanges() const;
+    void selectNoteRanges(int difficulty, quint64 revision, const miacode::chart_selection::NoteRanges& ranges);
+    bool deleteNoteSelection();
+    miacode::chart_selection::NoteTimingState noteInitialTiming() const;
     ScintillaDocumentAdapter document_;
     ScintillaDslStyler styler_;
     QPointer<DocumentModel> documentSession_;
@@ -232,6 +240,8 @@ private:
     bool navigationVisible_ = false;
     int reportedAnchor_ = -1;
     int reportedCaret_ = -1;
+    miacode::chart_selection::NoteRanges reportedRanges_;
+    bool noteSelection_ = false;
     qreal wheelRemainder_ = 0;
     int blockSpacing_ = 0;
     bool autoWrap_ = true;

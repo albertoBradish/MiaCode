@@ -1,3 +1,21 @@
+miacode_add_dev_tool(preview_slide_timing_spec TEST
+    SOURCES src/tools/preview/PreviewSlideTimingSpec.cpp
+    LIBS miacode_scene Qt6::Core Qt6::Gui
+    INCLUDES src
+)
+
+miacode_add_dev_tool(video_export_visual_aids_spec TEST
+    SOURCES src/tools/video_export/VideoExportVisualAidsSpec.cpp
+    LIBS miacode_export Qt6::Core Qt6::Gui
+    INCLUDES src
+)
+
+miacode_add_dev_tool(preview_visual_aids_spec TEST
+    SOURCES src/tools/preview/PreviewVisualAidsSpec.cpp
+    LIBS miacode_scene Qt6::Core Qt6::Gui
+    INCLUDES src
+)
+
 miacode_add_dev_tool(preview_asset_loader_spec TEST
     SOURCES
         src/tools/preview/PreviewSceneAssetLoaderSpec.cpp
@@ -78,7 +96,7 @@ miacode_add_dev_tool(preview_texture_generation_policy_spec TEST
 miacode_add_dev_tool(preview_sfx_timeline_spec TEST
     SOURCES
         src/tools/preview/PreviewSfxTimelineSpec.cpp
-    LIBS Qt6::Core
+    LIBS miacode_chart Qt6::Core
     INCLUDES src
 )
 
@@ -218,3 +236,13 @@ miacode_add_dev_tool(pv_memory_diagnostics_spec TEST
 )
 target_compile_definitions(pv_memory_diagnostics_spec PRIVATE
     "MIACODE_SOURCE_ROOT=\"${CMAKE_CURRENT_SOURCE_DIR}\"")
+
+miacode_add_dev_tool(preview_note_selection_interaction_spec TEST
+    SOURCES src/tools/preview/PreviewNoteSelectionInteractionSpec.cpp
+    LIBS miacode_preview_quick Qt6::Core Qt6::Gui Qt6::Quick Qt6::Test
+    INCLUDES src
+)
+target_compile_definitions(preview_note_selection_interaction_spec PRIVATE
+    "MIACODE_TEST_OUTPUT_ROOT=\"${CMAKE_CURRENT_BINARY_DIR}\""
+)
+set_tests_properties(preview_note_selection_interaction_spec PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")

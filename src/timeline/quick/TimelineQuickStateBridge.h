@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QHash>
+#include <QSet>
 #include <QMetaObject>
 #include <QObject>
 #include <QFont>
@@ -49,6 +50,8 @@ public:
 
     void clear();
     void setTimelineData(const TimelineRenderSnapshot& snapshot);
+    const QSet<quint64>& selectedNoteLocations() const { return selectedNoteLocations_; }
+    void setSelectedNoteLocations(const QSet<quint64>& locations);
     void replaceTimelineData(const TimelineRenderSnapshot& snapshot, double second, double durationSeconds);
     const TimelineRenderSnapshot& renderSnapshot() const;
     void setWaveformData(const std::shared_ptr<const miacode::waveform::WaveformData>& waveformData);
@@ -103,6 +106,7 @@ public:
     // binding; the bridge is what MainWindow already holds, so the tick is republished here
     // rather than making MainWindow reach for a QML-instantiated item pointer.
     void notifyRenderCadenceTick();
+    void requestNoteSelection(const QSet<quint64>& locations, bool additive) { emit noteSelectionRequested(locations, additive); }
     // True while preview playback is driving the timeline. The item uses this to keep the
     // render loop spinning (QQuickWindow::update) so afterAnimating keeps arriving; without
     // it the cadence would depend on whether an update() issued during afterAnimating also
@@ -111,6 +115,8 @@ public:
     bool playbackCadenceActive() const;
     bool showSlideTracks() const;
     void setShowSlideTracks(bool show);
+    bool showHandOrderAnnotations() const;
+    void setShowHandOrderAnnotations(bool show);
     bool followPreviewEnabled() const;
     void setFollowPreviewEnabled(bool enabled);
     bool viewportLockEnabled() const;
@@ -132,6 +138,7 @@ public:
     quint64 overlayDynamicRevision() const { return overlayDynamicRevision_; }
 
 signals:
+    void noteSelectionRequested(const QSet<quint64>& locations, bool additive);
     void renderStateChanged();
     void playheadChanged(double second);
     void zoomScaleChanged(double scale);
@@ -163,6 +170,7 @@ private:
     void bumpOverlayRevision();
     void bumpOverlayDynamicRevision();
 
+    QSet<quint64> selectedNoteLocations_;
     TimelineRenderSnapshot snapshot_;
     std::shared_ptr<const miacode::waveform::WaveformData> waveformData_;
     QHash<quint64, QVector<miacode::timeline::TimelineMuriMarkerPlacement>> muriMarkersByLocation_;
@@ -185,6 +193,7 @@ private:
     double playheadSeconds_ = 0.0;
     double cursorSeconds_ = 0.0;
     bool showSlideTracks_ = true;
+    bool showHandOrderAnnotations_ = true;
     bool followPreviewEnabled_ = true;
     bool viewportLockEnabled_ = false;
     bool followProgressEnabled_ = true;

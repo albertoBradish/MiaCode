@@ -25,6 +25,7 @@ Item {
     property bool chartCommandsEnabled: true
     property bool toolCommandsEnabled: true
     property bool nativeMenuMode: false
+    property bool handOrderKeyboardEnabled: false
     // Re-read each time the menu opens rather than kept live: the list only
     // changes when a document is opened, and a menu nobody is looking at has no
     // reason to hold a copy.
@@ -411,6 +412,11 @@ Item {
                 enabled: root.commandsEnabled && root.documentAvailable
                 onTriggered: root.commands.saveAsRequested()
             }
+            AppMenuAction {
+                text: qsTrId("action.export_plain_simai")
+                enabled: root.commandsEnabled && root.documentAvailable
+                onTriggered: root.commands.exportPlainSimaiRequested()
+            }
         }
 
         AppMenu {
@@ -521,6 +527,13 @@ Item {
             // Rows, labels and grouping come from the shared transform table,
             // so this menu cannot drift from the shortcut editor or the
             // editor's context menu.
+            AppMenuAction {
+                objectName: "adjustPlaySelection"
+                text: qsTrId("action.play_selection")
+                enabled: root.commandsEnabled && root.chartCommandsEnabled && root.commands.canPlaySelection
+                onTriggered: root.commands.playSelectionRequested()
+            }
+            AppMenuSeparator {}
             readonly property var transformRows: root.documentSession.chartTransformMenu()
 
             Repeater {
@@ -579,6 +592,29 @@ Item {
                                  && root.commands.canTransform
                         onTriggered: root.commands.chartTransformRequested(
                                          transformItem.modelData.id)
+                    }
+                }
+            }
+
+            AppMenu {
+                title: qsTrId("hand_order.title")
+                enabled: root.commandsEnabled && root.chartCommandsEnabled
+                    && !root.shortcuts.captureActive
+                Repeater {
+                    model: root.documentSession.handOrderMenu()
+                    delegate: AppMenuItem {
+                        id: handOrderItem
+                        required property var modelData
+                        action: AppMenuAction {
+                            text: qsTrId(handOrderItem.modelData.labelKey)
+                            shortcut: root.nativeMenuMode && root.handOrderKeyboardEnabled && root.shortcuts.revision >= 0
+                                ? root.shortcuts.sequence(handOrderItem.modelData.id) : ""
+                            shortcutText: root.shortcuts.displayText(handOrderItem.modelData.id)
+                            enabled: root.commandsEnabled && root.chartCommandsEnabled
+                                && (handOrderItem.modelData.requiresSelection === false || root.commands.canTransform)
+                                && !root.shortcuts.captureActive
+                            onTriggered: root.commands.chartTransformRequested(handOrderItem.modelData.id)
+                        }
                     }
                 }
             }

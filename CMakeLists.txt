@@ -5,7 +5,7 @@ set(MIACODE_VERSION_MINOR "0")
 set(MIACODE_VERSION_PATCH "1")
 # Single source of truth for the prerelease tag and package version. The
 # About dialog appends its compile date to this version at runtime.
-set(MIACODE_VERSION_PRERELEASE "")
+set(MIACODE_VERSION_PRERELEASE "handorder.26")
 set(MIACODE_BUILD_LAYOUT_REVISION "2026-04-21-first-unification")
 set(MIACODE_VERSION "${MIACODE_VERSION_MAJOR}.${MIACODE_VERSION_MINOR}.${MIACODE_VERSION_PATCH}")
 set(MIACODE_VERSION_STRING "${MIACODE_VERSION}")
@@ -576,8 +576,8 @@ qt_add_shaders(MiaCode "ui_shaders"
         src/app/ui/pet/shaders/pet.frag
 )
 set_target_properties(MiaCode PROPERTIES
-    MACOSX_BUNDLE_BUNDLE_NAME "MiaCode"
-    MACOSX_BUNDLE_GUI_IDENTIFIER "com.fanfaredash.MiaCode"
+    MACOSX_BUNDLE_BUNDLE_NAME "MiaCodeHandOrder"
+    MACOSX_BUNDLE_GUI_IDENTIFIER "com.fanfaredash.MiaCodeHandOrder"
 )
 
 if(UNIX AND NOT APPLE)
@@ -706,6 +706,8 @@ set(MIACODE_UI_QML_FILES
     src/app/ui/editor/EditorPane.qml
     src/app/ui/editor/MetadataDifficultyCard.qml
     src/app/ui/editor/EditorTabBar.qml
+    src/app/ui/editor/HandOrderIntervalsDialog.qml
+    src/app/ui/editor/NativeSlideSplitDialog.qml
     src/app/ui/editor/SourceEditor.qml
     src/app/ui/editor/CompletionPopup.qml
     src/app/ui/editor/NormalizeOptionsDialog.qml
@@ -920,6 +922,8 @@ set(MIACODE_TRANSLATION_TS_FILES
     translations/zh_CN.ts
     translations/ja_JP.ts
 )
+# Keep ID messages in the empty TS context. Qt 6.11 no longer converts
+# named-context source-text entries with the deprecated -idbased switch.
 qt_add_lrelease(
     LRELEASE_TARGET miacode_lrelease
     TS_FILES ${MIACODE_TRANSLATION_TS_FILES}

@@ -1,12 +1,31 @@
 #include "app/services/EditorSyncController.h"
 
 #include <QMetaObject>
+#include <algorithm>
 
 namespace miacode {
 
 EditorSyncController::EditorSyncController(QObject* parent)
     : QObject(parent)
 {
+}
+
+void EditorSyncController::setSelectionPlayable(bool playable)
+{
+    if (selectionPlayable_ == playable) return;
+    selectionPlayable_ = playable;
+    emit selectionPlayableChanged();
+}
+
+bool EditorSyncController::playSelection()
+{
+    const auto selection = editorSelection();
+    if (!selectionPlayable_ || !selection.valid || selection.ranges.isEmpty()) return false;
+    // Deliver synchronously with the current identity. The runtime validates
+    // against its own document revision before resolving the source selection.
+    emit selectionPlaybackRequested(selection.difficultyId, selection.revision,
+        qMin(selection.anchor, selection.position), qMax(selection.anchor, selection.position));
+    return true;
 }
 
 bool EditorSyncController::followActive() const { return follow_.active; }
@@ -99,7 +118,71 @@ EditorSelectionState EditorSyncController::editorSelection() const
     selection.focused = editorFocused_;
     selection.valid = editorVisible_ && contextDifficultyId_ > 0
         && contextDifficultyId_ == readyDifficultyId_ && contextRevision_ == readyRevision_;
+    selection.ranges = contextRanges_;
+    if (selection.ranges.isEmpty() && !contextNoteSelection_ && contextAnchor_ != contextPosition_)
+        selection.ranges.append({qMin(contextAnchor_, contextPosition_), qMax(contextAnchor_, contextPosition_)});
+    selection.noteSelection = contextNoteSelection_;
     return selection;
+}
+
+void EditorSyncController::setNoteCatalogue(int difficultyId, quint64 revision, const chart_selection::NoteRanges& ranges)
+{
+    catalogueDifficulty_ = difficultyId;
+    catalogueRevision_ = revision;
+    noteCatalogue_ = ranges;
+}
+
+bool EditorSyncController::requestNoteSelection(int difficultyId, quint64 revision,
+    const chart_selection::NoteRanges& ranges, bool additive)
+{
+    if (!readinessAccepts(difficultyId, revision) || catalogueDifficulty_ != difficultyId
+        || catalogueRevision_ != revision) return false;
+    caretPending_ = false;
+    deliveredCaretValid_ = false;
+    if (navigationPending_) {
+        scheduleNavigationFinished(pendingNavigation_.sequence, false);
+        navigationPending_ = false;
+    }
+    if (deliveredNavigationSequence_ != 0) {
+        scheduleNavigationFinished(deliveredNavigationSequence_, false);
+        deliveredNavigationSequence_ = 0;
+    }
+    const auto current = editorSelection();
+    const auto intersects = [](const auto& note, const auto& selected) {
+        return std::any_of(selected.cbegin(), selected.cend(), [&](const auto& range) {
+            return range.start < note.end && note.start < range.end;
+        });
+    };
+    // Shift gestures toggle complete note objects, including an existing text selection.
+    chart_selection::NoteRanges normalized;
+    for (const auto& note : noteCatalogue_) {
+        const bool hit = intersects(note, ranges);
+        const bool wasSelected = additive && current.valid && intersects(note, current.ranges);
+        if (hit != wasSelected) normalized.append(note);
+    }
+    contextRanges_ = normalized; // Catalogue is already ordered and deduplicated.
+    contextNoteSelection_ = true;
+    emit noteSelectionRequested(difficultyId, revision, contextRanges_);
+    scheduleEditorContextDelivery();
+    return true;
+}
+
+bool EditorSyncController::requestNoteSelectionAtPosition(int difficultyId, quint64 revision, int position, bool additive)
+{
+    for (const auto& note : noteCatalogue_)
+        if (position >= note.start && position < note.end)
+            return requestNoteSelection(difficultyId, revision, {note}, additive);
+    return false;
+}
+
+void EditorSyncController::setEditorRanges(int difficultyId, quint64 revision,
+    const chart_selection::NoteRanges& ranges, bool noteSelection)
+{
+    if (!readinessAccepts(difficultyId, revision)) return;
+    if (contextRanges_ == ranges && contextNoteSelection_ == noteSelection) return;
+    contextRanges_ = ranges;
+    contextNoteSelection_ = noteSelection;
+    scheduleEditorContextDelivery();
 }
 
 void EditorSyncController::setEditorReadiness(
@@ -126,6 +209,8 @@ void EditorSyncController::setEditorReadiness(
         scheduleTouchPadControlHoldDelivery();
     }
     if (changed) {
+        contextRanges_.clear();
+        contextNoteSelection_ = false;
         deliveredCaretValid_ = false;
     }
     if (changed && navigationPending_) {
@@ -162,7 +247,9 @@ void EditorSyncController::setEditorContext(
     contextPosition_ = qMax(0, position);
     editorFocused_ = focused;
     imeComposing_ = imeComposing;
-    if (activityChanged) {
+    if (activityChanged || selectionChanged) {
+        contextRanges_.clear();
+        contextNoteSelection_ = false;
         scheduleEditorContextDelivery();
     }
     if ((activityChanged || selectionChanged) && !publishCaret) {

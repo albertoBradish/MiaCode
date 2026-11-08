@@ -323,6 +323,8 @@ void miacode::runtime::VideoExportHost::installExportPreviewAuditionScene(int di
     session_.state_.timeline_.latestTimelinePreviewRevision_ = session_.state_.timeline_.timelineRevision_;
     session_.state_.timeline_.latestTimelinePreviewSnapshotReady_ = true;
     session_.scene_->setNoteMarkers(previewState.shiftedNoteMarkers);
+    session_.scene_->setVisualAidChartTiming(session_.state_.timeline_.lastTimelineParseResult_,
+        miacode::chart_clock::clockCountFromDocument(session_.applicationServices_.workspace().document()), effectiveFirst);
     session_.lastPreviewNoteMarkerSignature_ = previewState.noteMarkerSignature;
 
     const double durationSeconds = session_.previewPlaybackEndSeconds();
@@ -409,6 +411,7 @@ void miacode::runtime::VideoExportHost::clearAudition()
     session_.lastPreviewNoteMarkerSignature_.clear();
     if (session_.scene_ != nullptr) {
         session_.scene_->setNoteMarkers({});
+        session_.scene_->setVisualAidChartTiming({}, 0, 0.0);
         session_.scene_->setMuriAnalysisReport({});
     }
     session_.clearPreviewObjectStats();
@@ -519,6 +522,14 @@ bool miacode::runtime::VideoExportHost::buildVideoExportSnapshot(
         defaultOutputName, built.outputMode
     );
     built.showTimestamp = requestedTask.showTimestamp;
+    built.showHandOrderAnnotations = requestedTask.showHandOrderAnnotations;
+    built.showMeasureLines = requestedTask.showMeasureLines;
+    built.showJudgementSkeleton = requestedTask.showJudgementSkeleton;
+    built.showSlideJudgementTiming = requestedTask.showSlideJudgementTiming;
+    built.slideTimingFromLaunchBeat = requestedTask.slideTimingFromLaunchBeat;
+    built.slideTimingEarlyPerfectFromHead = requestedTask.slideTimingEarlyPerfectFromHead;
+    built.measureLineMode = requestedTask.measureLineMode;
+    built.measureLineCustomBeats = requestedTask.measureLineCustomBeats;
     built.showObjectStatsHud = requestedTask.showObjectStatsHud;
     built.showChartInfoHud = requestedTask.showChartInfoHud;
     built.centerDisplayMode = requestedTask.centerDisplayMode;
@@ -612,14 +623,22 @@ bool miacode::runtime::VideoExportHost::buildVideoExportSnapshotForChartDirector
     const miacode::simai::SimaiTimingMetadata timingMetadata = miacode::simai::buildTimingMetadata(document);
     const SimaiValidationReport report =
         SimaiParser::buildValidationReport(difficulty->chart, validationLocale, timingMetadata);
-    if (report.errorCount > 0) {
-        QString issueSummary;
-        if (!report.issues.isEmpty()) {
-            issueSummary = report.issues.constFirst().displayMessage.trimmed();
+    int blockingErrorCount = 0;
+    QString issueSummary;
+    for (const SimaiValidationIssue& issue : report.issues) {
+        if (issue.severity != SimaiValidationSeverity::Error
+            || (!requestedTask.showHandOrderAnnotations && issue.isAnnotation)) {
+            continue;
         }
+        ++blockingErrorCount;
+        if (issueSummary.isEmpty()) {
+            issueSummary = issue.displayMessage.trimmed();
+        }
+    }
+    if (blockingErrorCount > 0) {
         if (errorMessage != nullptr) {
             *errorMessage = issueSummary.isEmpty()
-                ? qtTrId("dialog.batch_export.error.validation_failed_count").arg(report.errorCount)
+                ? qtTrId("dialog.batch_export.error.validation_failed_count").arg(blockingErrorCount)
                 : qtTrId("dialog.batch_export.error.validation_failed_detail").arg(issueSummary);
         }
         return false;
@@ -727,6 +746,14 @@ bool miacode::runtime::VideoExportHost::buildVideoExportSnapshotForChartDirector
         defaultOutputName, built.outputMode
     );
     built.showTimestamp = requestedTask.showTimestamp;
+    built.showHandOrderAnnotations = requestedTask.showHandOrderAnnotations;
+    built.showMeasureLines = requestedTask.showMeasureLines;
+    built.showJudgementSkeleton = requestedTask.showJudgementSkeleton;
+    built.showSlideJudgementTiming = requestedTask.showSlideJudgementTiming;
+    built.slideTimingFromLaunchBeat = requestedTask.slideTimingFromLaunchBeat;
+    built.slideTimingEarlyPerfectFromHead = requestedTask.slideTimingEarlyPerfectFromHead;
+    built.measureLineMode = requestedTask.measureLineMode;
+    built.measureLineCustomBeats = requestedTask.measureLineCustomBeats;
     built.showObjectStatsHud = requestedTask.showObjectStatsHud;
     built.showChartInfoHud = requestedTask.showChartInfoHud;
     built.centerDisplayMode = requestedTask.centerDisplayMode;
@@ -841,6 +868,21 @@ bool miacode::runtime::VideoExportHost::exportPreviewVideoFromCli(
     if (!liveTimelineCoversDifficulty(difficultyId)) {
         parseAndPublishTimelineForDifficulty(difficultyId);
     }
+    if (request.showHandOrderAnnotations
+        && !session_.state_.timeline_.lastTimelineParseResult_.annotationErrors.isEmpty()) {
+        const SimaiMessage& issue =
+            session_.state_.timeline_.lastTimelineParseResult_.annotationErrors.constFirst();
+        SimaiValidationReport localized;
+        SimaiValidationIssue localizedIssue;
+        localizedIssue.severity = SimaiValidationSeverity::Error;
+        localizedIssue.isAnnotation = true;
+        localizedIssue.rawMessage = issue.message;
+        localized.issues.append(localizedIssue);
+        SimaiParser::localizeValidationReport(localized, uiValidationLocale());
+        return fail(qtTrId("cli.export.hand_order_annotation_invalid"),
+            QStringLiteral("%1:%2 %3").arg(issue.line).arg(issue.col)
+                .arg(localized.issues.constFirst().displayMessage));
+    }
 
     const QString previewSkinDir = session_.resolvePreviewSkinDir();
     if (previewSkinDir.trimmed().isEmpty()) {
@@ -934,6 +976,7 @@ bool miacode::runtime::VideoExportHost::exportPreviewVideoFromCli(
     task.outputHeight = request.outputHeight;
     task.fps = request.fps;
     task.showTimestamp = request.showTimestamp;
+    task.showHandOrderAnnotations = request.showHandOrderAnnotations;
     task.showObjectStatsHud = request.showObjectStatsHud;
     task.showChartInfoHud = request.showChartInfoHud;
     task.chartTitle = session_.applicationServices_.workspace().document().title;

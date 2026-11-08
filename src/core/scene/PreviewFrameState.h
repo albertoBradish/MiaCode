@@ -1,11 +1,14 @@
 #pragma once
 
 #include <QImage>
+#include <QHash>
+#include <QSet>
 #include <QRectF>
 #include <QVector>
 #include <QtGlobal>
 #include <QtMath>
 
+#include <array>
 #include <limits>
 #include <memory>
 #include <utility>
@@ -19,11 +22,16 @@
 #include "core/video/PreviewRenderSettings.h"
 #include "core/chart/model/TimelineData.h"
 
+namespace miacode::slide_judge { class LaunchBeatIndex; }
+
 namespace miacode::preview::scene {
 
 class PreviewStandardFireworkEffect;
 
 struct PreviewSkinAssets {
+    // Optional pixel-exact hand artwork, indexed by the original QImage's
+    // cache key. A missing set falls back to the sprite shader tint.
+    QHash<quint64, std::array<QImage, 3>> handOrderVariants;
     QImage tapImage;
     QImage tapEachImage;
     QImage tapBreakImage;
@@ -242,12 +250,18 @@ struct PreviewRenderState {
     PreviewTapJudgeTextDistance tapJudgeTextDistance = PreviewTapJudgeTextDistance::Inner;
     PreviewJudgeEffectStyle judgeEffectStyle = PreviewJudgeEffectStyle::Standard;
     bool showDebugInfo = false;
+    bool showMeasureLines = false;
+    bool showJudgementSkeleton = false;
+    bool showSlideJudgementTiming = false;
+    bool slideTimingFromLaunchBeat = false;
+    bool slideTimingEarlyPerfectFromHead = false;
     bool showTimestamp = true;
     bool showObjectStatsHud = false;
     bool showChartInfoHud = false;
     // Presentation-only switch exposed to extensions. Mine semantics remain
     // intact while their dedicated sprites/guides are replaced by normal art.
     bool useMineSkin = true;
+    bool showHandOrderAnnotations = true;
     miacode::preview_gameplay::CenterDisplayMode centerDisplayMode =
         miacode::preview_gameplay::kDefaultCenterDisplayMode;
 };
@@ -255,6 +269,12 @@ struct PreviewRenderState {
 struct PreviewFrameState {
     PreviewHudFontSettings hudFontSettings;
     QVector<TimelineNoteMarker> noteMarkers;
+    // Export may crop render markers before a future launch cue. Preserve its
+    // immutable full-chart lookup independently of the visible marker range.
+    std::shared_ptr<const miacode::slide_judge::LaunchBeatIndex> slideTimingLaunchBeats;
+    QVector<double> measureLineSeconds;
+    // Editor-only transient projection; never written into chart/render settings.
+    QSet<quint64> selectedNoteLocations;
     std::shared_ptr<const PreviewProgressStatsCache> progressStatsCache;
     MuriAnalysisReport muriAnalysisReport;
     MuriRenderOptions muriRenderOptions;

@@ -30,10 +30,10 @@ param(
     [string]$QtVersion = "",
     [string[]]$QtModules = @(),
     [string]$QtOutputDir = "",
-    [string]$BuildDir = "build",
+    [string]$BuildDir = "",
     [ValidateSet("Release", "Debug")]
     [string]$Config = "Release",
-    [int]$BuildJobs = [Environment]::ProcessorCount,
+    [int]$BuildJobs = 4,
     # Skip the decode-only preview FFmpeg SDK build for architectures that
     # default to it (FFmpeg.TrimByArch in windows-toolchain.psd1). The trim
     # toolchain builds the x64 av*.dll set from FFmpeg source, which takes the
@@ -154,12 +154,19 @@ function Resolve-VulkanIncludeDir {
 }
 
 $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+if ($BuildJobs -lt 1 -or $BuildJobs -gt 4) {
+    throw "BuildJobs must be between 1 and 4 in this workspace."
+}
 if ([string]::IsNullOrWhiteSpace($QtOutputDir)) {
-    $QtOutputDir = Join-Path $repoRoot ".qt"
+    $QtOutputDir = Join-Path (Split-Path -Parent $repoRoot) "toolchains\qt"
 } else {
     $QtOutputDir = Resolve-RepoPath -RepoRoot $repoRoot -PathValue $QtOutputDir
 }
-$BuildDir = Resolve-RepoPath -RepoRoot $repoRoot -PathValue $BuildDir
+if ([string]::IsNullOrWhiteSpace($BuildDir)) {
+    $BuildDir = Join-Path (Split-Path -Parent $repoRoot) "build\windows_$targetArch"
+} else {
+    $BuildDir = Resolve-RepoPath -RepoRoot $repoRoot -PathValue $BuildDir
+}
 
 $buildDevTools = if ($Config -eq "Debug") { "ON" } else { "OFF" }
 

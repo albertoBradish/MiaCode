@@ -1,5 +1,6 @@
 #include "media_tools/net/NetProvider.h"
 #include "media_tools/net/NetClient.h"
+#include "common/RuntimePaths.h"
 
 #include <QCryptographicHash>
 #include <QDir>
@@ -9,7 +10,6 @@
 #include <QJsonDocument>
 #include <QPointer>
 #include <QSaveFile>
-#include <QStandardPaths>
 #include <QTimer>
 #include <QUuid>
 #include <QtConcurrentRun>
@@ -57,12 +57,17 @@ public:
             const auto cached = provider_.previews_.value(provider_.previewCache_.value(cacheKey_));
             if (!request_.parameters.value("forceRefresh").toBool() && cached.expiresAt > provider_.clock_.elapsed()
                 && cacheComplete(cached)) { finish({}, cached.handle); return; }
-            root_ = provider_.previewRoot_->path();
+            root_ = provider_.previewRoot_ && provider_.previewRoot_->isValid()
+                ? provider_.previewRoot_->path()
+                : QString();
         } else {
             ids_ = request_.parameters.value("chartIds").toArray();
             const auto destination = request_.parameters.value("destination").toObject();
             if (destination.value("kind") == QLatin1String("managed")) {
-                root_ = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + QStringLiteral("/net-downloads");
+                const QString dataRoot = miacode::runtime_paths::dataDirectory();
+                root_ = dataRoot.isEmpty()
+                    ? QString()
+                    : QDir(dataRoot).filePath(QStringLiteral("net-downloads"));
             } else {
                 const auto grant = provider_.directoryGrants_.value(destination.value("grantRef").toString());
                 if (grant.principal != request_.principal) { finish(error("permission.denied")); return; }

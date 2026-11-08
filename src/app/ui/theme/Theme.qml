@@ -5,7 +5,7 @@ import "ThemePalettes.js" as PaletteData
 
 QtObject {
     property bool miaMiaCode: false
-    readonly property string brandName: miaMiaCode ? "MiaMiaCode" : "MiaCode"
+    readonly property string brandName: miaMiaCode ? "MiaMiaCode" : "MiaCode Hand Order"
     readonly property string brandDisplayText: {
         if (!miaMiaCode)
             return brandName

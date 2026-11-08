@@ -105,7 +105,16 @@ ApplicationWindow {
         property var sizePresetOptions: ["Standard"]
         property bool showObjectStatsHud: false
         property bool showChartInfoHud: false
+        property int handOrderModeIndex: 0
+        property var handOrderModeOptions: [
+            { value: 0, label: "Follow preview" },
+            { value: 1, label: "Original chart" },
+            { value: 2, label: "Hand-order colors" }
+        ]
         property bool clockCountEnabled: false
+        property bool showSlideJudgementTiming: false
+        property bool slideTimingFromLaunchBeat: false
+        property bool slideTimingEarlyPerfectFromHead: false
         property var fontLibraryOptions: [
             { label: "Default font", path: "", family: "" },
             { label: "Example Font (example.ttf)", path: "/fonts/example.ttf", family: "Example Font" }
@@ -133,6 +142,15 @@ ApplicationWindow {
         property bool applyingAtomicRange: false
 
         signal rangeChanged()
+
+        // Match the real ExportSession::setActiveTab side effect. A plain
+        // QtObject property has no setter to keep its settings tab in sync.
+        onActiveTabChanged: {
+            if (activeTab === "batch")
+                settingsTab = "batch"
+            else if (settingsTab === "batch")
+                settingsTab = "output"
+        }
 
         onExportStartSecondsChanged: {
             if (applyingAtomicRange)
@@ -566,12 +584,53 @@ bool verifyBatchInputsOwnASettingsTab(QTextStream& err)
     ok &= require(!batchPage->isVisible(),
                   QStringLiteral("another settings tab hides the batch inputs"), err);
 
+    session->setProperty("settingsTab",QStringLiteral("output"));
+    QCoreApplication::processEvents();
+    auto* moreDisplay = findVisualItem(contentItem,QStringLiteral("exportMoreDisplayButton"));
+    auto* moreOptions = findVisualItem(contentItem,QStringLiteral("exportMoreDisplayOptions"));
+    ok &= require(moreDisplay && moreOptions && !moreDisplay->property("checked").toBool()
+        && !moreOptions->isVisible(),QStringLiteral("additional export display settings default collapsed"),err);
+    if (moreDisplay) moreDisplay->setProperty("checked",true);
+    QCoreApplication::processEvents();
+    ok &= require(moreOptions && moreOptions->isVisible(),QStringLiteral("More Display reveals existing export options"),err);
+    auto* earlySwitch=findVisualItem(contentItem,QStringLiteral("exportSlideTimingEarlyPerfectFromHeadSwitch"));
+    ok &= require(earlySwitch!=nullptr,QStringLiteral("video options expose the launch child switch"),err);
+    if(earlySwitch) {
+        ok &= require(!earlySwitch->isEnabled() && !earlySwitch->property("checked").toBool(),
+            QStringLiteral("launch child option defaults off and requires both ancestors"),err);
+        session->setProperty("showSlideJudgementTiming",true);
+        QCoreApplication::processEvents();
+        ok &= require(!earlySwitch->isEnabled(),QStringLiteral("main visibility alone does not enable the child"),err);
+        session->setProperty("slideTimingFromLaunchBeat",true);
+        QCoreApplication::processEvents();
+        ok &= require(earlySwitch->isEnabled(),QStringLiteral("matching-launch option enables its child"),err);
+        earlySwitch->setProperty("checked",true);
+        QMetaObject::invokeMethod(earlySwitch,"toggled");
+        ok &= require(session->property("slideTimingEarlyPerfectFromHead").toBool(),
+            QStringLiteral("toggling the child updates export settings"),err);
+        session->setProperty("slideTimingFromLaunchBeat",false);
+        QCoreApplication::processEvents();
+        ok &= require(!earlySwitch->isEnabled() && earlySwitch->property("checked").toBool(),
+            QStringLiteral("disabling the parent retains the child preference"),err);
+        session->setProperty("slideTimingFromLaunchBeat",true);
+        session->setProperty("showSlideJudgementTiming",false);
+        QCoreApplication::processEvents();
+        ok &= require(!earlySwitch->isEnabled(),QStringLiteral("disabling visibility also disables the child"),err);
+    }
+
+    if (moreDisplay) moreDisplay->setProperty("checked",false);
+    QCoreApplication::processEvents();
+    ok &= require(moreOptions && !moreOptions->isVisible() && earlySwitch && earlySwitch->property("checked").toBool(),
+        QStringLiteral("collapsing More Display retains the enabled child preference"),err);
+
     session->setProperty("settingsTab", QStringLiteral("batch"));
     session->setProperty("activeTab", QStringLiteral("export"));
     QCoreApplication::processEvents();
     ok &= require(session->property("settingsTab").toString() == QStringLiteral("output"),
                   QStringLiteral("leaving batch mode falls back to a settings tab that still exists"),
                   err);
+    ok &= require(findVisualItem(contentItem, QStringLiteral("exportHandOrderModeCombo")) != nullptr,
+                  QStringLiteral("output settings expose the hand-order export choice"), err);
     ok &= require(findVisualItem(contentItem, QStringLiteral("exportSettingsTab_batch")) == nullptr,
                   QStringLiteral("the batch settings tab disappears with batch mode"), err);
     ok &= require(!batchPage->isVisible(),

@@ -8,6 +8,7 @@
 #include <QVector>
 
 #include "core/video/PreviewGameplayConfig.h"
+#include "core/chart/model/TimelineData.h"
 
 enum class TimelineRenderNoteKind {
     Unknown,
@@ -54,11 +55,18 @@ struct TimelineRenderNote {
     // HS multiplier frozen when this note was parsed.
     double hsMultiplier = 1.0;
     int sourceCol = 1;
+    // UTF-16 length of this independent note object (no timing/control text).
+    int sourceLength = 1;
     int lane = 1;
     int endLane = 1;
     int eachGroupId = -1;
     TimelineRenderNoteKind kind = TimelineRenderNoteKind::Unknown;
     quint32 flags = TimelineRenderFlagHasHeadStar;
+    int slideBranchIndex = 0;
+    HandOrderHand handOrderHead = HandOrderHand::Unspecified;
+    QVector<HandOrderTrackStop> handOrderTrackStops;
+    HandOrderWifiMode handOrderWifiMode = HandOrderWifiMode::Legacy;
+    QVector<QVector<HandOrderTrackStop>> handOrderWifiSectorStops;
 };
 
 struct TimelineCursorAnchor {

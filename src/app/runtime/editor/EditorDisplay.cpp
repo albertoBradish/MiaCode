@@ -82,23 +82,12 @@ void miacode::runtime::EditorHost::loadPortableState()
     const auto completionConfig = miacode::readEditorCompletionCandidates(ui);
     state_.editorCompletionDurationCandidates_ = completionConfig.durations;
     state_.editorCompletionDivisionCandidates_ = completionConfig.divisions;
-    QSettings legacySettings;
-    const bool hasLegacyBottomPanelHeight =
-        legacySettings.contains(QStringLiteral("ui/bottomPanelHeight"));
     if (ui.value("bottom_tabs_content_scale").isDouble()) {
         // Stored as a content-scale ratio (not pixels). The raw value is clamped
         // to its valid [min,max] range by applyBottomTabsContentScale() when the
         // height is re-applied below.
         state_.bottomTabsContentScale_ =
             ui.value("bottom_tabs_content_scale").toDouble(state_.bottomTabsContentScale_);
-    }
-    // The shell's scale is canonical even when it already existed before this
-    // launch, so always retire the obsolete v2 pixel-height key. (The legacy
-    // pixel value itself is discarded rather than migrated — the migration
-    // path used to route it through ShellHost::setBottomTabsHeight(), which
-    // was deleted because it was a no-op: bottomTabs_ is never constructed.)
-    if (hasLegacyBottomPanelHeight) {
-        legacySettings.remove(QStringLiteral("ui/bottomPanelHeight"));
     }
     if (ui.value("preview_pane_width_ratio").isDouble()) {
         state_.previewPaneWidthRatio_ =
@@ -230,6 +219,14 @@ void miacode::runtime::EditorHost::resetPortablePreviewSettingsToDefaults()
     state_.previewTouchPadAuthoringShortcutEnabled_ = true;
     state_.previewShowDebugInfo_ = false;
     state_.previewShowTimestamp_ = true;
+    state_.previewShowHandOrderAnnotations_ = true;
+    state_.previewShowMeasureLines_ = false;
+    state_.previewShowJudgementSkeleton_ = false;
+    state_.previewShowSlideJudgementTiming_ = false;
+    state_.previewSlideTimingFromLaunchBeat_ = false;
+    state_.previewSlideTimingEarlyPerfectFromHead_ = false;
+    state_.previewMeasureLineMode_ = 0;
+    state_.previewMeasureLineCustomBeats_ = 4;
     state_.previewShowObjectStatsHud_ = false;
     state_.exportShowObjectStatsHud_ = false;
     state_.previewShowChartInfoHud_ = false;
@@ -449,8 +446,21 @@ void miacode::runtime::EditorHost::applyPortablePreviewSettings(const QJsonObjec
     if (preview.value("show_debug_info").isBool()) {
         state_.previewShowDebugInfo_ = preview.value("show_debug_info").toBool(false);
     }
+    state_.previewShowMeasureLines_ = preview.value("show_measure_lines").toBool(false);
+    state_.previewShowJudgementSkeleton_ = preview.value("show_judgement_skeleton").toBool(false);
+    state_.previewShowSlideJudgementTiming_ = preview.value("show_slide_judgement_timing").toBool(false);
+    state_.previewSlideTimingFromLaunchBeat_ = preview.value("slide_timing_from_launch_beat").toBool(false);
+    state_.previewSlideTimingEarlyPerfectFromHead_ = preview.value("slide_timing_early_perfect_from_head").toBool(false);
+    state_.previewMeasureLineMode_ = static_cast<int>(miacode::preview::scene::normalizedMeasureLineMode(
+        preview.value("measure_line_mode").toInt(0)));
+    state_.previewMeasureLineCustomBeats_ = preview.value("measure_line_custom_beats").toInt(4);
+    if (state_.previewMeasureLineCustomBeats_ <= 0) state_.previewMeasureLineCustomBeats_ = 4;
     if (preview.value("show_timestamp").isBool()) {
         state_.previewShowTimestamp_ = preview.value("show_timestamp").toBool(true);
+    }
+    if (preview.value("show_hand_order_annotations").isBool()) {
+        state_.previewShowHandOrderAnnotations_ =
+            preview.value("show_hand_order_annotations").toBool(true);
     }
     if (preview.value("show_object_stats_preview").isBool()) {
         state_.previewShowObjectStatsHud_ = preview.value("show_object_stats_preview").toBool(false);
@@ -624,6 +634,14 @@ void miacode::runtime::EditorHost::savePortableState() const
     );
     preview.insert("show_debug_info", state_.previewShowDebugInfo_);
     preview.insert("show_timestamp", state_.previewShowTimestamp_);
+    preview.insert("show_hand_order_annotations", state_.previewShowHandOrderAnnotations_);
+    preview.insert("show_measure_lines", state_.previewShowMeasureLines_);
+    preview.insert("show_judgement_skeleton", state_.previewShowJudgementSkeleton_);
+    preview.insert("show_slide_judgement_timing", state_.previewShowSlideJudgementTiming_);
+    preview.insert("slide_timing_from_launch_beat", state_.previewSlideTimingFromLaunchBeat_);
+    preview.insert("slide_timing_early_perfect_from_head", state_.previewSlideTimingEarlyPerfectFromHead_);
+    preview.insert("measure_line_mode", state_.previewMeasureLineMode_);
+    preview.insert("measure_line_custom_beats", state_.previewMeasureLineCustomBeats_);
     preview.insert("show_object_stats_preview", state_.previewShowObjectStatsHud_);
     preview.insert("show_object_stats_export", state_.exportShowObjectStatsHud_);
     preview.insert("show_chart_info_preview", state_.previewShowChartInfoHud_);

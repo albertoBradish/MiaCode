@@ -13,6 +13,7 @@
 #include <QTextStream>
 
 #include <algorithm>
+#include <optional>
 
 namespace {
 
@@ -195,6 +196,11 @@ bool PreviewPreparedSceneCache::sync(const PreviewFrameState& state)
     nextKey.showSlideTracks = state.muriRenderOptions.showSlideTracks;
     nextKey.showJudgeMarkers = state.muriRenderOptions.showJudgeMarkers;
     nextKey.showTouchTrail = state.muriRenderOptions.showTouchTrail;
+    nextKey.showSlideJudgementTiming = state.render.showSlideJudgementTiming;
+    nextKey.slideTimingFromLaunchBeat = state.render.slideTimingFromLaunchBeat;
+    nextKey.slideTimingEarlyPerfectFromHead = state.render.slideTimingEarlyPerfectFromHead;
+    nextKey.slideTimingLaunchBeatIdentity = state.render.slideTimingFromLaunchBeat
+        ? reinterpret_cast<quintptr>(state.slideTimingLaunchBeats.get()) : 0;
     nextKey.slideEarlierSecondAndTextOnTop = state.render.slideEarlierSecondAndTextOnTop;
     nextKey.tapJudgeTextDistance = state.render.tapJudgeTextDistance;
     nextKey.showChartReviewSlideJudgeOverlay = state.muriRenderOptions.showChartReviewSlideJudgeOverlay;
@@ -296,6 +302,15 @@ void PreviewPreparedSceneCache::rebuild(const PreviewFrameState& state)
     markerIndexByKey.reserve(state.noteMarkers.size() * 2);
     const QHash<QString, SlideHeadRepresentative> slideHeadRepresentatives =
         buildSlideHeadRepresentatives(state.noteMarkers);
+    std::optional<miacode::slide_judge::LaunchBeatIndex> launchBeats;
+    const miacode::slide_judge::LaunchBeatIndex* launchIndex = nullptr;
+    if (state.render.showSlideJudgementTiming && state.render.slideTimingFromLaunchBeat) {
+        launchIndex=state.slideTimingLaunchBeats.get();
+        if (launchIndex==nullptr) {
+            launchBeats.emplace(state.noteMarkers);
+            launchIndex=&*launchBeats;
+        }
+    }
 
     for (int markerIndex = 0; markerIndex < state.noteMarkers.size(); ++markerIndex) {
         const TimelineNoteMarker& marker = state.noteMarkers.at(markerIndex);
@@ -382,6 +397,10 @@ void PreviewPreparedSceneCache::rebuild(const PreviewFrameState& state)
                     marker.second - trackTiming.appearLeadInSeconds,
                     qMax(marker.second, qMax(marker.endSecond, marker.slideTraceSecond))
                 );
+                if (state.render.showSlideJudgementTiming) {
+                    slideLikeLayer_.entries.last().slideTimingGeometry =
+                        std::make_shared<const PreviewSlideTimingGeometry>(buildPreviewSlideTimingGeometry(marker,launchIndex,state.render.slideTimingEarlyPerfectFromHead));
+                }
                 appendPreparedMarkerEntry(
                     &judgeEffectLayer_,
                     markerIndex,

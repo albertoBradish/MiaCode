@@ -7,6 +7,7 @@
 #include "core/scene/PreviewActiveMarkerView.h"
 #include "core/scene/PreviewChartReviewLayerState.h"
 #include "core/scene/PreviewHeadLayerState.h"
+#include "core/scene/SelectionOutlineImage.h"
 #include "core/scene/PreviewJudgeOverlayShared.h"
 #include "core/scene/PreviewMaimuriDxJudgeLayerState.h"
 #include "core/scene/PreviewOpacityCurves.h"
@@ -716,6 +717,64 @@ bool verifyMineSkinCanFallBackToNormalArt(QTextStream& err)
                err);
 }
 
+bool verifyHandTintKeepsTapAndHoldMaterials(QTextStream& err)
+{
+    PreviewFrameState state;
+    state.playheadSeconds = 0.9;
+    state.skin.tapImage = solidImage(64, 64);
+    state.skin.tapBreakImage = solidImage(65, 65);
+    state.skin.tapEachImage = solidImage(66, 66);
+    state.skin.tapMineImage = solidImage(67, 67);
+    state.skin.tapExImage = solidImage(64, 64);
+    state.skin.holdImage = solidImage(32, 64);
+    state.skin.holdOnImage = solidImage(32, 64);
+    state.skin.holdBreakImage = solidImage(33, 64);
+    state.skin.holdBreakOnImage = solidImage(33, 64);
+    state.skin.holdEachImage = solidImage(34, 64);
+    state.skin.holdEachOnImage = solidImage(34, 64);
+    state.skin.holdMineImage = solidImage(35, 64);
+    state.skin.holdExImage = solidImage(32, 64);
+
+    for (int variant = 0; variant < 3; ++variant) {
+        for (const QString& type : {QStringLiteral("tap"), QStringLiteral("hold")}) {
+            TimelineNoteMarker marker;
+            marker.type = type;
+            marker.second = 1.0;
+            marker.endSecond = type == QLatin1String("hold") ? 1.5 : -1.0;
+            marker.lane = 1;
+            marker.isBreak = variant == 0 || variant == 2;
+            marker.isEx = variant == 0 || variant == 2;
+            marker.isEach = variant == 1;
+            marker.isMine = variant == 2;
+            marker.handOrderHead = HandOrderHand::Left;
+            state.noteMarkers = {marker};
+
+            state.render.showHandOrderAnnotations = false;
+            const PreviewHeadLayerState original = buildFallbackHeadLayerState(state);
+            state.render.showHandOrderAnnotations = true;
+            const PreviewHeadLayerState colored = buildFallbackHeadLayerState(state);
+            if (!require(!original.sprites.isEmpty() && colored.sprites.size() == original.sprites.size(),
+                         QStringLiteral("hand tint retains %1 variant %2 sprites").arg(type).arg(variant), err)) {
+                return false;
+            }
+            for (int index = 0; index < colored.sprites.size(); ++index) {
+                const auto& before = original.sprites.at(index);
+                const auto& after = colored.sprites.at(index);
+                if (!require(before.handOrderHand == HandOrderHand::Unspecified
+                                 && after.handOrderHand == HandOrderHand::Left
+                                 && before.image != nullptr && after.image != nullptr
+                                 && *before.image == *after.image
+                                 && before.sourceRect == after.sourceRect
+                                 && before.effect == after.effect,
+                             QStringLiteral("hand tint keeps %1 variant %2 art, slices and effect").arg(type).arg(variant), err)) {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
 bool verifySlideMineComponentsSelectIndependentArt(QTextStream& err)
 {
     using namespace miacode::preview::scene;
@@ -929,6 +988,9 @@ int main(int argc, char* argv[])
     if (!verifyMineSkinCanFallBackToNormalArt(err)) {
         return 1;
     }
+    if (!verifyHandTintKeepsTapAndHoldMaterials(err)) {
+        return 1;
+    }
     if (!verifySlideMineComponentsSelectIndependentArt(err)) {
         return 1;
     }
@@ -937,6 +999,43 @@ int main(int argc, char* argv[])
     }
     if (!verifyVerticalStraightSlideCpUsesMirroredSprite(err)) {
         return 1;
+    }
+
+    {
+        using miacode::preview::scene::selectionOutlineImage;
+        using miacode::preview::scene::selectionOutlinePadding;
+        QImage original(9,9,QImage::Format_ARGB32_Premultiplied);
+        original.fill(Qt::transparent);
+        for (int y = 2; y <= 6; ++y)
+            for (int x = 2; x <= 6; ++x)
+                if (x == 2 || x == 6 || y == 2 || y == 6)
+                    original.setPixel(x,y,qRgba(255,0,255,255));
+        const auto outline = selectionOutlineImage(original,1);
+        const int pad = selectionOutlinePadding(1);
+        const QRgb outer = outline.pixel(pad+1,pad+4);
+        if (!require(qAlpha(outline.pixel(pad+2,pad+4)) == 0
+                && qAlpha(outline.pixel(pad+3,pad+4)) == 0
+                && qAlpha(outline.pixel(pad+4,pad+4)) == 0,
+                QStringLiteral("selection contours leave original art and enclosed tap holes clear"),err)) return 1;
+        if (!require(qAlpha(outer) > 0 && qAlpha(outer) < 204
+                && qRed(outer) == qAlpha(outer) && qGreen(outer) < qRed(outer)
+                && qAlpha(outline.pixel(pad,pad+4)) < qAlpha(outer)
+                && qAlpha(outline.pixel(pad-1,pad+4)) == 0,
+                QStringLiteral("selection contours have a subdued thin yellow antialiased edge with no broad fill"),err)) return 1;
+        QImage body(1,5,QImage::Format_ARGB32_Premultiplied);
+        body.fill(Qt::white);
+        const auto strip = selectionOutlineImage(body,1,false,false);
+        if (!require(strip.width() == 1 && qAlpha(strip.pixel(0,pad-1)) > 0
+                && qAlpha(strip.pixel(0,pad+2)) == 0,
+                QStringLiteral("hold outline body slices join caps without painting internal seam borders"),err)) return 1;
+        for (qreal dpr : {1.0, 1.25, 1.5, 2.0}) {
+            const auto scaled = selectionOutlineImage(body,dpr,false,false);
+            const int scaledPad = selectionOutlinePadding(dpr);
+            if (!require(scaled.size() == QSize(1,5+2*scaledPad)
+                    && qAlpha(scaled.pixel(0,scaledPad-qRound(dpr*1.25))) > 0
+                    && qAlpha(scaled.pixel(0,scaledPad+2)) == 0,
+                    QStringLiteral("fractional DPR keeps hold contour padding and transparent seam geometry consistent"),err)) return 1;
+        }
     }
 
     out << "preview_head_layer_spec ok" << Qt::endl;

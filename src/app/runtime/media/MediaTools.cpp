@@ -22,6 +22,7 @@
 
 #include <QDesktopServices>
 #include <QTemporaryDir>
+#include "common/RuntimePaths.h"
 #include <QUrl>
 #include <QtCore>
 #include <QtGui>
@@ -515,7 +516,15 @@ bool compressVideoUnder20Mb(
         return false;
     }
 
-    QTemporaryDir passLogDirectory;
+    const QString passLogRoot = miacode::runtime_paths::tempDirectory();
+    if (passLogRoot.isEmpty()) {
+        if (error != nullptr) {
+            *error = miacode::localizedText("media_tools.pass_log_directory_failed");
+        }
+        return false;
+    }
+    QTemporaryDir passLogDirectory(
+        QDir(passLogRoot).filePath(QStringLiteral("pv-pass-XXXXXX")));
     if (!passLogDirectory.isValid()) {
         if (error != nullptr) {
             *error = miacode::localizedText("media_tools.pass_log_directory_failed");
@@ -772,7 +781,15 @@ bool prependPvBlack(
     const double totalDurationSeconds =
         inputDurationSeconds + silenceSeconds;
 
-    QTemporaryDir passLogDirectory;
+    const QString passLogRoot = miacode::runtime_paths::tempDirectory();
+    if (passLogRoot.isEmpty()) {
+        if (error != nullptr) {
+            *error = QStringLiteral("Could not create the two-pass log directory.");
+        }
+        return false;
+    }
+    QTemporaryDir passLogDirectory(
+        QDir(passLogRoot).filePath(QStringLiteral("pv-prepend-pass-XXXXXX")));
     if (!passLogDirectory.isValid()) {
         if (error != nullptr) {
             *error = QStringLiteral("Could not create the two-pass log directory.");

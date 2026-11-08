@@ -31,12 +31,8 @@ extern int AmdPowerXpressRequestHighPerformance;
 //                              compiled in (P2).
 //   startup/gpu_policy       : the resolved internal GPU device policy (P3).
 //
-// These are emitted very early in main() (phase=boot), which lands them in the
-// app-local logs/ dir BEFORE a chart binds. When a chart opens, the runtime log
-// directory rebinds to the chart's .miacode/logs/ (setSessionProjectLogDirectory
-// drains + reopens the writer), so the boot copy is NOT in the log a user
-// collects per-chart. They are therefore re-emitted (phase=log_dir_rebound)
-// right after each rebind so the collected project log is self-contained.
+// These are emitted early in main() (phase=boot) into the workspace runtime
+// log directory shared by GUI, CLI export, and export worker processes.
 
 namespace miacode::app::entry {
 

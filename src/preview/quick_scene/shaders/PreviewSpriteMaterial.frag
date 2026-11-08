@@ -5,6 +5,9 @@ layout(location = 1) in float vOpacity;
 layout(location = 2) in float vWave;
 layout(location = 3) in float vAbsWave;
 layout(location = 4) in float vEffect;
+layout(location = 5) in float vHandOrderHand;
+layout(location = 6) in float vHandOrderClipDistance;
+layout(location = 7) in vec3 vBrightness;
 
 layout(location = 0) out vec4 fragColor;
 
@@ -30,13 +33,42 @@ vec4 sampleFootprintAverage(sampler2D tex, vec2 uv)
     return (c0 + c1 + c2 + c3) * 0.25;
 }
 
+float selectionAlpha(vec2 uv)
+{
+    if (any(lessThan(uv, vec2(0.0))) || any(greaterThan(uv, vec2(1.0)))) return 0.0;
+    return texture(source, uv).a;
+}
+
+float selectionDilation(vec2 uv, vec2 dx, vec2 dy, float radius)
+{
+    float alpha = selectionAlpha(uv);
+    // Circular footprint avoids the heavy square corners of a 3x3 dilation.
+    for (int i = 0; i < 8; ++i) {
+        float angle = float(i) * 0.78539816339;
+        alpha = max(alpha, selectionAlpha(uv + radius * (cos(angle) * dx + sin(angle) * dy)));
+    }
+    return alpha;
+}
+
 void main()
 {
+    if (vHandOrderClipDistance < 0.0) discard;
     if (vOpacity <= 0.0) {
         fragColor = vec4(0.0);
         return;
     }
 
+    if (vEffect > 2.5) {
+        // One screen-pixel contour, separated slightly from the original art.
+        // Original break/each/EX/mine colors and transparent interiors survive.
+        vec2 dx = dFdx(vTexCoord);
+        vec2 dy = dFdy(vTexCoord);
+        float outer = selectionDilation(vTexCoord, dx, dy, 1.75);
+        float inner = selectionDilation(vTexCoord, dx, dy, 0.75);
+        float alpha = max(0.0, outer - inner) * vOpacity * 0.8;
+        fragColor = vec4(vec3(1.0, 0.863, 0.314) * alpha, alpha);
+        return;
+    }
     vec4 texel = sampleFootprintAverage(source, vTexCoord);
     if (texel.a <= 0.0) {
         fragColor = vec4(0.0);
@@ -55,6 +87,22 @@ void main()
         color *= brightness;
     }
 
+    if (vHandOrderHand > 0.5) {
+        vec3 handColor = vHandOrderHand < 1.5 ? vec3(0.22, 0.55, 1.0)
+            : (vHandOrderHand < 2.5 ? vec3(1.0, 0.27, 0.33) : vec3(0.86, 0.88, 0.92));
+        float luminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
+        // Keep source alpha, shading, and some original color: skin shape and
+        // Break/Each/Mine details remain visible beneath the hand color.
+        color = mix(color, handColor * luminance * 1.25, 0.72);
+    }
+
     color = clamp(color, 0.0, 1.0);
+    // Preserve the original color path (and avoid derivative work) for all
+    // native sprites and fully restored tracks.
+    if (vBrightness.x < 1.0 || vBrightness.y < 1.0) {
+        float edgeWidth = max(fwidth(vBrightness.z), 0.0000001);
+        float unrevealed = smoothstep(-edgeWidth, edgeWidth, vBrightness.z);
+        color *= vBrightness.x * mix(1.0, vBrightness.y, unrevealed);
+    }
     fragColor = vec4(color * texel.a, texel.a) * vOpacity;
 }

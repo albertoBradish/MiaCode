@@ -3,6 +3,7 @@
 
 #include "core/chart/document/SimaiDocument.h"
 #include "core/chart/parser/SimaiParser.h"
+#include "core/scene/PreviewVisualAidTiming.h"
 #include "core/chart/document/ChartClockCount.h"
 #include "core/chart/ChartAssetPaths.h"
 #include "core/chart/model/TimelineMarkerOffset.h"
@@ -208,6 +209,14 @@ QJsonObject VideoExportSnapshot::toJson() const
     render.insert(QStringLiteral("hand_radius_px"), muriRenderOptions.handRadiusPx);
     render.insert(QStringLiteral("static_tap_on_slide_threshold_seconds"), staticTapOnSlideThresholdSeconds);
     render.insert(QStringLiteral("show_timestamp"), showTimestamp);
+    render.insert(QStringLiteral("show_hand_order_annotations"), showHandOrderAnnotations);
+    render.insert(QStringLiteral("show_measure_lines"), showMeasureLines);
+    render.insert(QStringLiteral("show_judgement_skeleton"), showJudgementSkeleton);
+    render.insert(QStringLiteral("show_slide_judgement_timing"), showSlideJudgementTiming);
+    render.insert(QStringLiteral("slide_timing_from_launch_beat"), slideTimingFromLaunchBeat);
+    render.insert(QStringLiteral("slide_timing_early_perfect_from_head"), slideTimingEarlyPerfectFromHead);
+    render.insert(QStringLiteral("measure_line_mode"), measureLineMode);
+    render.insert(QStringLiteral("measure_line_custom_beats"), measureLineCustomBeats);
     render.insert(QStringLiteral("show_object_stats_hud"), showObjectStatsHud);
     render.insert(QStringLiteral("show_chart_info_hud"), showChartInfoHud);
     render.insert(QStringLiteral("clock_count_enabled"), clockCountEnabled);
@@ -369,8 +378,19 @@ bool VideoExportSnapshot::fromJson(
     parsed.staticTapOnSlideThresholdSeconds =
         render.value(QStringLiteral("static_tap_on_slide_threshold_seconds"))
             .toDouble(parsed.staticTapOnSlideThresholdSeconds);
+    parsed.showMeasureLines = render.value(QStringLiteral("show_measure_lines")).toBool(false);
+    parsed.showJudgementSkeleton = render.value(QStringLiteral("show_judgement_skeleton")).toBool(false);
+    parsed.showSlideJudgementTiming = render.value(QStringLiteral("show_slide_judgement_timing")).toBool(false);
+    parsed.slideTimingFromLaunchBeat = render.value(QStringLiteral("slide_timing_from_launch_beat")).toBool(false);
+    parsed.slideTimingEarlyPerfectFromHead = render.value(QStringLiteral("slide_timing_early_perfect_from_head")).toBool(false);
+    parsed.measureLineMode = static_cast<int>(miacode::preview::scene::normalizedMeasureLineMode(
+        render.value(QStringLiteral("measure_line_mode")).toInt(0)));
+    parsed.measureLineCustomBeats = render.value(QStringLiteral("measure_line_custom_beats")).toInt(4);
+    if (parsed.measureLineCustomBeats <= 0) parsed.measureLineCustomBeats = 4;
     parsed.showTimestamp =
         render.value(QStringLiteral("show_timestamp")).toBool(parsed.showTimestamp);
+    parsed.showHandOrderAnnotations = render.value(
+        QStringLiteral("show_hand_order_annotations")).toBool(parsed.showHandOrderAnnotations);
     parsed.showObjectStatsHud =
         render.value(QStringLiteral("show_object_stats_hud")).toBool(parsed.showObjectStatsHud);
     parsed.showChartInfoHud =
@@ -483,6 +503,14 @@ bool buildVideoExportTaskFromSnapshot(
     const SimaiParseResult nativeResult = SimaiParser::parseForTimeline(
         difficulty->chart,
         timingMetadata);
+    if (snapshot.showHandOrderAnnotations && !nativeResult.annotationErrors.isEmpty()) {
+        const SimaiMessage& issue = nativeResult.annotationErrors.constFirst();
+        if (errorMessage != nullptr) {
+            *errorMessage = QStringLiteral("Invalid hand-order annotation at %1:%2: %3")
+                .arg(issue.line).arg(issue.col).arg(issue.message);
+        }
+        return false;
+    }
     bool firstOk = false;
     const double firstSeconds = parsedFirstSeconds(document.first, &firstOk);
     if (!firstOk) {
@@ -535,6 +563,19 @@ bool buildVideoExportTaskFromSnapshot(
     built.sizePreset = snapshot.sizePreset;
     built.fullRangeExport = snapshot.fullRangeExport;
     built.showTimestamp = snapshot.showTimestamp;
+    built.showHandOrderAnnotations = snapshot.showHandOrderAnnotations;
+    built.handOrderExportMode = snapshot.showHandOrderAnnotations
+        ? HandOrderExportMode::Annotated : HandOrderExportMode::Original;
+    built.showMeasureLines = snapshot.showMeasureLines;
+    built.showJudgementSkeleton = snapshot.showJudgementSkeleton;
+    built.showSlideJudgementTiming = snapshot.showSlideJudgementTiming;
+    built.slideTimingFromLaunchBeat = snapshot.slideTimingFromLaunchBeat;
+    built.slideTimingEarlyPerfectFromHead = snapshot.slideTimingEarlyPerfectFromHead;
+    built.measureLineMode = snapshot.measureLineMode;
+    built.measureLineCustomBeats = snapshot.measureLineCustomBeats;
+    built.measureLineSeconds = miacode::preview::scene::buildPreviewMeasureLineSeconds(nativeResult,
+        miacode::chart_clock::clockCountFromDocument(document),
+        miacode::preview::scene::normalizedMeasureLineMode(built.measureLineMode), built.measureLineCustomBeats, firstSeconds);
     built.showObjectStatsHud = snapshot.showObjectStatsHud;
     built.showChartInfoHud = snapshot.showChartInfoHud;
     // Reconstruct chart metadata from the parsed SimaiDocument so the

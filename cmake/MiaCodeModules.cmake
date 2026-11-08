@@ -31,6 +31,8 @@ miacode_add_module(miacode_base
         src/common/PixelGeometry.h
         src/common/ProcessDiagnostics.cpp
         src/common/ProcessDiagnostics.h
+        src/common/RuntimePaths.cpp
+        src/common/RuntimePaths.h
         src/common/TaskCancellation.h
         src/common/UiHangWatchdog.cpp
         src/common/UiHangWatchdog.h
@@ -51,6 +53,10 @@ miacode_add_module(miacode_chart
         src/core/chart/IntroConfig.h
         src/core/chart/SlideReferenceData.cpp
         src/core/chart/SlideReferenceData.h
+        src/core/chart/SlideJudgeData.cpp
+        src/core/chart/SlideJudgeData.h
+        src/core/chart/SlideJudgementTiming.cpp
+        src/core/chart/SlideJudgementTiming.h
         src/core/chart/document/ChartClockCount.h
         src/core/chart/document/SimaiDocument.cpp
         src/core/chart/document/SimaiDocument.h
@@ -58,9 +64,12 @@ miacode_add_module(miacode_chart
         src/core/chart/document/SimaiTimingMetadata.h
         src/core/chart/model/TimelineData.h
         src/core/chart/model/TimelineMarkerOffset.h
+        src/core/chart/parser/HandOrderAnnotationSyntax.cpp
+        src/core/chart/parser/HandOrderAnnotationSyntax.h
         src/core/chart/parser/SimaiCommentScan.cpp
         src/core/chart/parser/SimaiCommentScan.h
         src/core/chart/parser/SimaiParser.Driver.cpp
+        src/core/chart/parser/SimaiParser.HandOrder.cpp
         src/core/chart/parser/SimaiParser.Slide.cpp
         src/core/chart/parser/SimaiParser.StrictChecks.cpp
         src/core/chart/parser/SimaiParser.TouchTap.cpp
@@ -74,18 +83,26 @@ miacode_add_module(miacode_chart
         src/core/chart/transform/ChartBatchTransform.Subdivision.cpp
         src/core/chart/transform/ChartBatchTransform.Transform.cpp
         src/core/chart/transform/ChartBatchTransform.h
+        src/core/chart/transform/ChartNoteSelection.cpp
+        src/core/chart/transform/HandOrderEdit.cpp
+        src/core/chart/transform/HandOrderEdit.h
+        src/core/chart/transform/NativeSlideSplit.cpp
+        src/core/chart/transform/NativeSlideSplit.h
         src/core/chart/transform/ChartNormalization.cpp
         src/core/chart/transform/ChartNormalization.h
         src/core/chart/transform/ChartNormalizationSegmentPolicy.cpp
         src/core/chart/transform/ChartNormalizationSegmentPolicy.h
         src/core/chart/transform/Non384SnapTable.cpp
         src/core/chart/transform/Non384SnapTable.h
+        src/core/chart/transform/PlainSimaiExport.cpp
+        src/core/chart/transform/PlainSimaiExport.h
     PUBLIC miacode_base
     QRC resources/slide_data.qrc
 )
 # SimaiParser.cpp includes its partial translation units.
 set_source_files_properties(
     src/core/chart/parser/SimaiParser.Driver.cpp
+    src/core/chart/parser/SimaiParser.HandOrder.cpp
     src/core/chart/parser/SimaiParser.Slide.cpp
     src/core/chart/parser/SimaiParser.StrictChecks.cpp
     src/core/chart/parser/SimaiParser.TouchTap.cpp
@@ -200,6 +217,10 @@ miacode_add_module(miacode_scene
         src/core/scene/PreviewSkinSelectors.h
         src/core/scene/PreviewSlideMotionLayerState.cpp
         src/core/scene/PreviewSlideMotionLayerState.h
+        src/core/scene/PreviewVisualAidTiming.cpp
+        src/core/scene/PreviewVisualAidTiming.h
+        src/core/scene/PreviewVisualAidLayerState.cpp
+        src/core/scene/PreviewVisualAidLayerState.h
         src/core/scene/PreviewSpriteDescriptor.h
         src/core/scene/PreviewTouchHoldLayerState.cpp
         src/core/scene/PreviewTouchHoldLayerState.h
@@ -209,6 +230,8 @@ miacode_add_module(miacode_scene
         src/core/scene/PreviewTouchLayerState.h
         src/core/scene/PreviewTrackLayerState.cpp
         src/core/scene/PreviewTrackLayerState.h
+        src/core/scene/PreviewSlideTiming.cpp
+        src/core/scene/PreviewSlideTiming.h
         src/core/scene/PreviewTrackShared.cpp
         src/core/scene/PreviewTrackShared.h
         src/core/scene/TouchPadAuthoringState.h
@@ -391,6 +414,8 @@ miacode_add_module(miacode_preview_quick
         src/preview/quick_scene/PreviewQuickChartReviewLayer.h
         src/preview/quick_scene/PreviewQuickCircleNodes.cpp
         src/preview/quick_scene/PreviewQuickCircleNodes.h
+        src/preview/quick_scene/PreviewQuickMeasureRingNodes.cpp
+        src/preview/quick_scene/PreviewQuickMeasureRingNodes.h
         src/preview/quick_scene/PreviewQuickGraphicsInfo.cpp
         src/preview/quick_scene/PreviewQuickGraphicsInfo.h
         src/preview/quick_scene/PreviewQuickGuideLayer.cpp
@@ -419,6 +444,8 @@ miacode_add_module(miacode_preview_quick
         src/preview/quick_scene/PreviewQuickSectorNodes.h
         src/preview/quick_scene/PreviewQuickSlideMotionLayer.cpp
         src/preview/quick_scene/PreviewQuickSlideMotionLayer.h
+        src/preview/quick_scene/PreviewQuickVisualAidLayer.cpp
+        src/preview/quick_scene/PreviewQuickVisualAidLayer.h
         src/preview/quick_scene/PreviewQuickSpriteBatchPolicy.h
         src/preview/quick_scene/PreviewQuickSpriteNodes.cpp
         src/preview/quick_scene/PreviewQuickSpriteNodes.h
@@ -452,6 +479,7 @@ if(MIACODE_PREVIEW_MULTIMEDIA)
 endif()
 # qmltyperegistrar includes QML_ELEMENT headers by file name only.
 target_include_directories(miacode_preview_quick PRIVATE src/preview/quick_scene)
+target_include_directories(miacode_preview_quick PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
 target_link_libraries(miacode_preview_quick PRIVATE Qt6::QuickPrivate)
 if (WIN32)
     target_link_libraries(miacode_preview_quick PRIVATE
@@ -467,6 +495,8 @@ qt_add_shaders(miacode_preview_quick "preview_sprite_shaders"
         src/preview/quick_scene/shaders/PreviewSpriteMaterial.frag
         src/preview/quick_scene/shaders/PreviewStageDimMaterial.vert
         src/preview/quick_scene/shaders/PreviewStageDimMaterial.frag
+        src/preview/quick_scene/shaders/PreviewMeasureRing.vert
+        src/preview/quick_scene/shaders/PreviewMeasureRing.frag
         src/preview/quick_scene/shaders/PreviewModernFireworkMaterial.vert
         src/preview/quick_scene/shaders/PreviewModernFireworkMaterial.frag
         src/preview/quick_scene/shaders/PreviewModernFireworkPost.vert

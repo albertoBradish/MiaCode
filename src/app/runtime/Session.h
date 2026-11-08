@@ -201,6 +201,7 @@ public:
         double exportStartSeconds = 0.0;
         double contentDurationSeconds = -1.0;
         bool showTimestamp = true;
+        bool showHandOrderAnnotations = true;
         bool showObjectStatsHud = false;
         bool showChartInfoHud = false;
         bool addIntro = false;

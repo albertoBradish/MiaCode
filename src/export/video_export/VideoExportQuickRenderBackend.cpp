@@ -2,6 +2,7 @@
 
 #include "core/chart/ChartAssetPaths.h"
 #include "core/chart/IntroConfig.h"
+#include "core/chart/SlideJudgementTiming.h"
 #include "core/video/PreviewGameplayConfig.h"
 #include "core/video/PreviewVideoGeometryConfig.h"
 #include "core/scene/PreviewProgressStatsCache.h"
@@ -70,6 +71,14 @@ bool VideoExportQuickRenderBackend::bootstrap(
     frameState_ = miacode::preview::scene::PreviewFrameState();
     frameState_.hudFontSettings = task.hudFontSettings;
     frameState_.noteMarkers = noteMarkers;
+    if (task.slideTimingFromLaunchBeat)
+        frameState_.slideTimingLaunchBeats=std::make_shared<const miacode::slide_judge::LaunchBeatIndex>(task.noteMarkers);
+    frameState_.measureLineSeconds = task.measureLineSeconds;
+    frameState_.render.showMeasureLines = task.showMeasureLines;
+    frameState_.render.showJudgementSkeleton = task.showJudgementSkeleton;
+    frameState_.render.showSlideJudgementTiming = task.showSlideJudgementTiming;
+    frameState_.render.slideTimingFromLaunchBeat = task.slideTimingFromLaunchBeat;
+    frameState_.render.slideTimingEarlyPerfectFromHead = task.slideTimingEarlyPerfectFromHead;
     frameState_.progressStatsCache = buildProgressStatsCache(noteMarkers);
     frameState_.muriAnalysisReport = muriAnalysisReport;
     frameState_.muriRenderOptions = task.muriRenderOptions;
@@ -89,6 +98,7 @@ bool VideoExportQuickRenderBackend::bootstrap(
     frameState_.render.judgeEffectStyle = task.judgeEffectStyle;
     frameState_.render.showDebugInfo = false;
     frameState_.render.showTimestamp = task.showTimestamp;
+    frameState_.render.showHandOrderAnnotations = task.showHandOrderAnnotations;
     frameState_.render.showObjectStatsHud = task.showObjectStatsHud;
     frameState_.render.showChartInfoHud = task.showChartInfoHud;
     frameState_.chartTitle = task.chartTitle;
@@ -243,6 +253,8 @@ void VideoExportQuickRenderBackend::setShowObjectStatsHud(bool show)
 void VideoExportQuickRenderBackend::setNoteMarkers(const QVector<TimelineNoteMarker>& notes)
 {
     frameState_.noteMarkers = notes;
+    frameState_.slideTimingLaunchBeats = frameState_.render.slideTimingFromLaunchBeat
+        ? std::make_shared<const miacode::slide_judge::LaunchBeatIndex>(notes) : nullptr;
     frameState_.progressStatsCache = buildProgressStatsCache(notes);
     frameState_.sceneContentRevision += 1;
     syncSessionStateIfInitialized();

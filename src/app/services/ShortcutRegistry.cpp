@@ -86,9 +86,10 @@ ShortcutRegistry& ShortcutRegistry::instance()
 }
 
 ShortcutRegistry::ShortcutRegistry()
-    : ShortcutRegistry(userOverridePath(), QDir(QDir::currentPath()).filePath(QStringLiteral("shortcuts.json")))
+    : ShortcutRegistry(userOverridePath(), {})
 {
-    useCurrentCwd_ = true;
+    // A launch directory can belong to another installation. Only explicit
+    // registry hosts may opt into an additional input path.
 }
 
 ShortcutRegistry::ShortcutRegistry(QString overridePath, QString cwdOverridePath)

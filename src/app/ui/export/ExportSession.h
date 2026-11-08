@@ -56,7 +56,14 @@ class ExportSession final : public QObject, public miacode::ExportPagePort
 
     Q_PROPERTY(bool showObjectStatsHud READ showObjectStatsHud WRITE setShowObjectStatsHud NOTIFY videoChanged)
     Q_PROPERTY(bool showChartInfoHud READ showChartInfoHud WRITE setShowChartInfoHud NOTIFY videoChanged)
+    Q_PROPERTY(int handOrderModeIndex READ handOrderModeIndex WRITE setHandOrderModeIndex NOTIFY videoChanged)
+    Q_PROPERTY(QVariantList handOrderModeOptions READ handOrderModeOptions NOTIFY localeLabelsChanged)
     Q_PROPERTY(bool clockCountEnabled READ clockCountEnabled WRITE setClockCountEnabled NOTIFY videoChanged)
+    Q_PROPERTY(bool showMeasureLines READ showMeasureLines WRITE setShowMeasureLines NOTIFY videoChanged)
+    Q_PROPERTY(bool showJudgementSkeleton READ showJudgementSkeleton WRITE setShowJudgementSkeleton NOTIFY videoChanged)
+    Q_PROPERTY(bool showSlideJudgementTiming READ showSlideJudgementTiming WRITE setShowSlideJudgementTiming NOTIFY videoChanged)
+    Q_PROPERTY(bool slideTimingFromLaunchBeat READ slideTimingFromLaunchBeat WRITE setSlideTimingFromLaunchBeat NOTIFY videoChanged)
+    Q_PROPERTY(bool slideTimingEarlyPerfectFromHead READ slideTimingEarlyPerfectFromHead WRITE setSlideTimingEarlyPerfectFromHead NOTIFY videoChanged)
 
     // Shared portable font library for the intro difficulty card. File selection
     // remains QML-native through UiRequestService; no Widgets surface is used.
@@ -147,7 +154,19 @@ public:
 
     bool showObjectStatsHud() const { return task_.showObjectStatsHud; }
     bool showChartInfoHud() const { return task_.showChartInfoHud; }
+    int handOrderModeIndex() const { return static_cast<int>(task_.handOrderExportMode); }
+    QVariantList handOrderModeOptions() const;
     bool clockCountEnabled() const { return task_.clockCountEnabled; }
+    bool showMeasureLines() const { return task_.showMeasureLines; }
+    bool showJudgementSkeleton() const { return task_.showJudgementSkeleton; }
+    bool showSlideJudgementTiming() const { return task_.showSlideJudgementTiming; }
+    bool slideTimingFromLaunchBeat() const { return task_.slideTimingFromLaunchBeat; }
+    bool slideTimingEarlyPerfectFromHead() const { return task_.slideTimingEarlyPerfectFromHead; }
+    void setShowMeasureLines(bool value);
+    void setShowJudgementSkeleton(bool value);
+    void setShowSlideJudgementTiming(bool value);
+    void setSlideTimingFromLaunchBeat(bool value);
+    void setSlideTimingEarlyPerfectFromHead(bool value);
 
     QVariantList fontLibraryOptions() const;
 
@@ -238,6 +257,7 @@ public:
     void setSizePresetIndex(int index);
     void setShowObjectStatsHud(bool value);
     void setShowChartInfoHud(bool value);
+    void setHandOrderModeIndex(int index);
     void setClockCountEnabled(bool value);
     void setIntroEnabled(bool value);
     void setIntroBackgroundModeIndex(int index);

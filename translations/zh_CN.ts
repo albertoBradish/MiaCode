@@ -233,13 +233,25 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
         <source>Save As...</source>
         <translation>另存为</translation>
     </message>
+    <message id="action.export_plain_simai">
+        <source>Export plain Simai...</source>
+        <translation>导出纯 Simai...</translation>
+    </message>
     <message id="action.transform.mirror_lr">
         <source>Mirror Left/Right</source>
         <translation>左右镜像</translation>
     </message>
+    <message id="action.transform.mirror_lr_swap_hands">
+        <source>Mirror Left/Right and swap hands</source>
+        <translation>左右镜像并交换左右手</translation>
+    </message>
     <message id="action.transform.mirror_ud">
         <source>Mirror Up/Down</source>
         <translation>上下镜像</translation>
+    </message>
+    <message id="action.transform.mirror_ud_swap_hands">
+        <source>Mirror Up/Down and swap hands</source>
+        <translation>上下镜像并交换左右手</translation>
     </message>
     <message id="action.transform.more">
         <source>More...</source>
@@ -332,6 +344,10 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
     <message id="cli.export.chart_read_failed">
         <source>failed to read chart file</source>
         <translation>读取谱面文件失败</translation>
+    </message>
+    <message id="cli.export.hand_order_annotation_invalid">
+        <source>hand-order annotation is invalid</source>
+        <translation>手序标注无效</translation>
     </message>
     <message id="cli.export.difficulty_invalid">
         <source>invalid difficulty token</source>
@@ -452,6 +468,14 @@ Classic mode: All functions are on one page, similar to the layout in earlier ve
     <message id="cli.video_export.hide_timestamp">
         <source>Hide timestamp overlay in output video.</source>
         <translation>隐藏输出视频中的时间戳。</translation>
+    </message>
+    <message id="cli.video_export.hand_order">
+        <source>Hand-order display: annotated or original.</source>
+        <translation>手序显示：annotated 或 original。</translation>
+    </message>
+    <message id="cli.video_export.hand_order_invalid">
+        <source>--hand-order must be annotated or original</source>
+        <translation>--hand-order 必须是 annotated 或 original</translation>
     </message>
     <message id="cli.video_export.inner_brightness">
         <source>Inner background brightness (0.0-1.0).</source>
@@ -1609,6 +1633,10 @@ Failed: %2</source>
         <source>Show preview debug info</source>
         <translation>显示预览调试信息</translation>
     </message>
+    <message id="dialog.render_settings.gameplay.hand_order">
+        <source>Show hand-order annotations</source>
+        <translation>显示手序标注</translation>
+    </message>
     <message id="dialog.render_settings.preview_group">
         <source>Preview</source>
         <translation>预览</translation>
@@ -1957,6 +1985,22 @@ Restore the backup from %1?</source>
         <source>Show object stats</source>
         <translation>显示物量统计</translation>
     </message>
+    <message id="dialog.video_export.option.hand_order_mode">
+        <source>Hand-order display</source>
+        <translation>手序显示</translation>
+    </message>
+    <message id="dialog.video_export.hand_order.follow_preview">
+        <source>Follow preview</source>
+        <translation>跟随预览</translation>
+    </message>
+    <message id="dialog.video_export.hand_order.original">
+        <source>Original chart</source>
+        <translation>强制原谱</translation>
+    </message>
+    <message id="dialog.video_export.hand_order.annotated">
+        <source>Hand-order colors</source>
+        <translation>强制手序</translation>
+    </message>
     <message id="dialog.video_export.option.show_timestamp">
         <source>Show bottom-left timestamp</source>
         <translation>显示左下角时间戳</translation>
@@ -2228,6 +2272,10 @@ File: </source>
     <message id="document.save_failed">
         <source>Save failed</source>
         <translation>保存失败</translation>
+    </message>
+    <message id="document.plain_export_same_path">
+        <source>Choose a different file to keep the annotated chart.</source>
+        <translation>请选择其他文件，以保留含手序标注的原谱。</translation>
     </message>
     <message id="document.selection_beats">
         <source>Selection beats: %1</source>
@@ -3512,6 +3560,10 @@ The file may be open in preview, a media player, File Explorer preview pane, or 
     <message id="qml.enable_application_background">
         <source>Enable application background</source>
         <translation>启用应用背景</translation>
+    </message>
+    <message id="dialog.video_export.more_display">
+        <source>More Display Options</source>
+        <translation>更多显示</translation>
     </message>
     <message id="qml.enable_clock_count">
         <source>Enable clock_count</source>
@@ -5053,6 +5105,300 @@ Error: %1</source>
     <message id="dialog.preferences.theme.dracula"><source>Dracula</source><translation>德古拉</translation></message>
     <message id="dialog.preferences.theme.tokyo_night"><source>Tokyo Night</source><translation>东京之夜</translation></message>
     <message id="dialog.preferences.theme.noah"><source>Noa</source><translation>诺亚</translation></message>
+
+<message id="hand_order.title">
+        <source>Hand Order</source>
+        <translation>手序</translation>
+    </message>
+    <message id="hand_order.object_selection_requires_contiguous">
+        <source>This operation requires one continuous selection.</source>
+        <translation>此操作需要连续选区，请在编辑器中选择完整区间。</translation>
+    </message>
+    <message id="hand_order.set_left">
+        <source>Set Selection to Left Hand</source>
+        <translation>选中内容设为左手</translation>
+    </message>
+    <message id="hand_order.set_right">
+        <source>Set Selection to Right Hand</source>
+        <translation>选中内容设为右手</translation>
+    </message>
+    <message id="hand_order.set_either">
+        <source>Set Selection to Either Hand</source>
+        <translation>选中内容设为无色/任选</translation>
+    </message>
+    <message id="hand_order.split_annotation">
+        <source>Split Hand-order Intervals</source>
+        <translation>拆分手序区间</translation>
+    </message>
+    <message id="hand_order.bisect_annotation">
+        <source>Bisect Sticking Intervals</source>
+        <translation>一键二分 Sticking 区间</translation>
+    </message>
+    <message id="hand_order.swap_hands">
+        <source>Swap Left and Right Hands in Selection</source>
+        <translation>交换选中内容左右手</translation>
+    </message>
+    <message id="hand_order.selection_scope">
+        <source>Edit complete notes in the source selection, including slide heads and all branches</source>
+        <translation>对源文本选区中的完整音符操作；整条 slide 的头与全部分支一并修改</translation>
+    </message>
+    <message id="hand_order.feedback">
+        <source>Hand order: %1 changed, %2 partial tokens skipped, %3 unsupported, %4 diagnostics (click for details)</source>
+        <translation>手序：修改 %1 项，跳过部分 token %2 项、不支持 %3 项，诊断 %4 项（点击查看）</translation>
+    </message>
+    <message id="hand_order.diagnostic">
+        <source>Line %1, column %2: %3</source>
+        <translation>第 %1 行，第 %2 列：%3</translation>
+    </message>
+    <message id="hand_order.intervals">
+        <source>Hand-order Intervals</source>
+        <translation>手序区间</translation>
+    </message>
+    <message id="hand_order.draft_notice">
+        <source>Changes affect the corresponding interval. Assign every track interval, then write them to the chart in one edit. An unspecified head keeps its original skin. Unwritten choices remain in this session for the matching document version and are not saved with the chart.</source>
+        <translation>更改只作用于对应区间。所有轨迹区间都赋予手别后，点击“写入谱面”一次应用。未指定的头保持原皮肤。关闭后暂存于当前会话的对应文档版本，尚未写入的区间不会随谱面保存。</translation>
+    </message>
+    <message id="hand_order.head_row">
+        <source>%1:%2 · Head</source>
+        <translation>%1:%2 · 头</translation>
+    </message>
+    <message id="hand_order.track_row">
+        <source>%1:%2 · Branch %3 · %4–%5%</source>
+        <translation>%1:%2 · 分支 %3 · %4–%5%</translation>
+    </message>
+    <message id="hand_order.unspecified">
+        <source>Unspecified</source>
+        <translation>未指定</translation>
+    </message>
+    <message id="hand_order.left">
+        <source>Left</source>
+        <translation>左手</translation>
+    </message>
+    <message id="hand_order.right">
+        <source>Right</source>
+        <translation>右手</translation>
+    </message>
+    <message id="hand_order.either">
+        <source>Either</source>
+        <translation>无色/任选</translation>
+    </message>
+    <message id="hand_order.apply_intervals">
+        <source>Write to Chart</source>
+        <translation>写入谱面</translation>
+    </message>
+    <message id="hand_order.applied">
+        <source>Hand-order intervals written; undo restores them in one step.</source>
+        <translation>手序区间已写入谱面，可一次撤销。</translation>
+    </message>
+
+
+
+
+
+    <message id="hand_order.wifi_mode_notice">
+        <source>Wifi sectors 1/2 follow the native sides and exchange on reflection. Single mode selects one hand for the whole track; the circled 1 marks explicit single-hand execution. Either still means one selected hand.</source>
+        <translation>Wifi 扇区 1/2 对应原生两侧，镜像会交换扇区。单手模式整条选择同一只手；预览中的圈 1 表示显式单手，m 仍为左右任选一只手。</translation>
+    </message>
+    <message id="hand_order.wifi_single_row">
+        <source>%1:%2 branch %3 · whole-track single hand</source>
+        <translation>%1:%2 分支 %3 · 整条单手</translation>
+    </message>
+    <message id="hand_order.wifi_sector_row">
+        <source>%1:%2 branch %3 · sector %4 · %5–%6%</source>
+        <translation>%1:%2 分支 %3 · 扇区 %4 · %5–%6%</translation>
+    </message>
+    <message id="hand_order.wifi_legacy">
+        <source>Legacy whole track</source>
+        <translation>兼容整体轨迹</translation>
+    </message>
+    <message id="hand_order.wifi_split">
+        <source>Two sectors</source>
+        <translation>双扇区</translation>
+    </message>
+    <message id="hand_order.wifi_single">
+        <source>Explicit single hand</source>
+        <translation>显式单手</translation>
+    </message>
+    <message id="hand_order.split_native_slide">
+        <source>Split into Independent Slides</source>
+        <translation>拆成独立 slide</translation>
+    </message>
+    <message id="hand_order.native.notice">
+        <source>An applicable plan preserves native geometry and actual motion times, but gives each segment an independent judgement. Counting, scoring (especially Break), Each, track appearance/disappearance, sounds and Muri may change. Review every item. Any unreliable complete slide target blocks the batch; Cancel makes no edit.</source>
+        <translation>可应用方案保持原生几何与实际运动时刻，但每段会独立判定。物量、计分（尤其 Break）、Each、轨迹出现/消失、音效和 Muri 可能改变。请逐项复核；任一完整 slide 目标不可靠时整批不应用，取消不编辑。</translation>
+    </message>
+    <message id="hand_order.native.summary">
+        <source>Prepared %1 · ignored non-slides %2 · partial tokens skipped %3 · unsupported %4</source>
+        <translation>准备转换 %1 项 · 忽略非 slide %2 项 · 跳过部分 token %3 项 · 不支持 %4 项</translation>
+    </message>
+    <message id="hand_order.native.blocked">
+        <source>The whole batch is blocked. Close this preview and select convertible chains again.</source>
+        <translation>本批不可应用。请关闭预览，重新选择可转换的链式 slide。</translation>
+    </message>
+    <message id="hand_order.native.stale">
+        <source>The document, timing or parser policy changed. Prepare a new preview.</source>
+        <translation>文档、时序或解析策略已变化，请重新生成预览。</translation>
+    </message>
+    <message id="hand_order.native.counts">
+        <source>Tracks %1 → %2 · heads %3 → %4 · %5 additional independent judgement boundaries</source>
+        <translation>轨迹物件 %1 → %2 · 可打头 %3 → %4 · 新增 %5 个独立判定边界</translation>
+    </message>
+    <message id="hand_order.native.before">
+        <source>Before</source>
+        <translation>修改前</translation>
+    </message>
+    <message id="hand_order.native.after">
+        <source>Proposed result</source>
+        <translation>修改后草案</translation>
+    </message>
+    <message id="hand_order.native.apply">
+        <source>Apply Entire Prepared Batch</source>
+        <translation>应用整批拆分</translation>
+    </message>
+    <message id="hand_order.native.status.ready">
+        <source>Prepared draft</source>
+        <translation>转换草案</translation>
+    </message>
+    <message id="hand_order.native.status.partial">
+        <source>Skipped partial token</source>
+        <translation>跳过部分选中</translation>
+    </message>
+    <message id="hand_order.native.status.ignored">
+        <source>Ignored non-slide</source>
+        <translation>忽略非 slide</translation>
+    </message>
+    <message id="hand_order.native.status.unsupported">
+        <source>Blocks this batch</source>
+        <translation>阻止本批</translation>
+    </message>
+    <message id="hand_order.native.reason.empty_selection">
+        <source>Select complete native chains first.</source>
+        <translation>请先完整选中原生链式 slide。</translation>
+    </message>
+    <message id="hand_order.native.reason.partial_token">
+        <source>This token is only partly selected and will stay unchanged.</source>
+        <translation>此 token 仅部分选中，保持原文。</translation>
+    </message>
+    <message id="hand_order.native.reason.non_slide">
+        <source>This ordinary note is not a slide target and will stay unchanged.</source>
+        <translation>普通音符不是 slide 拆分目标，保持原文。</translation>
+    </message>
+    <message id="hand_order.native.reason.native_segments">
+        <source>Draft generated from the existing native segments.</source>
+        <translation>按已有原生链段生成的独立轨迹草案。</translation>
+    </message>
+    <message id="hand_order.native.reason.invalid_chart">
+        <source>Native syntax errors prevent a reliable conversion.</source>
+        <translation>原生语法错误使转换无法可靠完成。</translation>
+    </message>
+    <message id="hand_order.native.reason.invalid_annotation">
+        <source>A selected target has an invalid hand annotation.</source>
+        <translation>选中目标含非法手序标注。</translation>
+    </message>
+    <message id="hand_order.native.reason.wifi_not_supported">
+        <source>Wifi paths cannot be split into independent native segments here. Use hand-order interval splitting for colouring.</source>
+        <translation>Wifi 展开路径不在原生结构拆分范围；精细染色可用“拆分手序区间”。</translation>
+    </message>
+    <message id="hand_order.native.reason.missing_markers">
+        <source>Parsed native objects are missing.</source>
+        <translation>缺少可核对的原生解析对象。</translation>
+    </message>
+    <message id="hand_order.native.reason.single_segment">
+        <source>This slide has one native segment. Use hand-order interval splitting for colouring.</source>
+        <translation>此 slide 只有一个原生段；精细染色可用“拆分手序区间”。</translation>
+    </message>
+    <message id="hand_order.native.reason.invalid_geometry">
+        <source>Native geometry or motion times are missing or invalid.</source>
+        <translation>原生几何或运动时刻缺失/无效。</translation>
+    </message>
+    <message id="hand_order.native.reason.unrepresentable_native">
+        <source>The native segment cannot be represented reliably in Simai.</source>
+        <translation>此原生段无法可靠表示为合法 Simai。</translation>
+    </message>
+    <message id="hand_order.native.reason.hand_order_unrepresentable">
+        <source>The original hand intervals cannot be mapped reliably to every new segment.</source>
+        <translation>原有手序无法可靠重映射到全部新段。</translation>
+    </message>
+    <message id="hand_order.native.reason.no_chain_selected">
+        <source>No convertible native chain is fully selected.</source>
+        <translation>未完整选中可转换的原生链式 slide。</translation>
+    </message>
+    <message id="hand_order.native.reason.round_trip_invalid">
+        <source>The proposed result failed strict Simai validation.</source>
+        <translation>转换草案未通过 Simai 严格验证。</translation>
+    </message>
+    <message id="hand_order.native.reason.round_trip_mismatch">
+        <source>Reparsing did not preserve geometry, actual motion times or annotations.</source>
+        <translation>复读核对未能保持几何、实际运动时刻或手序。</translation>
+    </message>
+    <message id="hand_order.native.reason.head_count_mismatch">
+        <source>The proposed result would change the real shared-head count.</source>
+        <translation>转换草案改变了实际共享头数量。</translation>
+    </message>
+    <message id="hand_order.native.change.independent_judgement_boundaries">
+        <source>Each resulting segment has an independent judgement boundary.</source>
+        <translation>每个新段都会拥有独立判定边界。</translation>
+    </message>
+    <message id="hand_order.native.change.slide_count_changes">
+        <source>The number of slide track objects increases as shown above.</source>
+        <translation>slide 轨迹物件数量按上方实际计数增加。</translation>
+    </message>
+    <message id="hand_order.native.change.availability_may_change">
+        <source>Independent segments may accept input at different times or react differently to early contact.</source>
+        <translation>独立段的判定起效与提前接触关系可能改变。</translation>
+    </message>
+    <message id="hand_order.native.change.scoring_may_change">
+        <source>Scoring may change; this is not a per-chart score simulation.</source>
+        <translation>计分可能改变；此处不是逐谱计分模拟。</translation>
+    </message>
+    <message id="hand_order.native.change.each_may_change">
+        <source>Each relationships may change.</source>
+        <translation>Each 关系可能改变。</translation>
+    </message>
+    <message id="hand_order.native.change.disappearance_may_change">
+        <source>Track appearance and disappearance may change, including headless-track presentation.</source>
+        <translation>轨迹出现与消失方式可能改变，包括无头轨迹的显示。</translation>
+    </message>
+    <message id="hand_order.native.change.sfx_may_change">
+        <source>Sound events may change.</source>
+        <translation>音效事件可能改变。</translation>
+    </message>
+    <message id="hand_order.native.change.muri_may_change">
+        <source>Muri results may change; before/after Muri is not calculated in this preview.</source>
+        <translation>Muri 结果可能改变；本预览未计算前后 Muri 结果。</translation>
+    </message>
+    <message id="hand_order.native.change.break_count_scoring_changes">
+        <source>Split native Break segments retain Break, which may change Break counts and scoring.</source>
+        <translation>拆出的原生 Break 段保留 Break，Break 物量和计分可能改变。</translation>
+    </message>
+    <message id="action.play_selection">
+        <source>Play Selection</source>
+        <translation>播放选区</translation>
+    </message>
+    <message id="preview.canvas.show_measure_lines">
+        <source>Show Measure Lines</source>
+        <translation>显示小节线</translation>
+    </message>
+    <message id="preview.canvas.show_judgement_skeleton">
+        <source>Show Judgement Skeleton</source>
+        <translation>显示判定骨骼</translation>
+    </message>
+    <message id="preview.canvas.measure_mode">
+        <source>Measure Line Mode</source>
+        <translation>小节线模式</translation>
+    </message>
+    <message id="preview.canvas.measure_chart_clock">
+        <source>Chart clock_count (default 4 beats)</source>
+        <translation>谱面 clock_count（默认 4 拍）</translation>
+    </message>
+    <message id="preview.canvas.measure_custom_beats">
+        <source>Custom beats per measure</source>
+        <translation>自定义每小节拍数</translation>
+    </message>
+    <message id="preview.canvas.measure_text_lines">
+        <source>Text line starts</source>
+        <translation>按文本行首</translation>
+    </message>
 </context>
 <context>
     <!-- Qt loads qtbase texts for the system locale; this context keeps the
@@ -5161,4 +5507,19 @@ Error: %1</source>
 
 
 
+<context>
+    <name>HandOrderSlideTiming</name>
+    <message id="preview.canvas.slide_timing_from_launch_beat">
+        <source>Start on a matching launch beat</source>
+        <translation>有启动拍时从启动拍开始</translation>
+    </message>
+    <message id="preview.canvas.slide_timing_early_perfect_from_head">
+        <source>Fully bright from star head when Perfect starts before launch beat</source>
+        <translation>启动拍前已进入 Perfect 时，从头拍全亮</translation>
+    </message>
+    <message id="preview.canvas.show_slide_judgement_timing">
+        <source>Show Slide Judgement Timing</source>
+        <translation>显示 Slide 判定时值</translation>
+    </message>
+</context>
 </TS>

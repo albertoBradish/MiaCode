@@ -63,6 +63,7 @@
 #include <windows.h>
 #endif
 #include "export/video_export/VideoExportControllerInternal.h"
+#include "common/RuntimePaths.h"
 
 // VideoExportPreparedTask.cpp — temp-dir registry (single-TU mutable state) and the VideoExportController::exportPreparedTask orchestration method.
 //
@@ -96,7 +97,11 @@ public:
         if (initialized_) {
             return true;
         }
-        rootPath_ = QDir(QDir::tempPath()).filePath(
+        const QString tempRoot = miacode::runtime_paths::tempDirectory();
+        if (tempRoot.isEmpty()) {
+            return false;
+        }
+        rootPath_ = QDir(tempRoot).filePath(
             QStringLiteral("miacode-video-export-%1").arg(QCoreApplication::applicationPid()));
         auto processLock = std::make_unique<QLockFile>(rootPath_ + QStringLiteral(".lock"));
         processLock->setStaleLockTime(0);
@@ -162,7 +167,7 @@ public:
 private:
     void cleanupStaleDirsLocked()
     {
-        QDir tempRoot(QDir::tempPath());
+        QDir tempRoot(miacode::runtime_paths::tempDirectory());
         const QFileInfoList entries = tempRoot.entryInfoList(
             QStringList(QStringLiteral("miacode-video-export-*")),
             QDir::Dirs | QDir::NoDotAndDotDot | QDir::Readable | QDir::Writable

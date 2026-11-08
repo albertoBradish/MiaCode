@@ -30,6 +30,11 @@ struct PreviewQuickSpriteVertex {
     float v = 0.0f;
     float opacity = 1.0f;
     float effect = 0.0f;
+    float handOrderHand = 0.0f;
+    float handOrderClipDistance = 1.0f;
+    float brightness = 1.0f;
+    float unrevealedBrightness = 1.0f;
+    float revealDistance = 0.0f;
 };
 
 struct OrderedRunScratch {
@@ -48,9 +53,14 @@ const QSGGeometry::AttributeSet& previewQuickSpriteVertexAttributes()
         QSGGeometry::Attribute::createWithAttributeType(1, 2, QSGGeometry::FloatType, QSGGeometry::TexCoordAttribute),
         QSGGeometry::Attribute::create(2, 1, QSGGeometry::FloatType),
         QSGGeometry::Attribute::create(3, 1, QSGGeometry::FloatType),
+        QSGGeometry::Attribute::create(4, 1, QSGGeometry::FloatType),
+        QSGGeometry::Attribute::create(5, 1, QSGGeometry::FloatType),
+        QSGGeometry::Attribute::create(6, 1, QSGGeometry::FloatType),
+        QSGGeometry::Attribute::create(7, 1, QSGGeometry::FloatType),
+        QSGGeometry::Attribute::create(8, 1, QSGGeometry::FloatType),
     };
     static QSGGeometry::AttributeSet attributeSet = {
-        4,
+        9,
         static_cast<int>(sizeof(PreviewQuickSpriteVertex)),
         attributes
     };
@@ -97,8 +107,10 @@ void writeSpriteVertices(
         return;
     }
 
-    const qreal halfWidth = sprite.width / 2.0;
-    const qreal halfHeight = sprite.height / 2.0;
+    const bool outline = sprite.effect == PreviewAnimatedSpriteEffect::SelectionOutline;
+    const qreal padding = outline ? 3.0 : 0.0;
+    const qreal halfWidth = sprite.width / 2.0 + padding;
+    const qreal halfHeight = sprite.height / 2.0 + padding;
     const QPointF localTopLeft(-halfWidth, -halfHeight);
     const QPointF localTopRight(halfWidth, -halfHeight);
     const QPointF localBottomLeft(-halfWidth, halfHeight);
@@ -109,19 +121,33 @@ void writeSpriteVertices(
     const QPointF bottomLeft = sprite.center + rotateLocalPoint(localBottomLeft, sprite.rotationDegrees);
     const QPointF bottomRight = sprite.center + rotateLocalPoint(localBottomRight, sprite.rotationDegrees);
 
-    const float leftU = static_cast<float>(uvRect.left());
-    const float rightU = static_cast<float>(uvRect.left() + uvRect.width());
-    const float topV = static_cast<float>(uvRect.top());
-    const float bottomV = static_cast<float>(uvRect.top() + uvRect.height());
+    const qreal padU = padding * uvRect.width() / sprite.width;
+    const qreal padV = padding * uvRect.height() / sprite.height;
+    const float leftU = static_cast<float>(uvRect.left() - padU);
+    const float rightU = static_cast<float>(uvRect.left() + uvRect.width() + padU);
+    const float topV = static_cast<float>(uvRect.top() - padV);
+    const float bottomV = static_cast<float>(uvRect.top() + uvRect.height() + padV);
     const float opacity = static_cast<float>(sprite.opacity);
     const float effect = static_cast<float>(sprite.effect);
+    const float handOrderHand = static_cast<float>(sprite.handOrderHand);
+    const auto distance = [&sprite](const QPointF& point) {
+        return sprite.handOrderClipNormal.isNull() ? 1.0f : static_cast<float>(QPointF::dotProduct(
+            point - sprite.handOrderClipOrigin, sprite.handOrderClipNormal));
+    };
 
-    vertices[baseIndex + 0] = {static_cast<float>(topLeft.x()), static_cast<float>(topLeft.y()), leftU, topV, opacity, effect};
-    vertices[baseIndex + 1] = {static_cast<float>(topRight.x()), static_cast<float>(topRight.y()), rightU, topV, opacity, effect};
-    vertices[baseIndex + 2] = {static_cast<float>(bottomLeft.x()), static_cast<float>(bottomLeft.y()), leftU, bottomV, opacity, effect};
-    vertices[baseIndex + 3] = {static_cast<float>(topRight.x()), static_cast<float>(topRight.y()), rightU, topV, opacity, effect};
-    vertices[baseIndex + 4] = {static_cast<float>(bottomRight.x()), static_cast<float>(bottomRight.y()), rightU, bottomV, opacity, effect};
-    vertices[baseIndex + 5] = {static_cast<float>(bottomLeft.x()), static_cast<float>(bottomLeft.y()), leftU, bottomV, opacity, effect};
+    vertices[baseIndex + 0] = {static_cast<float>(topLeft.x()), static_cast<float>(topLeft.y()), leftU, topV, opacity, effect, handOrderHand, distance(topLeft)};
+    vertices[baseIndex + 1] = {static_cast<float>(topRight.x()), static_cast<float>(topRight.y()), rightU, topV, opacity, effect, handOrderHand, distance(topRight)};
+    vertices[baseIndex + 2] = {static_cast<float>(bottomLeft.x()), static_cast<float>(bottomLeft.y()), leftU, bottomV, opacity, effect, handOrderHand, distance(bottomLeft)};
+    vertices[baseIndex + 3] = {static_cast<float>(topRight.x()), static_cast<float>(topRight.y()), rightU, topV, opacity, effect, handOrderHand, distance(topRight)};
+    vertices[baseIndex + 4] = {static_cast<float>(bottomRight.x()), static_cast<float>(bottomRight.y()), rightU, bottomV, opacity, effect, handOrderHand, distance(bottomRight)};
+    vertices[baseIndex + 5] = {static_cast<float>(bottomLeft.x()), static_cast<float>(bottomLeft.y()), leftU, bottomV, opacity, effect, handOrderHand, distance(bottomLeft)};
+    for (int index = 0; index < 6; ++index) {
+        auto& vertex = vertices[baseIndex + index];
+        vertex.brightness = static_cast<float>(sprite.brightness);
+        vertex.unrevealedBrightness = static_cast<float>(sprite.unrevealedBrightness);
+        vertex.revealDistance = static_cast<float>(sprite.revealOffset
+            + QPointF::dotProduct(QPointF(vertex.x, vertex.y) - sprite.center, sprite.revealDirection));
+    }
 }
 
 class PreviewQuickSpriteBatchRootNode final : public QSGNode
@@ -330,6 +356,7 @@ public:
                 PreviewQuickSpriteVertex filler = run.vertices.constLast();
                 filler.opacity = 0.0f;
                 filler.effect = 0.0f;
+                filler.handOrderHand = 0.0f;
                 miacode::preview::quick_scene::fillPreviewQuickDegenerateVertexTail(
                     geometryVertices,
                     profile.requiredVertexCount,

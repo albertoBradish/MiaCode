@@ -1,5 +1,6 @@
 #include "export/video_export/VideoExportEstimateHistory.h"
 #include "export/video_export/VideoExportSnapshot.h"
+#include "common/RuntimePaths.h"
 
 #include <QDateTime>
 #include <QDir>
@@ -8,7 +9,6 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSaveFile>
-#include <QStandardPaths>
 
 #include <algorithm>
 #include <cmath>
@@ -160,7 +160,10 @@ ExportEstimateProfile exportEstimateProfileForSnapshot(const ::VideoExportSnapsh
 
 QString exportEstimateHistoryPath()
 {
-    const QString root = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+    const QString root = miacode::runtime_paths::dataDirectory();
+    if (root.isEmpty()) {
+        return QString();
+    }
     return QDir(root).filePath(QStringLiteral("export-performance-history.json"));
 }
 
@@ -236,6 +239,9 @@ bool recordSuccessfulExportPerformance(
         return false;
     }
     const QString path = resolvedHistoryPath(historyPathOverride);
+    if (path.isEmpty()) {
+        return false;
+    }
     QVector<Sample> samples = loadSamples(path);
     samples.append(Sample{profile, elapsedMs, QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs)});
     if (samples.size() > kMaximumSamples) {

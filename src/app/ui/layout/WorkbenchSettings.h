@@ -9,8 +9,7 @@
 // 桌面工作台的持久化边界。QML 在拖动期间维护临时几何，只在用户完成
 // 操作后写入这里，从而避免分隔线移动时连续刷新配置文件。
 // 布局项写入 PreferenceDocument 的 preferences_v2.json（与主题、编辑器同一文件）。
-// 默认 QSettings NativeFormat 在未设置 organizationName 时，Windows 注册表
-// 不会留下这些键，第二次启动仍是默认布局。
+// This build only reads layout values from its isolated preference document.
 // QML preference models own interaction; MainWindow only persists and applies
 // their backend-neutral values for preview/runtime consumers.
 namespace miacode::ui {

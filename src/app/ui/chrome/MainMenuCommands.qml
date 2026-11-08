@@ -15,12 +15,14 @@ QtObject {
     property bool canTransform: false
     property bool netUploadEnabled: false
     property bool renderModeMenuAvailable: false
+    property bool canPlaySelection: false
     property bool commandsEnabled: true
 
     signal openRequested()
     signal saveRequested()
     signal saveWholeDocumentRequested()
     signal saveAsRequested()
+    signal exportPlainSimaiRequested()
     signal exitRequested()
     signal undoRequested()
     signal redoRequested()
@@ -36,6 +38,7 @@ QtObject {
     signal netUploadRequested()
     signal mediaToolRequested(string toolId)
     signal chartTransformRequested(string opId)
+    signal playSelectionRequested()
     signal aboutRequested()
     signal setupWizardRequested()
     signal preferencesRequested()

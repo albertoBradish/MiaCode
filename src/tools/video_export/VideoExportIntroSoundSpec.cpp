@@ -23,6 +23,8 @@ bool verifyPreferencesAndDifficultyReseed(QTextStream& err)
 {
     VideoExportTask edited;
     edited.introSoundFileName = QStringLiteral("custom-start.flac");
+    edited.handOrderExportMode = HandOrderExportMode::Original;
+    edited.showHandOrderAnnotations = false;
     miacode::video_export::applyVideoExportPreferences(
         {{QStringLiteral("intro_pv_brightness"), 0.35},
          {QStringLiteral("add_intro"), false},
@@ -49,6 +51,10 @@ bool verifyPreferencesAndDifficultyReseed(QTextStream& err)
         nearlyEqual(preferences.value(QStringLiteral("intro_pv_brightness")).toDouble(-1.0), 0.35),
         QStringLiteral("PV brightness survives saving and restoring export preferences"),
         err);
+    VideoExportTask restoredPreferences;
+    miacode::video_export::applyVideoExportPreferences(preferences, &restoredPreferences);
+    ok &= require(restoredPreferences.handOrderExportMode == HandOrderExportMode::Original,
+                  QStringLiteral("hand-order export choice survives preferences"), err);
 
     VideoExportTask reseeded;
     reseeded.outputPath = QStringLiteral("new-difficulty.mp4");
@@ -57,6 +63,9 @@ bool verifyPreferencesAndDifficultyReseed(QTextStream& err)
     ok &= require(reseeded.intro.enabled && reseeded.intro.pvPreview
                       && nearlyEqual(reseeded.intro.pvPreviewStartSeconds, 42.5),
                   QStringLiteral("difficulty reseeding retains the pending export's intro selection"), err);
+    ok &= require(reseeded.handOrderExportMode == HandOrderExportMode::Original
+                      && !reseeded.showHandOrderAnnotations,
+                  QStringLiteral("difficulty reseeding preserves resolved hand-order choice"), err);
     ok &= require(
         reseeded.introSoundFileName == QStringLiteral("custom-start.flac"),
         QStringLiteral("difficulty reseeding preserves the selected intro sound"),

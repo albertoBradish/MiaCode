@@ -25,6 +25,16 @@ struct SimaiCompletionConfig {
     bool operator==(const SimaiCompletionConfig&) const = default;
 };
 
+struct HandOrderCompletion {
+    int startPosition = -1;
+    QStringList candidates;
+    bool active() const { return startPosition >= 0 && !candidates.isEmpty(); }
+};
+
+// Candidates at a UTF-16 caret inside a hand-order suffix. The replacement
+// starts after the latest key/value separator, never in the native note.
+HandOrderCompletion handOrderCompletionAt(const QString& chartText, int position);
+
 SimaiCompletionConfig defaultCompletionConfig();
 bool isValidCompletionValue(CompletionCandidateGroup group, const QString& value);
 QString sanitizeCompletionInput(const QString& value);

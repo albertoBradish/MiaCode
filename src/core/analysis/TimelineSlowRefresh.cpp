@@ -103,6 +103,19 @@ QByteArray noteMarkerSignature(const QVector<TimelineNoteMarker>& notes)
         signature.append('|');
         signature.append(marker.headlessImmediate ? '1' : '0');
         signature.append('|');
+        signature.append(QByteArray::number(static_cast<int>(marker.handOrderHead)));
+        signature.append('|');
+        signature.append(QByteArray::number(marker.handOrderTrackStops.size()));
+        signature.append('|');
+        for (const HandOrderTrackStop& stop : marker.handOrderTrackStops) {
+            signature.append(QByteArray::number(stop.progress, 'g', 17));
+            signature.append(':');
+            signature.append(QByteArray::number(static_cast<int>(stop.hand)));
+            signature.append(',');
+        }
+        signature.append('|');
+        signature.append(QByteArray::number(marker.slideBranchIndex));
+        signature.append('|');
         signature.append(marker.touchPad.toUtf8());
         signature.append('\n');
     }

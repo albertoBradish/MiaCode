@@ -2,6 +2,7 @@
 
 #include "common/DebugLog.h"
 #include "common/OperationLog.h"
+#include "common/RuntimePaths.h"
 
 #include <QCoreApplication>
 #include <QDir>
@@ -9,7 +10,6 @@
 #include <QFileInfo>
 #include <QSaveFile>
 #include <QSet>
-#include <QStandardPaths>
 
 #include <atomic>
 #include <cerrno>
@@ -384,21 +384,18 @@ QString crashRecoveryFilePath(const QString& chartFilePath)
     if (chartFilePath.isEmpty()) {
         return QString();
     }
-    const QString cleaned = QDir::cleanPath(chartFilePath);
-    const QFileInfo info(cleaned);
-    QString chartDir = info.absolutePath();
-    if (chartDir.isEmpty()) {
+    const QString projectDataDirectory =
+        miacode::runtime_paths::projectDirectoryForChart(chartFilePath);
+    if (projectDataDirectory.isEmpty()) {
         return QString();
     }
-    QString fileName = info.fileName().trimmed();
+    QString fileName = QFileInfo(chartFilePath).fileName().trimmed();
     if (fileName.isEmpty()) {
         fileName = QStringLiteral("maidata.txt");
     }
-    // Mirrors autosaveEntryDirectoryPathForFile +
-    // <chartDir>/.miacode/.autosave/<fileName>/<fileName>.crash_recovery
-    return QDir(chartDir)
-        .filePath(QStringLiteral(".miacode/.autosave/%1/%1.crash_recovery")
-                      .arg(fileName));
+    // Match the autosave container while keeping both files in runtime/data.
+    return QDir(projectDataDirectory).filePath(
+        QStringLiteral(".autosave/%1/%1.crash_recovery").arg(fileName));
 }
 
 QByteArray readRecoveryFile(const QString& chartFilePath)
@@ -439,8 +436,7 @@ std::atomic<bool> g_sessionMarkerEnabled{false};
 // abnormal exit — and then delete it, corrupting the first instance's state.
 QString sessionMarkerDir()
 {
-    const QString configRoot =
-        QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    const QString configRoot = miacode::runtime_paths::configDirectory();
     if (configRoot.isEmpty()) {
         return QString();
     }

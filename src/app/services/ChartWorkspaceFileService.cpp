@@ -113,17 +113,7 @@ bool stageProjectFiles(ProjectSaveTransaction& transaction, const QDir& source,
             if (!transaction.add({}, name)) return false;
         }
     }
-    const QDir targetSettings(target.filePath(QStringLiteral(".miacode")));
-    const auto targetSettingsFiles = targetSettings.entryInfoList(QDir::Files | QDir::Hidden);
-    const QDir settings(source.filePath(QStringLiteral(".miacode")));
-    for (const auto& file : settings.entryInfoList(QDir::Files | QDir::Hidden)) {
-        if (!transaction.add(file.absoluteFilePath(), QStringLiteral(".miacode/") + file.fileName()))
-            return false;
-    }
-    for (const auto& file : targetSettingsFiles) {
-        if (!QFileInfo::exists(settings.filePath(file.fileName()))
-            && !transaction.add({}, QStringLiteral(".miacode/") + file.fileName())) return false;
-    }
+    // Project preferences live in the isolated runtime. Leave both sidecars alone.
     return true;
 }
 

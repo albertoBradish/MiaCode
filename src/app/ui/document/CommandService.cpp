@@ -73,6 +73,7 @@ bool CommandService::openCurrentFolder()
         && QDesktopServices::openUrl(QUrl::fromLocalFile(QFileInfo(path).absolutePath()));
 }
 bool CommandService::saveDocumentAs(const QUrl& fileUrl) { return document_->saveAs(fileUrl); }
+bool CommandService::exportPlainSimai(const QUrl& fileUrl) { return document_->exportPlainSimai(fileUrl); }
 void CommandService::discardDocumentChanges() { document_->discardChanges(); }
 void CommandService::selectDifficulty(int id) { document_->selectDifficulty(id); }
 bool CommandService::addDifficulty(int id) { return document_->addDifficulty(id); }
