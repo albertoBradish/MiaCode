@@ -201,11 +201,6 @@ bool PreviewPreparedSceneCache::sync(const PreviewFrameState& state)
         ? reinterpret_cast<quintptr>(state.slideTimingLaunchBeats.get()) : 0;
     nextKey.showJudgeMarkers = state.muriRenderOptions.showJudgeMarkers;
     nextKey.showTouchTrail = state.muriRenderOptions.showTouchTrail;
-    nextKey.showSlideJudgementTiming = state.render.showSlideJudgementTiming;
-    nextKey.slideTimingFromLaunchBeat = state.render.slideTimingFromLaunchBeat;
-    nextKey.slideTimingEarlyPerfectFromHead = state.render.slideTimingEarlyPerfectFromHead;
-    nextKey.slideTimingLaunchBeatIdentity = state.render.slideTimingFromLaunchBeat
-        ? reinterpret_cast<quintptr>(state.slideTimingLaunchBeats.get()) : 0;
     nextKey.slideEarlierSecondAndTextOnTop = state.render.slideEarlierSecondAndTextOnTop;
     nextKey.tapJudgeTextDistance = state.render.tapJudgeTextDistance;
     nextKey.showChartReviewSlideJudgeOverlay = state.muriRenderOptions.showChartReviewSlideJudgeOverlay;

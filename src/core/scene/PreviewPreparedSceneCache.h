@@ -26,10 +26,6 @@ struct PreviewPreparedSceneCacheKey {
     quintptr slideTimingLaunchBeatIdentity = 0;
     bool showJudgeMarkers = false;
     bool showTouchTrail = false;
-    bool showSlideJudgementTiming = false;
-    bool slideTimingFromLaunchBeat = false;
-    bool slideTimingEarlyPerfectFromHead = false;
-    quintptr slideTimingLaunchBeatIdentity = 0;
     bool slideEarlierSecondAndTextOnTop = miacode::preview_gameplay::kPreviewSlideEarlierSecondAndTextOnTop;
     PreviewTapJudgeTextDistance tapJudgeTextDistance = PreviewTapJudgeTextDistance::Inner;
     bool showChartReviewSlideJudgeOverlay = false;
