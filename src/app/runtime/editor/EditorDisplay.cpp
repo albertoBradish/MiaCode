@@ -983,8 +983,5 @@ void Session::applyEditorOverwriteModeEnabled(bool enabled, bool persistPreferen
 
 void miacode::runtime::SettingsHost::setLowPerformanceMode(bool enabled)
 {
-    if (state_.lowPerformanceMode_ == enabled) return;
-    state_.lowPerformanceMode_ = enabled;
-    session_.playback_->setPreviewCanvasFrameRateMode(state_.previewCanvasFrameRateMode_, false);
-    if (!enabled || !state_.playing_) session_.playback_->flushQtPreviewTimelinePosition();
+    session_.playback_->setLowPerformanceMode(enabled);
 }
