@@ -14,8 +14,8 @@ int main()
         return 1;
     }
 
-    const QDir workspace = QFileInfo(QString::fromLocal8Bit(expectedRoot)).dir();
-    const QByteArray invalidRoot = workspace.filePath(QStringLiteral("exports/runtime")).toLocal8Bit();
+    const QDir rootParent = QFileInfo(QString::fromLocal8Bit(expectedRoot)).dir();
+    const QByteArray invalidRoot = rootParent.filePath(QStringLiteral("exports/runtime")).toLocal8Bit();
     qputenv("MIACODE_HAND_ORDER_RUNTIME_ROOT", invalidRoot);
     QString error;
     if (miacode::runtime_paths::initializeFromEnvironment(&error) || error.isEmpty()) {
@@ -28,6 +28,7 @@ int main()
         out << "FAIL: hand-order runtime root rejected: " << error << '\n';
         return 1;
     }
+    const QDir workspace(miacode::runtime_paths::workspaceDirectory());
 
     const QString root = QDir::fromNativeSeparators(miacode::runtime_paths::rootDirectory());
     const QStringList runtimeDirectories{

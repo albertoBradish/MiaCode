@@ -2,12 +2,15 @@
 
 #include <QDir>
 #include <QCryptographicHash>
+#include <QFile>
 #include <QFileInfo>
+#include <QSettings>
 
 namespace miacode::runtime_paths {
 namespace {
 
 QString initializedRoot;
+QString initializedWorkspace;
 
 QString childDirectory(const QString& name)
 {
@@ -25,6 +28,13 @@ bool fail(QString* error, const QString& message)
     return false;
 }
 
+bool markerMatches(const QString& path, const QByteArray& expected)
+{
+    QFile marker(path);
+    return !QFileInfo(marker).isSymLink() && marker.open(QIODevice::ReadOnly)
+        && marker.read(128).trimmed() == expected && marker.atEnd();
+}
+
 }  // namespace
 
 bool initializeFromEnvironment(QString* error)
@@ -35,17 +45,23 @@ bool initializeFromEnvironment(QString* error)
     }
 
     const QFileInfo requestedInfo(QDir::cleanPath(requested));
-    if (!requestedInfo.isAbsolute() || requestedInfo.fileName() != QStringLiteral("runtime")) {
+    if (!requestedInfo.isAbsolute() || requestedInfo.isSymLink()
+        || QFileInfo(requestedInfo.absolutePath()).isSymLink()) {
         return fail(error, QStringLiteral("runtime root must be an absolute hand-order runtime directory"));
     }
 
-    const QDir workspace = requestedInfo.dir();
-    const bool developmentWorkspace =
-        QFileInfo::exists(workspace.filePath(QStringLiteral("baseline.json")))
-        && QFileInfo::exists(workspace.filePath(QStringLiteral("source/AGENTS.md")));
+    QDir workspace = requestedInfo.dir();
     const bool portablePackage =
-        QFileInfo::exists(workspace.filePath(QStringLiteral("HandOrderPackage.marker")))
+        requestedInfo.fileName() == QLatin1String("runtime")
+        && markerMatches(workspace.filePath(QStringLiteral("HandOrderPackage.marker")),
+            QByteArrayLiteral("MiaCodeHandOrder portable package v1"))
         && QFileInfo::exists(workspace.filePath(QStringLiteral("app/MiaCode.exe")));
+    const bool developmentWorkspace = !portablePackage && workspace.dirName() == QLatin1String("runtime")
+        && workspace.cdUp()
+        && QFileInfo::exists(workspace.filePath(QStringLiteral("baseline.json")))
+        && QFileInfo::exists(workspace.filePath(QStringLiteral("source/AGENTS.md")))
+        && markerMatches(QDir(requestedInfo.absoluteFilePath()).filePath(QStringLiteral(".hand-order-runtime")),
+            QByteArrayLiteral("MiaCodeHandOrder.runtime.v1"));
     if (!developmentWorkspace && !portablePackage) {
         return fail(error, QStringLiteral("runtime root parent is not a hand-order workspace or package"));
     }
@@ -63,7 +79,8 @@ bool initializeFromEnvironment(QString* error)
     }
 
     const QString canonicalRoot = QFileInfo(root).canonicalFilePath();
-    const QString expectedRoot = QDir(workspace.canonicalPath()).filePath(QStringLiteral("runtime"));
+    const QString expectedRoot = QDir(workspace.canonicalPath()).filePath(portablePackage ? QStringLiteral("runtime")
+        : QStringLiteral("runtime/") + requestedInfo.fileName());
     if (canonicalRoot.isEmpty()
         || canonicalRoot.compare(QDir::cleanPath(expectedRoot), Qt::CaseInsensitive) != 0) {
         return fail(error, QStringLiteral("runtime root resolves outside its hand-order directory: %1").arg(root));
@@ -89,14 +106,15 @@ bool initializeFromEnvironment(QString* error)
     }
 
     initializedRoot = canonicalRoot;
+    initializedWorkspace = workspace.canonicalPath();
+    QSettings::setDefaultFormat(QSettings::IniFormat);
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, configDirectory());
+    QSettings::setPath(QSettings::IniFormat, QSettings::SystemScope, configDirectory());
     return true;
 }
 
 QString rootDirectory() { return initializedRoot; }
-QString workspaceDirectory()
-{
-    return initializedRoot.isEmpty() ? QString() : QFileInfo(initializedRoot).dir().absolutePath();
-}
+QString workspaceDirectory() { return initializedWorkspace; }
 QString configDirectory() { return childDirectory(QStringLiteral("config")); }
 QString cacheDirectory() { return childDirectory(QStringLiteral("cache")); }
 QString dataDirectory() { return childDirectory(QStringLiteral("data")); }

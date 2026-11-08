@@ -34,7 +34,8 @@ $qtRoot = Join-Path $workspace 'toolchains\qt\6.11.1\msvc2022_64'
 if (-not (Test-Path -LiteralPath (Join-Path $qtRoot 'lib\cmake\Qt6\Qt6Config.cmake'))) {
     throw "Qt SDK is missing: $qtRoot"
 }
-$runtimeRoot = Join-Path $workspace 'runtime'
+. (Join-Path $PSScriptRoot 'hand-order-runtime.ps1')
+$runtimeRoot = Initialize-HandOrderDevelopmentRuntime $workspace
 $runtimeTemp = Join-Path $runtimeRoot 'temp'
 New-Item -ItemType Directory -Path $runtimeTemp -Force | Out-Null
 $env:MIACODE_HAND_ORDER_QT_ROOT = $qtRoot

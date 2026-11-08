@@ -8,16 +8,15 @@ $workspace = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
 if ((Split-Path -Leaf $workspace) -eq 'worktrees') {
     $workspace = [System.IO.Path]::GetFullPath((Split-Path -Parent $workspace))
 }
-$runtimeRoot = Join-Path $workspace 'runtime'
+. (Join-Path $PSScriptRoot 'build\hand-order-runtime.ps1')
 $buildRoot = [System.IO.Path]::GetFullPath((Join-Path $workspace 'build'))
 $distRoot = [System.IO.Path]::GetFullPath((Join-Path $workspace 'dist'))
 
 if (-not $Executable) {
     $candidates = @(
-        (Join-Path $buildRoot 'windows_x64\Release\MiaCode.exe'),
-        (Join-Path $buildRoot 'windows_x64\bin\Release\MiaCode.exe'),
-        (Join-Path $buildRoot 'windows_x64\bin\MiaCode.exe'),
-        (Join-Path $distRoot 'app\MiaCode.exe')
+        (Join-Path $buildRoot 'hand_order_public_dev_20261108\Release\MiaCode.exe'),
+        (Join-Path $buildRoot 'hand_order_public_dev_20261108\bin\Release\MiaCode.exe'),
+        (Join-Path $buildRoot 'hand_order_public_dev_20261108\bin\MiaCode.exe')
     )
     $Executable = $candidates | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
 }
@@ -40,7 +39,7 @@ $previousTemp = $env:TEMP
 $previousTmp = $env:TMP
 $previousTmpDir = $env:TMPDIR
 try {
-    New-Item -ItemType Directory -Path $runtimeRoot -Force | Out-Null
+    $runtimeRoot = Initialize-HandOrderDevelopmentRuntime $workspace
     $runtimeTemp = Join-Path $runtimeRoot 'temp'
     New-Item -ItemType Directory -Path $runtimeTemp -Force | Out-Null
     $env:MIACODE_HAND_ORDER_RUNTIME_ROOT = $runtimeRoot
