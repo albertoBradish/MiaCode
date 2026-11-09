@@ -112,10 +112,25 @@ double slideReach(const TimelineNoteMarker& note)
     return length > 0.0 ? length : reach(buttonPosition(note.lane), buttonPosition(note.endLane));
 }
 
+int annotatedSide(HandOrderHand hand)
+{
+    switch (hand) {
+    case HandOrderHand::Left: return 0;
+    case HandOrderHand::Right: return 1;
+    default: return -1;
+    }
+}
+
+double contactUrgency(double interval)
+{
+    return 0.22 / std::max(0.06, interval) * (1.0 - interval / kMovementMemory);
+}
+
 struct Attack {
     double second = 0.0;
     QPointF position;
     bool startsHold = false;
+    int annotatedSide = -1;
 };
 
 struct Occupancy {
@@ -250,7 +265,8 @@ PressureCurve estimatePressure(const SimaiParseResult& chart, double firstSecond
                 startsHold = occupy(second, end, {1.0, 0.0, 0.0, 0.0});
         }
         if (inMedia(second))
-            attacks.append(Attack{second, touch ? note.touchPoint : buttonPosition(note.lane), startsHold});
+            attacks.append(Attack{second, touch ? note.touchPoint : buttonPosition(note.lane),
+                startsHold, annotatedSide(note.handOrderHead)});
     }
 
     std::sort(edges.begin(), edges.end(), [](const auto& a, const auto& b) { return a.second < b.second; });
@@ -299,6 +315,9 @@ PressureCurve estimatePressure(const SimaiParseResult& chart, double firstSecond
     const double strikeScale = 0.25 / curve.secondsPerFrame;
     QVector<QPointF> previousPositions;
     QVector<QPointF> twoBackPositions;
+    std::array<QVector<QPointF>, 2> previousAnnotatedPositions;
+    std::array<double, 2> previousAnnotatedSeconds{};
+    bool previousGroupAnnotated = false;
     double previousSecond = -1.0;
     double previousInterval = 0.0;
     for (qsizetype first = 0; first < attacks.size();) {
@@ -308,11 +327,19 @@ PressureCurve estimatePressure(const SimaiParseResult& chart, double firstSecond
         const int frameIndex = frameAt(attack.second);
         auto& frame = curve.frames[frameIndex];
         QVector<QPointF> positions;
+        std::array<QVector<QPointF>, 2> annotatedPositions;
+        bool groupAnnotated = true;
         double startingHolds = 0.0;
         qsizetype end = first;
         while (end < attacks.size() && attacks.at(end).second - attack.second < kChordWindow) {
             const auto& contact = attacks.at(end++);
             if (!positions.contains(contact.position)) positions.append(contact.position);
+            if (contact.annotatedSide < 0) {
+                groupAnnotated = false;
+            } else {
+                auto& contacts = annotatedPositions[contact.annotatedSide];
+                if (!contacts.contains(contact.position)) contacts.append(contact.position);
+            }
             if (contact.startsHold && contact.second == attack.second) ++startingHolds;
         }
         const double strikes = end - first;
@@ -331,22 +358,47 @@ PressureCurve estimatePressure(const SimaiParseResult& chart, double firstSecond
 
         const double interval = attack.second - previousSecond;
         if (!previousPositions.isEmpty() && interval < kMovementMemory) {
-            // Returning to a recent contact makes alternating patterns less
-            // costly than a sequence of equally long, continuously new reaches.
-            const bool hasReturn = !twoBackPositions.isEmpty() && previousInterval + interval < kMovementMemory;
-            const double returnWeight = hasReturn ? 0.44 / (1.0 + occupied) : 0.0;
-            const double urgency = 0.22 / std::max(0.06, interval) * (1.0 - interval / kMovementMemory);
-            for (const auto& point : positions) {
-                const double direct = nearestReach(point, previousPositions);
-                const double returning = hasReturn ? std::min(direct, nearestReach(point, twoBackPositions)) : direct;
-                frame.movement += strikeScale * urgency * (direct + returnWeight * (returning - direct));
-                frame.rhythm += strikeScale * 0.22 * urgency * std::exp(-12.0 * direct);
+            if (groupAnnotated && previousGroupAnnotated) {
+                // Known ownership replaces the anonymous transition. An
+                // unassigned contact breaks this chain for both sides.
+                for (int side = 0; side < 2; ++side) {
+                    const double sideInterval = attack.second - previousAnnotatedSeconds[side];
+                    if (previousAnnotatedPositions[side].isEmpty() || sideInterval >= kMovementMemory) continue;
+                    const double urgency = contactUrgency(sideInterval);
+                    for (const auto& point : annotatedPositions[side]) {
+                        const double distance = nearestReach(point, previousAnnotatedPositions[side]);
+                        frame.movement += strikeScale * urgency * distance;
+                        frame.rhythm += strikeScale * 0.22 * urgency * std::exp(-12.0 * distance);
+                    }
+                }
+            } else {
+                // Returning to a recent contact makes alternating patterns less
+                // costly than a sequence of equally long, continuously new reaches.
+                const bool hasReturn = !twoBackPositions.isEmpty() && previousInterval + interval < kMovementMemory;
+                const double returnWeight = hasReturn ? 0.44 / (1.0 + occupied) : 0.0;
+                const double urgency = contactUrgency(interval);
+                for (const auto& point : positions) {
+                    const double direct = nearestReach(point, previousPositions);
+                    const double returning = hasReturn ? std::min(direct, nearestReach(point, twoBackPositions)) : direct;
+                    frame.movement += strikeScale * urgency * (direct + returnWeight * (returning - direct));
+                    frame.rhythm += strikeScale * 0.22 * urgency * std::exp(-12.0 * direct);
+                }
             }
             if (previousInterval > 0.0 && previousInterval < kMovementMemory) {
                 const double change = std::min(2.0, std::abs(std::log2(interval / previousInterval)));
                 frame.rhythm += strikeScale * 0.32 * change;
             }
         }
+        if (groupAnnotated) {
+            for (int side = 0; side < 2; ++side) {
+                if (annotatedPositions[side].isEmpty()) continue;
+                previousAnnotatedPositions[side] = std::move(annotatedPositions[side]);
+                previousAnnotatedSeconds[side] = attack.second;
+            }
+        } else {
+            previousAnnotatedPositions = {};
+        }
+        previousGroupAnnotated = groupAnnotated;
         previousSecond = attack.second;
         previousInterval = interval;
         twoBackPositions = std::move(previousPositions);

@@ -1,9 +1,11 @@
 #include "core/analysis/HandOrderPressureAdapter.h"
+#include "core/analysis/ChartStructureAnalysis.h"
 
 #include <QTextStream>
 #include <cmath>
 
 using miacode::chart_structure::estimateHandOrderPressure;
+using miacode::chart_structure::estimatePressure;
 
 namespace {
 
@@ -79,11 +81,57 @@ bool measureHeadsAndFallback()
     return ok;
 }
 
+bool explicitContextReplacesAnonymousMovement()
+{
+    SimaiParseResult chart;
+    chart.durationSeconds = 8.0;
+    for (int i = 0; i < 32; ++i) {
+        auto tap = note("tap", i * 0.125, HandOrderHand::Unspecified);
+        tap.lane = i % 2 == 0 ? 1 : 5;
+        chart.noteMarkers.append(tap);
+    }
+    const auto anonymous = estimatePressure(chart, 0.0, 0.0);
+    for (qsizetype i = 0; i < chart.noteMarkers.size(); ++i)
+        chart.noteMarkers[i].handOrderHead = i % 2 == 0 ? HandOrderHand::Left : HandOrderHand::Right;
+    const auto alternating = estimatePressure(chart, 0.0, 0.0);
+    for (auto& tap : chart.noteMarkers) tap.handOrderHead = HandOrderHand::Left;
+    const auto singleHand = estimatePressure(chart, 0.0, 0.0);
+    for (qsizetype i = 1; i < chart.noteMarkers.size(); i += 2)
+        chart.noteMarkers[i].handOrderHead = HandOrderHand::Either;
+    const auto mixed = estimatePressure(chart, 0.0, 0.0);
+
+    const auto& base = anonymous.frames.at(10);
+    const auto& twoHands = alternating.frames.at(10);
+    const auto& oneHand = singleHand.frames.at(10);
+    bool ok = expect(equal(base.density, twoHands.density) && equal(base.density, oneHand.density),
+        "applied annotations leave scoring TPS intact");
+    ok &= expect(equal(twoHands.movement, 0.0) && twoHands.strength < base.strength
+        && oneHand.movement > base.movement && oneHand.strength > base.strength,
+        "explicit per-hand history replaces the anonymous reach with either smaller or larger effort");
+    ok &= expect(equal(mixed.frames.at(10).movement, base.movement)
+        && equal(mixed.frames.at(10).endurance, base.endurance),
+        "unknown assignments break exact contact history and retain the anonymous calculation");
+
+    auto trace = note("slide", 1.0, HandOrderHand::Unspecified);
+    trace.hasHeadStar = false;
+    trace.slideTraceSecond = 1.25;
+    trace.endSecond = 3.0;
+    trace.endLane = 5;
+    chart.noteMarkers = {trace};
+    const auto anonymousTrack = estimatePressure(chart, 0.0, 0.0);
+    chart.noteMarkers[0].handOrderTrackStops = {{0.0, HandOrderHand::Left}, {0.5, HandOrderHand::Right}};
+    const auto annotatedTrack = estimatePressure(chart, 0.0, 0.0);
+    ok &= expect(equal(anonymousTrack.frames.at(7).strength, annotatedTrack.frames.at(7).strength),
+        "a track handoff does not count the same physical trace twice");
+    return ok;
+}
+
 } // namespace
 
 int main()
 {
     const bool track = measureTracksAndOccupancy();
     const bool heads = measureHeadsAndFallback();
-    return track && heads ? 0 : 1;
+    const bool explicitContext = explicitContextReplacesAnonymousMovement();
+    return track && heads && explicitContext ? 0 : 1;
 }

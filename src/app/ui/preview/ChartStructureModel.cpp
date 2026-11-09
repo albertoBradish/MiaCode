@@ -74,13 +74,13 @@ QDataStream& operator>>(QDataStream& stream, PressureFrame& frame)
 QDataStream& operator<<(QDataStream& stream, const HandOrderPressureFrame& frame)
 {
     return stream << frame.leftOccupancy << frame.rightOccupancy << frame.leftMovement
-        << frame.rightMovement << frame.alternation << frame.strength;
+        << frame.rightMovement << frame.alternation;
 }
 
 QDataStream& operator>>(QDataStream& stream, HandOrderPressureFrame& frame)
 {
     return stream >> frame.leftOccupancy >> frame.rightOccupancy >> frame.leftMovement
-        >> frame.rightMovement >> frame.alternation >> frame.strength;
+        >> frame.rightMovement >> frame.alternation;
 }
 
 template<typename Curve>
@@ -459,8 +459,6 @@ QVariantList ChartStructureModel::heatmapSamples(double start, double end, int c
         || end <= start || columns <= 0) return values;
     columns = std::min(columns, 4096);
     const auto& curve = result_->pressure;
-    const auto& handFrames = result_->handPressure.frames;
-    const bool hasHands = handFrames.size() == curve.frames.size();
     const double step = (end - start) / columns;
     for (int i = 0; i < columns; ++i) {
         const double left = start + i * step;
@@ -468,11 +466,8 @@ QVariantList ChartStructureModel::heatmapSamples(double start, double end, int c
         const double first = std::clamp(std::floor(left / curve.secondsPerFrame), 0.0, static_cast<double>(curve.frames.size()));
         const double last = std::clamp(std::ceil(right / curve.secondsPerFrame), first, static_cast<double>(curve.frames.size()));
         double peak = 0.0;
-        for (auto frame = static_cast<qsizetype>(first); frame < static_cast<qsizetype>(last); ++frame) {
-            const double base = curve.frames.at(frame).strength;
-            const double displayed = hasHands ? std::max(base, 0.74 * base + 0.26 * handFrames.at(frame).strength) : base;
-            peak = std::max(peak, displayed);
-        }
+        for (auto frame = static_cast<qsizetype>(first); frame < static_cast<qsizetype>(last); ++frame)
+            peak = std::max(peak, curve.frames.at(frame).strength);
         values.append(peak);
     }
     return values;

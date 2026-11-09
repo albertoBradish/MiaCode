@@ -171,8 +171,6 @@ HandOrderPressureCurve estimateHandOrderPressure(const QVector<TimelineNoteMarke
     }
 
     std::array<double, 2> busy{}, moved{};
-    QVector<double> strengths;
-    strengths.reserve(frameCount);
     for (int i = 0; i < frameCount; ++i) {
         auto& frame = curve.frames[i];
         for (int side = 0; side < 2; ++side) {
@@ -183,17 +181,6 @@ HandOrderPressureCurve estimateHandOrderPressure(const QVector<TimelineNoteMarke
         frame.rightOccupancy = std::max(0.0, busy[1]);
         frame.leftMovement += std::max(0.0, moved[0]);
         frame.rightMovement += std::max(0.0, moved[1]);
-        const double left = std::log1p(frame.leftOccupancy) + 0.5 * frame.leftMovement;
-        const double right = std::log1p(frame.rightOccupancy) + 0.5 * frame.rightMovement;
-        frame.strength = std::max(left, right) + 0.3 * std::min(left, right) + 0.25 * frame.alternation;
-        strengths.append(frame.strength);
-    }
-    const double halfPeak = *std::max_element(strengths.cbegin(), strengths.cend()) * 0.5;
-    auto percentile = strengths.begin() + static_cast<qsizetype>(0.95 * (strengths.size() - 1));
-    std::nth_element(strengths.begin(), percentile, strengths.end());
-    const double scale = std::max(halfPeak, *percentile);
-    if (scale > 1e-9) {
-        for (auto& frame : curve.frames) frame.strength = std::min(1.0, frame.strength / scale);
     }
     return curve;
 }

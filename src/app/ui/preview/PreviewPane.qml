@@ -272,11 +272,16 @@ Rectangle {
                 const p = structure.pressureAt(second)
                 if (p.density === undefined)
                     return ""
-                return qsTrId("structure.pressure_tooltip")
+                const baseline = qsTrId("structure.pressure_tooltip")
                     .arg(second.toLocaleString(Qt.locale(), 'f', 3)).arg(Math.round(p.strength * 100))
                     .arg(p.density.toFixed(1)).arg(p.simultaneous.toFixed(1)).arg(p.movement.toFixed(1))
                     .arg(p.rhythm.toFixed(1)).arg(p.endurance.toFixed(1)).arg(p.held.toFixed(1))
                     .arg(p.slides.toFixed(1)).arg(p.hybrid.toFixed(1))
+                if (p.leftOccupancy === undefined)
+                    return baseline
+                return baseline + "\n" + qsTrId("structure.hand_order_tooltip")
+                    .arg(p.leftOccupancy.toFixed(1)).arg(p.rightOccupancy.toFixed(1))
+                    .arg(p.leftMovement.toFixed(1)).arg(p.rightMovement.toFixed(1)).arg(p.alternation.toFixed(1))
             }
         }
 
