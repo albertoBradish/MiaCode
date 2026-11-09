@@ -1,6 +1,8 @@
 # MiaCode HandOrder
 
-基于 [MiaCode v2.0.1](https://github.com/Team-MiaCode/MiaCode/releases/tag/2.0.1) 的独立手序标注扩展，由 [@albertoBradish](https://github.com/albertoBradish) 开发。此项目不是 Team-MiaCode 的官方发行版。
+基于 [MiaCode dev](https://github.com/Team-MiaCode/MiaCode/commit/be494a567869b407fd17acad33482af6ad1c664d) 的独立手序标注扩展，由 [@albertoBradish](https://github.com/albertoBradish) 开发。此项目不是 Team-MiaCode 的官方发行版。
+
+当前开发版本为 **2.0.1-handorder.27.dev.2**。
 
 [English](README_EN.md) · [下载公开版](https://github.com/albertoBradish/MiaCode/releases) · [上游 MiaCode](https://github.com/Team-MiaCode/MiaCode)
 
@@ -12,6 +14,21 @@
 - 便携包使用独立的配置、缓存、会话和日志目录，不读取或迁移官方版个人数据。
 
 实验性的自动手序拆解不包含在此公开版本中。手序是作者的人工标注，观看者仍需自行判断打法。
+
+## 编辑与导出功能
+
+- 源码、时间轴和预览同步音符选择，支持 Shift 框选、非连续对象编辑，以及独立选择 Slide 头星和轨迹。
+- 时间轴支持连续缩放、独立调整音符大小、四种键位排列及横向、上落、下落布局；语法与无理面板与时间轴分离。
+- 工作区支持面板停靠、标签组合、独立浮窗和命名布局保存。
+- 高级谱面信息可填写歌曲、谱师、版本、定数、试听区间和作者备注。
+- 自动推荐 Drop 区间，支持手动调整、选区右键设置或取消，并保存至 maidata；预览与视频导出可直接采用。
+- 压力热图综合位移、动作上下文和耐力负荷，结合人工手序显示左右手信息；可点击或拖动定位。
+- 常规、无理和黑底调试渲染分别保留显示选项；BPM、CPS 等信息支持自由比例画面。
+- 视频支持谱面预览片头、同步导出多张封面、30／100／200 MB 体积预设和自定义码率，PV 可独立开关。
+- 视频模板支持保存、应用与导入导出，使用 `.miatemplate` 后缀并兼容旧 JSON 文件；封面文字支持描边和阴影。
+- 支持 BPM 导入、应用与导出，以及 DX 失分和 SSS／SSS+ 容错计算。
+- 支持自动整理与原文件备份、空格防误触、空难度打包提醒和低性能模式。
+- 🦊狐狸在 Drop 段跟拍跳跃，其余段落轻摇头、摆尾，并平滑过渡。
 
 ## 快捷键
 
