@@ -57,6 +57,7 @@ class ScintillaEditorBridge : public ScintillaQuick_item
     Q_PROPERTY(bool spaceGuardEnabled READ spaceGuardEnabled WRITE setSpaceGuardEnabled NOTIFY spaceGuardChanged)
     Q_PROPERTY(bool spaceInputUnlocked READ spaceInputUnlocked NOTIFY spaceGuardChanged)
     Q_PROPERTY(bool imeComposing READ imeComposing NOTIFY imeComposingChanged)
+    Q_PROPERTY(bool workspaceMaximizeKeyEnabled MEMBER workspaceMaximizeKeyEnabled_)
 public:
     QColor sceneBackgroundColor() const { return Qt::transparent; }
     explicit ScintillaEditorBridge(QQuickItem* parent = nullptr);
@@ -137,6 +138,7 @@ public:
 signals:
     void spaceGuardChanged();
     void playbackToggleRequested();
+    void workspaceMaximizeRequested();
     void bindingsChanged();
     void editorColorsChanged();
     void appearanceChanged();
@@ -220,6 +222,7 @@ private:
     int overviewDisplayLineCount_ = 0;
     int overviewCurrentDisplayLine_ = -1;
     bool overviewFollowing_ = false;
+    bool workspaceMaximizeKeyEnabled_ = false;
     int overviewDirtyParts_ = OverviewAllDirty;
     bool overviewRefreshPending_ = false;
     QFont effectiveFont_;

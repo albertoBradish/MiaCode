@@ -69,6 +69,7 @@ class WorkbenchSettings final : public QObject
     Q_PROPERTY(double timelineVerticalWidthRatio READ timelineVerticalWidthRatio WRITE setTimelineVerticalWidthRatio NOTIFY workflowSettingsChanged)
     Q_PROPERTY(QVariantMap workspaceLayout READ workspaceLayout WRITE setWorkspaceLayout NOTIFY workspaceLayoutChanged)
     Q_PROPERTY(QVariantMap savedWorkspaceLayouts READ savedWorkspaceLayouts NOTIFY savedWorkspaceLayoutsChanged)
+    Q_PROPERTY(QVariantMap workspaceHiddenPanels READ workspaceHiddenPanels WRITE setWorkspaceHiddenPanels NOTIFY workspaceHiddenPanelsChanged)
     Q_PROPERTY(bool timelinePanelVisible READ timelinePanelVisible WRITE setTimelinePanelVisible NOTIFY timelinePanelVisibleChanged)
     Q_PROPERTY(double timelineNoteScale READ timelineNoteScale WRITE setTimelineNoteScale NOTIFY timelineNoteScaleChanged)
     Q_PROPERTY(QString timelineLaneOrder READ timelineLaneOrder WRITE setTimelineLaneOrder NOTIFY workflowSettingsChanged)
@@ -165,6 +166,8 @@ public:
     QVariantMap workspaceLayout() const { return workspaceLayout_; }
     void setWorkspaceLayout(const QVariantMap& layout);
     QVariantMap savedWorkspaceLayouts() const { return savedWorkspaceLayouts_; }
+    QVariantMap workspaceHiddenPanels() const { return workspaceHiddenPanels_; }
+    void setWorkspaceHiddenPanels(const QVariantMap& panels);
     Q_INVOKABLE void saveWorkspaceLayout(const QString& name, const QVariantMap& layout);
     Q_INVOKABLE QRect boundedWorkspaceWindowGeometry(const QRect& rect) const;
     Q_INVOKABLE void removeWorkspaceLayout(const QString& name);
@@ -180,6 +183,7 @@ signals:
     void timelineNoteScaleChanged();
     void workspaceLayoutChanged();
     void savedWorkspaceLayoutsChanged();
+    void workspaceHiddenPanelsChanged();
     void timelinePanelVisibleChanged();
     void setupCompletedChanged();
     void efficientSidebarEnabledChanged();
@@ -208,6 +212,7 @@ private:
     double timelineVerticalWidthRatio_ = 0.34;
     QVariantMap workspaceLayout_;
     QVariantMap savedWorkspaceLayouts_;
+    QVariantMap workspaceHiddenPanels_;
     bool timelinePanelVisible_ = true;
     double timelineNoteScale_ = 1.5;
     QString timelineLaneOrder_ = QStringLiteral("natural");
