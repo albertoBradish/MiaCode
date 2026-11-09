@@ -2,7 +2,7 @@
 
 基于 [MiaCode dev](https://github.com/Team-MiaCode/MiaCode/commit/be494a567869b407fd17acad33482af6ad1c664d) 的独立手序标注扩展，由 [@albertoBradish](https://github.com/albertoBradish) 开发。此项目不是 Team-MiaCode 的官方发行版。
 
-当前开发版本为 **2.0.1-handorder.27.dev.3**。
+当前版本为 **2.0.1-handorder.27**。
 
 [English](README_EN.md) · [下载公开版](https://github.com/albertoBradish/MiaCode/releases) · [上游 MiaCode](https://github.com/Team-MiaCode/MiaCode)
 

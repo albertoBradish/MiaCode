@@ -2,7 +2,7 @@
 
 An independent hand order annotation extension based on [MiaCode dev](https://github.com/Team-MiaCode/MiaCode/commit/be494a567869b407fd17acad33482af6ad1c664d), developed by [@albertoBradish](https://github.com/albertoBradish). This is not an official Team-MiaCode release.
 
-Current development version: **2.0.1-handorder.27.dev.3**.
+Current version: **2.0.1-handorder.27**.
 
 [中文](README.md) · [Download this fork](https://github.com/albertoBradish/MiaCode/releases) · [Upstream MiaCode](https://github.com/Team-MiaCode/MiaCode)
 
