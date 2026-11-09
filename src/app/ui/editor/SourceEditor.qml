@@ -14,6 +14,16 @@ Rectangle {
     property var preferences: null
     property var shortcuts: null
     readonly property bool overviewRulerEnabled: preferences ? preferences.editorOverviewRulerEnabled : false
+    readonly property var sceneWindow: root.Window.window
+    onSceneWindowChanged: {
+        editorContextMenu?.close()
+        bookmarkMenu?.close()
+        completionPopup?.close()
+        handOrderDetails?.close()
+        handOrderIntervals?.close()
+        nativeSlideSplitDialog?.close()
+        ++editorRailSceneRevision
+    }
     property bool navigationVisible: false
     onNavigationVisibleChanged: {
         if (!navigationVisible) {
@@ -230,7 +240,7 @@ Rectangle {
                 executeOperation(operation)
             }
         }
-        parent: Overlay.overlay
+        parent: root.Overlay.overlay
 
         property rect placement: Qt.rect(0, 0, 0, 0)
         property int anchorPosition: 0
@@ -707,6 +717,7 @@ Rectangle {
     }
     AppDialog {
         id: handOrderDetails
+        parent: root.Overlay.overlay
         title: qsTrId("hand_order.title")
         body: Label {
             text: root.editorController.handOrderFeedback
@@ -720,18 +731,21 @@ Rectangle {
     }
     HandOrderIntervalsDialog {
         id: handOrderIntervals
+        parent: root.Overlay.overlay
         controller: root.editorController
         applyEdit: () => sourceArea.applyHandOrderIntervals()
         onEditingFinished: sourceArea.forceActiveFocus()
     }
     NativeSlideSplitDialog {
         id: nativeSlideSplitDialog
+        parent: root.Overlay.overlay
         controller: root.editorController
         applyEdit: () => sourceArea.applyNativeSlideSplit()
         onEditingFinished: sourceArea.forceActiveFocus()
     }
     CompletionPopup {
         id: completionPopup
+        parent: root.Overlay.overlay
         editor: sourceArea
         controller: root.editorController
         onSettingsRequested: function(group) { root.completionSettingsRequested(group) }
@@ -748,7 +762,7 @@ Rectangle {
     }
     AppMenu {
         id: bookmarkMenu
-        parent: Overlay.overlay
+        parent: root.Overlay.overlay
         modal: true
         dim: false
         property string pendingOperation: ""
