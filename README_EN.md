@@ -18,8 +18,8 @@ Experimental automatic hand order decomposition is not part of this public versi
 ## Editing and export
 
 - Synchronize note selection across source, timeline, and preview, with Shift selection, non-contiguous editing, and independent Slide head and track selection.
-- Continuously zoom the timeline, resize note symbols, choose four lane orders, and use horizontal, falling, or rising layouts. Syntax and Muri panels remain separate.
-- Dock panels, group tabs, float individual panels, and save named workspace layouts.
+- Continuously zoom the timeline, resize note symbols, choose four lane orders, and use horizontal, falling, or rising layouts. The default bottom tabs group Timeline, Syntax, Muri. Each panel can dock or float independently.
+- Use the Workspace menu to show or hide panels, choose the preview side, change the sidebar style and timeline layout, or save a named layout.
 - Edit advanced chart information, including song and designer IDs, version, level constants, demo ranges, and creator comments.
 - Recommend Drop regions from audio and chart analysis, adjust them manually or from a source selection, and save them in maidata for preview and export.
 - Scrub the pressure heatmap, which accounts for movement, action context, and sustained effort. Existing manual annotations provide left/right hand details.
@@ -28,7 +28,7 @@ Experimental automatic hand order decomposition is not part of this public versi
 - Save and exchange video templates as `.miatemplate`, with legacy JSON compatibility. Cover text supports outlines and shadows.
 - Import, apply, and export BPM data, and calculate DX score loss and SSS/SSS+ allowances.
 - Use automatic chart formatting with backups, a spacebar guard, empty-difficulty ZIP warnings, and a low-performance mode.
-- The fox jumps to the beat during Drop regions and smoothly switches to gentler head and tail motion elsewhere.
+- The fox closes its eyes while jumping to the beat during Drop regions. It blinks naturally with gentler head and tail motion elsewhere.
 
 ## Shortcuts
 
