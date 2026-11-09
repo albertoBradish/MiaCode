@@ -468,6 +468,12 @@ Item {
                         chartEditorActive: root.chartEditorActive
                         editorCommandsEnabled: root.editorCommandsAvailable
                         onCloseEditorRequested: splitView.requestCloseActiveEditor()
+                        onWorkspaceMenuRequested: anchor => {
+                            if (root.platform.nativeMenuBar)
+                                root.hostWindow.nativeSystemMenu.menuDefinitions.toggleWorkspaceMenu(anchor)
+                            else
+                                titleBar.toggleWorkspaceMenuAt(anchor)
+                        }
                     }
                 }
                 compact: root.compact

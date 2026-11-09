@@ -17,7 +17,18 @@ Item {
     property bool documentAvailable: false
     property bool chartEditorActive: false
     property bool editorCommandsEnabled: false
+    readonly property bool sourceEditorFocused: root.Window.window?.sourceEditorFocused === true
+    readonly property bool handOrderCommandsEnabled: root.sourceEditorFocused && root.menuCommands.canTransform
+    readonly property bool leftHandOwnsAltW: root.handOrderCommandsEnabled && root.shortcutModel.revision >= 0
+        && root.shortcutModel.sequence("hand_order.set_left") === "Alt+W"
     signal closeEditorRequested()
+    signal workspaceMenuRequested(Item anchor)
+
+    Shortcut {
+        sequence: "Alt+W"
+        enabled: root.menuCommands.commandsEnabled && !root.shortcutModel.captureActive && !root.leftHandOwnsAltW
+        onActivated: root.workspaceMenuRequested(root.Window.window.contentItem)
+    }
 
     Instantiator {
         model: [
@@ -47,7 +58,10 @@ Item {
         previewSession: root.previewSession
         chartCommandsEnabled: root.chartEditorActive && root.menuCommands.commandsEnabled
         playbackCommandsEnabled: false
+        handOrderCommandsEnabled: root.handOrderCommandsEnabled
+        handOrderCaretCommandsEnabled: root.editorCommandsEnabled && root.sourceEditorFocused
         menuOwnsChartTransformShortcuts: root.nativeMenuBar
+        ownHandOrderShortcuts: true
         onChartTransformRequested: opId => root.menuCommands.chartTransformRequested(opId)
     }
 }

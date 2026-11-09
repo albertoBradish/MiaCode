@@ -81,6 +81,10 @@ Rectangle {
         ? 2 * Math.min(width / 2 - titleAreaLeft, titleAreaRight - width / 2)
         : titleAreaRight - titleAreaLeft)
 
+    function toggleWorkspaceMenuAt(anchor) {
+        mainMenuLoader.item?.toggleWorkspaceMenu(anchor)
+    }
+
     WindowGestureArea {
         anchors.fill: parent
         hostWindow: root.hostWindow

@@ -24,6 +24,7 @@ Item {
     property bool chartCommandsEnabled: true
     property bool playbackCommandsEnabled: true
     property bool menuOwnsChartTransformShortcuts: false
+    property bool ownHandOrderShortcuts: !menuOwnsChartTransformShortcuts
     property bool menuOwnsPreviewRateShortcuts: false
     property bool handOrderCommandsEnabled: false
     property bool handOrderCaretCommandsEnabled: false
@@ -47,7 +48,8 @@ Item {
                          || (modelData === "hand_order.bisect_annotation"
                              ? root.handOrderCaretCommandsEnabled : root.handOrderCommandsEnabled))
                      && root.chartCommandsEnabled
-                     && !root.menuOwnsChartTransformShortcuts
+                     && (modelData.startsWith("hand_order.")
+                         ? root.ownHandOrderShortcuts : !root.menuOwnsChartTransformShortcuts)
                      && sequence !== ""
             context: Qt.WindowShortcut
             onActivated: root.chartTransformRequested(modelData)

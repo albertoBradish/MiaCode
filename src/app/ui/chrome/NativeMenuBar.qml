@@ -57,7 +57,7 @@ MenuBar {
 
     Shortcut {
         sequence: "Alt+W"
-        enabled: root.commandsEnabled
+        enabled: root.commandsEnabled && !root.menuDefinitions.leftHandOwnsAltW
         onActivated: root.menuDefinitions.toggleWorkspaceMenu()
     }
 

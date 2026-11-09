@@ -70,11 +70,17 @@ Item {
     MainMenuCommands {
         id: commands
         onSaveRequested: ++root.saves
+        onChartTransformRequested: operation => {
+            if (operation === "hand_order.set_left") ++root.leftHandCalls
+        }
     }
 
     readonly property var panels: ["editor", "timeline", "preview", "sidebar", "validation", "muri"]
     property var enabledPanels: panels
     property int saves: 0
+    property int leftHandCalls: 0
+    property int workspaceMenuCalls: 0
+    property string leftHandSequence: "Alt+W"
 
     WorkbenchDock {
         id: dock
@@ -111,10 +117,13 @@ Item {
         editorShortcuts: Component {
             DockEditorShortcuts {
                 menuCommands: commands
-                shortcutModel: ({ revision: -1 })
-                commandService: ({ shortcutCommandIds: () => [] })
+                shortcutModel: ({ revision: 1, captureActive: false,
+                    sequence: id => id === "hand_order.set_left" ? root.leftHandSequence : "" })
+                commandService: ({ shortcutCommandIds: () => ["hand_order.set_left"] })
                 previewSession: null
                 saveEnabled: true
+                chartEditorActive: true
+                onWorkspaceMenuRequested: anchor => ++root.workspaceMenuCalls
             }
         }
         previewGeometry: function() { return {} }
@@ -169,6 +178,10 @@ Item {
             preferences.bottomPanelVisible = true
             root.selectedBottom = "timeline"
             root.enabledPanels = root.panels
+            root.leftHandSequence = "Alt+W"
+            root.leftHandCalls = 0
+            root.workspaceMenuCalls = 0
+            commands.canTransform = false
         }
 
         function test_nativeDefaultAndFixedActivityRail() {
@@ -272,6 +285,19 @@ Item {
             verify(editorPopup.parent.Window.window === editor.Window.window)
 
             const floatingEditor = editor.Window.window
+            floatingEditor.sourceEditorFocused = true
+            commands.canTransform = true
+            keyClick(Qt.Key_W, Qt.AltModifier)
+            tryCompare(root, "leftHandCalls", 1)
+            compare(root.workspaceMenuCalls, 0)
+            commands.canTransform = false
+            keyClick(Qt.Key_W, Qt.AltModifier)
+            tryCompare(root, "workspaceMenuCalls", 1)
+            commands.canTransform = true
+            root.leftHandSequence = "Alt+Q"
+            keyClick(Qt.Key_W, Qt.AltModifier)
+            tryCompare(root, "workspaceMenuCalls", 2)
+            compare(root.leftHandCalls, 1)
             const geometryBefore = JSON.stringify(dock.floating.editor)
             dock.togglePanelMaximization("editor", floatingEditor)
             tryVerify(() => dock.windowMaximized(floatingEditor))

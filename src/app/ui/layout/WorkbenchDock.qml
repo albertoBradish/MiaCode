@@ -179,6 +179,7 @@ Item {
         sequence: "`"
         autoRepeat: false
         enabled: root.maximizationTarget.length > 0 && root.keyboardAllowed(root.Window.window)
+            && root.Window.window?.activeFocusItem?.workspaceSourceEditor !== true
         onActivated: root.toggleCurrentPanelMaximization()
     }
 

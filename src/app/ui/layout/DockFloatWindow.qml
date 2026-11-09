@@ -61,6 +61,7 @@ ApplicationWindow {
         sequence: "`"
         autoRepeat: false
         enabled: root.visible && root.workspace.keyboardAllowed(root)
+            && root.activeFocusItem?.workspaceSourceEditor !== true
         onActivated: root.workspace.togglePanelMaximization(root.panelId, root)
     }
 

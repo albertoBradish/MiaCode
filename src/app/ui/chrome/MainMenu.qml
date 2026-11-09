@@ -26,6 +26,9 @@ Item {
     property bool toolCommandsEnabled: true
     property bool nativeMenuMode: false
     property bool handOrderKeyboardEnabled: false
+    readonly property bool leftHandOwnsAltW: root.commands.canTransform && !root.shortcuts.captureActive
+        && (root.handOrderKeyboardEnabled || root.Window.window?.sourceEditorFocused === true)
+        && root.shortcuts.revision >= 0 && root.shortcuts.sequence("hand_order.set_left") === "Alt+W"
     // Re-read each time the menu opens rather than kept live: the list only
     // changes when a document is opened, and a menu nobody is looking at has no
     // reason to hold a copy.
@@ -66,7 +69,19 @@ Item {
         return root.topMenus()
     }
 
-    function toggleWorkspaceMenu() {
+    function toggleWorkspaceMenu(anchor) {
+        if (anchor) {
+            if (workspaceMenu.visible) {
+                workspaceMenu.close()
+            } else {
+                root.closeActiveMenu()
+                workspaceMenu.dockedParent = workspaceMenu.parent
+                workspaceMenu.floatingPopup = true
+                workspaceMenu.closePolicy = Popup.CloseOnEscape | Popup.CloseOnPressOutside
+                workspaceMenu.popup(anchor, 12, 12)
+            }
+            return
+        }
         if (root.nativeMenuMode) {
             if (workspaceMenu.visible) workspaceMenu.close()
             else workspaceMenu.open()
@@ -77,7 +92,7 @@ Item {
 
     Shortcut {
         sequence: "Alt+W"
-        enabled: root.visible && root.commandsEnabled && !root.nativeMenuMode
+        enabled: root.visible && root.commandsEnabled && !root.nativeMenuMode && !root.leftHandOwnsAltW
         onActivated: root.toggleWorkspaceMenu()
     }
 
@@ -726,7 +741,16 @@ Item {
 
         AppMenu {
             id: workspaceMenu
+            property Item dockedParent: null
+            property bool floatingPopup: false
             retainBackdrop: true
+            onClosed: {
+                if (floatingPopup) {
+                    parent = dockedParent
+                    dockedParent = null
+                    floatingPopup = false
+                }
+            }
             title: root.menuTitle(qsTrId("workspace.menu"))
             readonly property var workspace: root.commands.workspace
 
