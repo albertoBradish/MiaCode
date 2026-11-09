@@ -392,6 +392,7 @@ Item {
         editorController: root.editorController
         syncController: root.editorSync
         analysisSession: root.analysisSession
+        chartStructure: root.previewSession?.structure ?? null
         preferences: root.preferences
         shortcuts: root.shortcuts
         onPlaybackToggleRequested: root.previewSession.togglePlayback()
