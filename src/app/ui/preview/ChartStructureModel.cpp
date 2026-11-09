@@ -62,13 +62,13 @@ QDataStream& operator>>(QDataStream& stream, AudioFrame& frame)
 QDataStream& operator<<(QDataStream& stream, const PressureFrame& frame)
 {
     return stream << frame.density << frame.simultaneous << frame.held << frame.slides
-        << frame.movement << frame.rhythm << frame.strength;
+        << frame.movement << frame.rhythm << frame.hybrid << frame.endurance << frame.strength;
 }
 
 QDataStream& operator>>(QDataStream& stream, PressureFrame& frame)
 {
     return stream >> frame.density >> frame.simultaneous >> frame.held >> frame.slides
-        >> frame.movement >> frame.rhythm >> frame.strength;
+        >> frame.movement >> frame.rhythm >> frame.hybrid >> frame.endurance >> frame.strength;
 }
 
 QDataStream& operator<<(QDataStream& stream, const HandOrderPressureFrame& frame)
@@ -329,6 +329,7 @@ void ChartStructureModel::acceptResult(const Input& input, quint64 sequence, Res
 }
 
 bool ChartStructureModel::available() const { return input_.difficulty > 0 && !input_.chart.trimmed().isEmpty(); }
+bool ChartStructureModel::pressureAvailable() const { return result_ && !result_->pressure.frames.isEmpty(); }
 bool ChartStructureModel::pending() const { return debounce_.isActive() || cancellation_ != nullptr; }
 bool ChartStructureModel::dropAvailable() const { return effectiveDrop().has_value(); }
 double ChartStructureModel::dropStartSeconds() const { const auto drop = effectiveDrop(); return drop ? drop->range.startSeconds : 0.0; }
@@ -486,7 +487,9 @@ QVariantMap ChartStructureModel::pressureAt(double seconds) const
     const auto& frame = curve.frames.at(index);
     QVariantMap values{{QStringLiteral("density"), frame.density}, {QStringLiteral("simultaneous"), frame.simultaneous},
         {QStringLiteral("held"), frame.held}, {QStringLiteral("slides"), frame.slides},
-        {QStringLiteral("movement"), frame.movement}, {QStringLiteral("rhythm"), frame.rhythm}};
+        {QStringLiteral("movement"), frame.movement}, {QStringLiteral("rhythm"), frame.rhythm},
+        {QStringLiteral("hybrid"), frame.hybrid}, {QStringLiteral("endurance"), frame.endurance},
+        {QStringLiteral("strength"), frame.strength}};
     if (index < result_->handPressure.frames.size()) {
         const auto& hands = result_->handPressure.frames.at(index);
         values.insert(QStringLiteral("leftOccupancy"), hands.leftOccupancy);
