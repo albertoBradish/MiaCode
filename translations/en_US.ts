@@ -6232,5 +6232,9 @@ Movement L %3 / R %4 · Alternation %5</source>
         <translation>Annotated hands · Load L %1 / R %2
 Movement L %3 / R %4 · Alternation %5</translation>
     </message>
+    <message id="preferences.advanced_metadata">
+        <source>Enable advanced chart information</source>
+        <translation>Enable advanced chart information</translation>
+    </message>
 </context>
 </TS>

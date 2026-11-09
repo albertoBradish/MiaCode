@@ -6251,5 +6251,9 @@ Movement L %3 / R %4 · Alternation %5</source>
         <translation>手動運指 · 占有 左 %1 / 右 %2
 移動 左 %3 / 右 %4 · 交替 %5</translation>
     </message>
+    <message id="preferences.advanced_metadata">
+        <source>Enable advanced chart information</source>
+        <translation>高度な譜面情報編集を有効にする</translation>
+    </message>
 </context>
 </TS>

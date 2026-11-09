@@ -6251,5 +6251,9 @@ Movement L %3 / R %4 · Alternation %5</source>
         <translation>人工手序 · 占用 左 %1 / 右 %2
 移动 左 %3 / 右 %4 · 交替 %5</translation>
     </message>
+    <message id="preferences.advanced_metadata">
+        <source>Enable advanced chart information</source>
+        <translation>启用高级信息编辑</translation>
+    </message>
 </context>
 </TS>
