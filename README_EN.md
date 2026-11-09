@@ -19,11 +19,11 @@ Experimental automatic hand order decomposition is not part of this public versi
 
 - Synchronize note selection across source, timeline, and preview, with Shift selection, non-contiguous editing, and independent Slide head and track selection.
 - Continuously zoom the timeline, resize note symbols, choose four lane orders, and use horizontal, falling, or rising layouts. The default bottom tabs group Timeline, Syntax, Muri. Each panel can dock or float independently.
-- Use the Workspace menu to show or hide panels, choose the preview side, change the sidebar style and timeline layout, or save a named layout.
+- The activity rail stays in the main window while the outline panel can dock or float independently. The Workspace menu controls panel visibility, preview side, sidebar style, timeline layout, and named layouts. Press the backtick key to maximize or restore the current panel.
 - Edit advanced chart information, including song and designer IDs, version, level constants, demo ranges, and creator comments.
 - Recommend Drop regions from audio and chart analysis, adjust them manually or from a source selection, and save them in maidata for preview and export.
-- Scrub the pressure heatmap, which accounts for movement, action context, and sustained effort. Existing manual annotations provide left/right hand details.
-- Keep separate display settings for normal, Muri, and black-background debug rendering. BPM, CPS, and other HUD elements support arbitrary aspect ratios.
+- Click or drag on the pressure heatmap to seek. Pressure is zero during rests, while the tooltip still shows fatigue recovery and left/right details from manual annotations.
+- Normal preview always hides judgement markers and touch trails. Muri and black-background Debug keep their own switches. Measure lines, judgement skeletons, and Slide judgement timing share the display menu. BPM, CPS, and other HUD elements support arbitrary aspect ratios.
 - Export chart-preview intros, multiple covers, 30/100/200 MB presets, or a custom bitrate, with an independent PV switch.
 - Save and exchange video templates as `.miatemplate`, with legacy JSON compatibility. Cover text supports outlines and shadows.
 - Import, apply, and export BPM data, and calculate DX score loss and SSS/SSS+ allowances.
@@ -32,7 +32,7 @@ Experimental automatic hand order decomposition is not part of this public versi
 
 ## Shortcuts
 
-Focus the chart source and select complete notes first. Shortcuts can be changed in Preferences.
+Focus the chart source and select complete notes first. Shortcuts can be changed in Preferences. With the default binding, Alt+W marks notes as left-handed when the source editor has an editable selection and opens Workspace elsewhere.
 
 | Action | Default |
 | --- | --- |
