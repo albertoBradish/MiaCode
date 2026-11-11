@@ -1140,7 +1140,7 @@ bool ScintillaEditorBridge::applyChartTransform(const QString& operation)
     if (operation == QLatin1String("hand_order.split_native_slide")) return prepareNativeSlideSplit();
     if (handOrder && !noteSelection_) {
         if (selectionStart() == selectionEnd() && operation != QLatin1String("hand_order.bisect_annotation")) return false;
-        return applyEditorTransaction(controller_->handOrderCommand(document_.text(),
+        return reviewChartTransform(controller_->handOrderCommand(document_.text(),
             document_.utf16Position(send(SCI_GETANCHOR)), cursorPosition(), operation, metadata));
     }
     if (documentSession_ && noteSelection_) {
@@ -1158,7 +1158,7 @@ bool ScintillaEditorBridge::applyChartTransform(const QString& operation)
                 return false;
             }
             const auto token = groups.first().first().token;
-            return applyEditorTransaction(controller_->handOrderCommand(document_.text(),
+            return reviewChartTransform(controller_->handOrderCommand(document_.text(),
                 token.start, token.end, operation, metadata));
         }
         QString transformed = document_.text();
