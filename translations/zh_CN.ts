@@ -6244,7 +6244,7 @@ Held %8 · Slides %9 · Overlap %10</source>
 
 
 <context>
-    <name>HandOrderPressure</name>
+    <name></name>
     <message id="structure.hand_order_tooltip">
         <source>Annotated hands · Load L %1 / R %2
 Movement L %3 / R %4 · Alternation %5</source>
