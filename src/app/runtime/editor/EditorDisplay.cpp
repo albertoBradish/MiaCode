@@ -755,6 +755,9 @@ void miacode::runtime::EditorHost::applyEditorOverwriteModeEnabled(bool enabled,
 void miacode::runtime::EditorHost::applyEditorAutoCompletionEnabled(bool enabled, bool persistPreference)
 {
     state_.editorAutoCompletionEnabled_ = enabled;
+    // Enabling completion is an explicit input-mode choice; never overwrite
+    // trailing chart text when returning to assisted insertion.
+    if (enabled && persistPreference) state_.editorOverwriteModeEnabled_ = false;
     if (persistPreference) {
         persistEditorTextFontPreference();
     }
