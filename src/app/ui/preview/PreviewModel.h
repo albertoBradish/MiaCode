@@ -42,6 +42,7 @@ class PreviewModel final : public QObject
     Q_PROPERTY(bool muriCheckEnabled READ muriCheckEnabled NOTIFY renderModeChanged)
     Q_PROPERTY(bool debugRendering READ debugRendering NOTIFY renderModeChanged)
     Q_PROPERTY(bool smoothStarErase READ smoothStarErase NOTIFY renderModeChanged)
+    Q_PROPERTY(bool handOrderOverlayEnabled READ handOrderOverlayEnabled NOTIFY canvasSettingsChanged)
     // 无理检测 parameters: 手部半径 (1080 px reference) and 撞尾阈值 (ms), plus the
     // slider ranges, so the menu states no limits of its own.
     Q_PROPERTY(int muriHandRadiusPx READ muriHandRadiusPx NOTIFY muriParametersChanged)
@@ -85,6 +86,8 @@ public:
     double canvasAspectRatio() const;
     QVariantMap canvasSettings() const;
     Q_INVOKABLE void setCanvasSetting(const QString& key, const QVariant& value);
+    bool handOrderOverlayEnabled() const;
+    Q_INVOKABLE void setHandOrderOverlayEnabled(bool enabled);
 
     void setPositionSeconds(double value);
     void setRate(double value);

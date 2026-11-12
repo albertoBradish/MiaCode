@@ -74,6 +74,17 @@ void PreviewModel::setCanvasSetting(const QString& key, const QVariant& value)
     if (surface() != nullptr) surface()->setRenderSetting(key, value);
 }
 
+bool PreviewModel::handOrderOverlayEnabled() const
+{
+    return canvasSettings().value(QStringLiteral("showHandOrderAnnotations"), true).toBool();
+}
+
+void PreviewModel::setHandOrderOverlayEnabled(bool enabled)
+{
+    // This is a presentation layer over existing annotations, never a solver command.
+    setCanvasSetting(QStringLiteral("showHandOrderAnnotations"), enabled);
+}
+
 void PreviewModel::resetV2UiProbe()
 {
     v2UiProbeStatisticsRebuildCount_ = 0;

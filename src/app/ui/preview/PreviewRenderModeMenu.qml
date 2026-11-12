@@ -186,6 +186,19 @@ AppStickyPopup {
         }
 
         AppSwitch {
+            width: parent.width
+            leftPadding: 12
+            rightPadding: 16
+            text: qsTrId("preview.hand_order_overlay")
+            Accessible.description: qsTrId("preview.hand_order_overlay_help")
+            checked: root.previewSession.handOrderOverlayEnabled
+            onToggled: {
+                root.previewSession.setHandOrderOverlayEnabled(checked)
+                checked = Qt.binding(() => root.previewSession.handOrderOverlayEnabled)
+            }
+        }
+
+        AppSwitch {
             id: smoothSwitch
             visible: !root.previewSession.muriCheckEnabled && !root.previewSession.debugRendering
             width: parent.width
