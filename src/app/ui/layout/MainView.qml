@@ -312,6 +312,12 @@ Item {
         root.commands.openDocument(fileUrl)
     }
 
+    function flushLibrarySessions() {
+        if (chartLibraryWindow.flush()) return true
+        chartLibraryWindow.open()
+        return false
+    }
+
     function requestClose() {
         root.hostWindow.close()
     }
