@@ -28,6 +28,9 @@ Item {
     required property var net
     required property var netUpload
     required property Component floatingEditorShortcuts
+    property var libraryModel: null
+    signal openLibraryManager()
+    signal openLibraryChart(string path)
     property bool compact: false
     property bool timelineGuideActive: false
     property bool workspaceShortcutsEnabled: true
@@ -549,6 +552,7 @@ Item {
         })
         defaultTree: root.defaultDockTree("default")
         builtinTree: root.defaultDockTree
+        libraryAvailable: !!root.libraryModel
         floatPreview: root.detachPreview
         dockPreview: root.dockPreview
         previewGeometry: root.previewGeometry
@@ -557,6 +561,7 @@ Item {
         availablePanels: {
             const panels = []
             if (panelShown("editor")) panels.push("editor")
+            if (root.libraryModel && panelShown("library")) panels.push("library")
             if (root.previewPanelShown && !root.previewDetached) panels.push("preview")
             if (root.timelineVisible) panels.push("timeline")
             if (root.syntaxVisible) panels.push("validation")
@@ -666,6 +671,16 @@ Item {
             workspaceDock.activate("editor")
             editorPane.revealAnalysisRow(difficultyId, revision, line, column, endColumn, second, root.analysisSession)
         }
+    }
+
+    ChartLibraryBrowser {
+        id: libraryBrowser
+        parent: workspaceDock.hostFor("library")
+        anchors.fill: parent
+        visible: !!root.libraryModel && workspaceDock.panelPresent("library")
+        library: root.libraryModel
+        onManageRequested: root.openLibraryManager()
+        onOpenChartRequested: path => root.openLibraryChart(path)
     }
 
     TimelinePanel {
