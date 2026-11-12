@@ -198,6 +198,7 @@ Item {
     }
 
     function runMediaTool(toolId) {
+        if (toolId === "chartLibrary") { chartLibraryWindow.open(); return }
         if (!root.documentSession.hasDocument)
             return
         switch (toolId) {
@@ -904,6 +905,12 @@ Item {
         objectName: "shellPreviewSettingsDialog"
         parent: splitView.settingsDialogParent
         previewSettings: root.applicationContext.previewSettings
+    }
+
+    ChartLibraryWindow {
+        id: chartLibraryWindow
+        library: root.applicationContext.chartLibrary
+        transientParent: root.Window.window
     }
 
     DxScoreLossWindow {

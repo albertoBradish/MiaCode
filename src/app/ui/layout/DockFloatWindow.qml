@@ -61,7 +61,13 @@ ApplicationWindow {
         sequence: "`"
         autoRepeat: false
         enabled: root.visible && root.workspace.keyboardAllowed(root)
-            && root.activeFocusItem?.workspaceSourceEditor !== true
+        onActivated: root.workspace.showManager(root)
+    }
+
+    Shortcut {
+        sequence: "Ctrl+`"
+        autoRepeat: false
+        enabled: root.visible && root.workspace.keyboardAllowed(root)
         onActivated: root.workspace.togglePanelMaximization(root.panelId, root)
     }
 
