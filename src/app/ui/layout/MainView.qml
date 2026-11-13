@@ -313,7 +313,7 @@ Item {
     }
 
     function flushLibrarySessions() {
-        if (chartLibraryWindow.flush()) return true
+        if (chartLibraryWindow.flush() && root.applicationContext.chartLibrary.checkpoint()) return true
         chartLibraryWindow.open()
         return false
     }
